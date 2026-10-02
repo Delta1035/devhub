@@ -10,6 +10,7 @@ import { useProjects } from '@renderer/features/projects/use-projects'
 import { OrphansBanner } from '@renderer/features/runs/orphans-banner'
 import { useRunEventsSync } from '@renderer/features/runs/use-runs'
 import { SettingsPage } from '@renderer/features/settings/settings-page'
+import { UpdateBadge } from '@renderer/features/updates/update-badge'
 
 function App(): React.JSX.Element {
   const { data: appInfo } = useAppInfo()
@@ -33,10 +34,12 @@ function App(): React.JSX.Element {
       <header className="flex items-center gap-3 border-b px-6 py-2.5">
         <h1 className="font-heading text-lg font-semibold">DevHub</h1>
         {appInfo && <span className="text-xs text-muted-foreground">v{appInfo.version}</span>}
+        <div className="ml-auto">
+          <UpdateBadge />
+        </div>
         <Button
           variant={showSettings ? 'secondary' : 'ghost'}
           size="icon-sm"
-          className="ml-auto"
           onClick={() => setShowSettings(!showSettings)}
           aria-label="设置"
           aria-pressed={showSettings}

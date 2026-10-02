@@ -61,7 +61,7 @@ React UI ──> @renderer/api ──> DevhubApi (packages/shared)
 
 ### ShellApi：仅桌面端可用的能力
 
-原生对话框、用系统浏览器打开链接等只在本机有意义的能力放在 `ShellApi`（`window.devhubShell`），不进入 `DevhubApi`。
+原生对话框、用系统浏览器打开链接、自动更新（`main/updater.ts`，ADR 0009）等只在本机有意义的能力放在 `ShellApi`（`window.devhubShell`），不进入 `DevhubApi`。
 UI 通过 `@renderer/api` 的 `shell` 访问；远程客户端中它为 `null`，UI 需据此隐藏相关入口。
 ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动映射）。
 

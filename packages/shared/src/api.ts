@@ -137,10 +137,38 @@ export interface ShellApi {
   pickFile(title: string): Promise<string | null>
   /** Opens an http(s) URL in the default browser; other protocols are rejected. */
   openExternal(url: string): Promise<void>
+  getUpdateStatus(): Promise<UpdateStatus>
+  /** Looks for a newer release; the result arrives as a status change. */
+  checkForUpdates(): Promise<void>
+  downloadUpdate(): Promise<void>
+  /** Quits (stopping every run, as on a normal quit) and installs the downloaded update. */
+  installUpdate(): Promise<void>
+  /** Called on every status change; returns a function that unsubscribes. */
+  onUpdateStatus(listener: (status: UpdateStatus) => void): () => void
 }
+
+/**
+ * Self-update of the installed app. `unsupported`: dev builds and the .deb package (updated by
+ * the system package manager), where nothing is checked.
+ */
+export type UpdateStatus =
+  | { state: 'unsupported'; reason: string }
+  | { state: 'idle' }
+  | { state: 'checking' }
+  | { state: 'up-to-date'; checkedAt: string }
+  | { state: 'available'; version: string }
+  | { state: 'downloading'; version: string; percent: number }
+  | { state: 'downloaded'; version: string }
+  | { state: 'error'; message: string }
 
 export const shellChannel = {
   pickDirectory: 'shell:pickDirectory',
   pickFile: 'shell:pickFile',
+  getUpdateStatus: 'shell:getUpdateStatus',
+  checkForUpdates: 'shell:checkForUpdates',
+  downloadUpdate: 'shell:downloadUpdate',
+  installUpdate: 'shell:installUpdate',
+  /** Pushed from main to the renderer. */
+  updateStatus: 'shell:updateStatus',
   openExternal: 'shell:openExternal'
 } as const

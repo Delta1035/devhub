@@ -38,3 +38,11 @@ deb:
   packageName: devhub
   artifactName: devhub_${version}_${arch}.${ext}
 npmRebuild: false
+# Where the installed app looks for updates (ADR 0009). The release workflow builds with
+# --publish never and uploads the installers itself, including the latest*.yml files written
+# because of this setting.
+publish:
+  provider: github
+  owner: Delta1035
+  repo: devhub
+  releaseType: release

@@ -57,10 +57,13 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: installers-${{ matrix.target }}
+          # latest*.yml and the blockmaps are what installed apps read to update themselves.
           path: |
             apps/desktop/dist/*.exe
             apps/desktop/dist/*.AppImage
             apps/desktop/dist/*.deb
+            apps/desktop/dist/latest*.yml
+            apps/desktop/dist/*.blockmap
           if-no-files-found: error
 
   release:
@@ -90,7 +93,8 @@ jobs:
             installers/*.exe
             installers/*.AppImage
             installers/*.deb
-      # Created as a draft: check the installers, then publish it on GitHub.
+      # Created as a draft: check the installers, then publish it on GitHub. Installed apps only
+      # see published releases, so publishing is what rolls the update out.
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}

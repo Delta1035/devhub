@@ -3,6 +3,7 @@ import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { createDevhubCore, type DevhubCore } from './core/devhub-core'
 import { registerIpcHandlers } from './ipc'
+import { registerUpdater } from './updater'
 import { createMainWindow } from './window'
 import { createTray } from './tray'
 
@@ -53,6 +54,7 @@ if (!app.requestSingleInstanceLock()) {
       dataDir: app.getPath('userData')
     })
     registerIpcHandlers(core)
+    registerUpdater()
     core.getSettings().then(
       (settings) => (closeAction = settings.closeAction),
       () => undefined

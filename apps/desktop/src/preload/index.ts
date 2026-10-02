@@ -8,7 +8,8 @@ import {
   type DevhubEvent,
   type DevhubEvents,
   type IpcResult,
-  type ShellApi
+  type ShellApi,
+  type UpdateStatus
 } from '@devhub/shared'
 
 async function invoke(channel: string, ...args: unknown[]): Promise<unknown> {
@@ -27,6 +28,23 @@ const api = Object.fromEntries(
 const shell: ShellApi = {
   pickDirectory: () => invoke(shellChannel.pickDirectory) as Promise<string | null>,
   pickFile: (title) => invoke(shellChannel.pickFile, title) as Promise<string | null>,
+  getUpdateStatus: () => invoke(shellChannel.getUpdateStatus) as Promise<UpdateStatus>,
+  checkForUpdates: async () => {
+    await invoke(shellChannel.checkForUpdates)
+  },
+  downloadUpdate: async () => {
+    await invoke(shellChannel.downloadUpdate)
+  },
+  installUpdate: async () => {
+    await invoke(shellChannel.installUpdate)
+  },
+  onUpdateStatus(listener) {
+    const handler = (_event: IpcRendererEvent, status: UpdateStatus): void => listener(status)
+    ipcRenderer.on(shellChannel.updateStatus, handler)
+    return () => {
+      ipcRenderer.removeListener(shellChannel.updateStatus, handler)
+    }
+  },
   openExternal: async (url) => {
     await invoke(shellChannel.openExternal, url)
   }

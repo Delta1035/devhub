@@ -78,10 +78,12 @@
 - 自定义 shell：设置页添加程序路径与参数，出现在「+」菜单中、可设为默认（ADR 0007 补充）；E2E 用 Node REPL 作为自定义 shell 覆盖
 - Linux 上 `mvnw` / `gradlew` 没有执行权限时改用 `sh ./mvnw` 运行（有权限时仍是 `./mvnw`）；真实权限位测试只在 Linux CI 运行
 - CI 缓存 Electron 与 electron-builder 的下载（`ELECTRON_CACHE` / `ELECTRON_BUILDER_CACHE` 指向仓库外的统一目录，按任务与 OS 分别缓存）；发布流程有意不使用缓存，避免缓存投毒影响分发的安装包
+- 自动更新（ADR 0009，新依赖 electron-updater）：Windows 安装版与 Linux AppImage 从 GitHub Releases 检查更新，用户决定下载与重启安装；顶栏提示 + 设置页「关于与更新」；发布流程上传 `latest*.yml` 与 `.blockmap`
+  - 已验证：本地打包产物含 `latest.yml` 与 `app-update.yml`，运行打包版能连上 GitHub 并正确提示 v0.1.2 缺少更新信息；完整更新流程需发布两个新版本后实测
 
 ### 下一步（M1）
 
-1. 自动更新（electron-updater）
+1. 发布一个新版本（含 latest.yml），再发布下一个版本，实测自动更新全流程
 2. monorepo 子包 / 多模块项目的脚本识别（暂缓）
 3. 推送后确认 CI 在 Windows + Ubuntu 都通过（Linux 上的杀进程树集成测试、E2E 与打包都是首次运行）
 
@@ -100,5 +102,5 @@
 - 终端：Linux 上 shell 的 SIGHUP / 会话扫描只在 CI 中验证
 - 编辑器：本机已安装 IDEA（D 盘自定义目录），经注册表检测成功；实际打开项目待人工点一次确认；检测不到时可在设置中手动指定；`reg query` 输出按系统代码页解码，安装路径含中文时可能识别不到
 - 发布待办（GitHub 仓库设置，非代码）：开启 Immutable releases；为 `v*` tag 加 ruleset 限制创建者
-- 发布：安装包不做签名（已决定，Windows SmartScreen 会提示）；自动更新排在待办中
+- 发布：安装包不做签名（已决定，Windows SmartScreen 会提示）；v0.1.2 及更早版本没有 latest.yml，需手动升级一次
 - 端口推断是启发式的：脚本里没写端口、也不是已知工具时不检查；`run-manager.ts` 已接近 400 行，下次改动时拆分

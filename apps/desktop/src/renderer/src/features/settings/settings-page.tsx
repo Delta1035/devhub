@@ -13,6 +13,7 @@ import {
 } from '@renderer/features/terminal/terminal-prefs'
 import { appearance, type ThemePreference } from '@renderer/lib/appearance'
 import { CustomShellsEditor } from './custom-shells-editor'
+import { UpdatesSection } from './updates-section'
 import { NumberSetting, Segmented, SettingRow, SettingsSection } from './settings-controls'
 import { usePreference, useSettings, useUpdateSettings } from './use-settings'
 
@@ -56,6 +57,7 @@ export function SettingsPage({ onClose }: { onClose: () => void }): React.JSX.El
               />
               <EditorsSection save={save} onError={setError} />
               <ProcessSection settings={settings.data} save={save} />
+              <UpdatesSection />
             </>
           )}
         </div>

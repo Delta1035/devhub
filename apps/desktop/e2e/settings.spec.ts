@@ -123,3 +123,11 @@ test('a custom shell can be added and opened from the terminal menu', async ({
   await page.keyboard.press('Enter')
   await expect(page.locator('.xterm-rows')).toContainText('42')
 })
+
+test('a development build says it does not check for updates', async ({ launchDevhub }) => {
+  const { page } = await launchDevhub()
+  await openSettings(page)
+  const updates = page.getByRole('region', { name: '关于与更新' })
+  await expect(updates.getByRole('status')).toHaveText('开发版本不检查更新')
+  await expect(updates.getByRole('button', { name: '检查更新' })).toBeHidden()
+})
