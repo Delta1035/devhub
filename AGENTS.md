@@ -34,6 +34,7 @@ DevHub 是一个桌面客户端：自动发现本地项目中的脚本（npm / m
 - `pnpm e2e` — 构建并运行 Playwright E2E（在 VSCode 终端中需先 `env -u ELECTRON_RUN_AS_NODE`）
 - `pnpm test` / `pnpm lint` / `pnpm typecheck`
 - `pnpm --filter @devhub/desktop build:win` / `build:linux` — 打包
+- `pnpm release patch|minor|major` — 改版本、提交并打 tag；`git push --follow-tags` 后由 CI 发布草稿 Release
 
 ## 平台注意事项
 

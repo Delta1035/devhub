@@ -15,6 +15,7 @@
     "format:check": "prettier --check .",
     "e2e": "pnpm --filter @devhub/desktop e2e",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
+    "release": "pnpm --dir apps/desktop version --message \"chore(release): v%s\"",
     "prepare": "husky"
   },
   "lint-staged": {
