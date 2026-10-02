@@ -91,20 +91,25 @@
   - `core/health/` 订阅运行事件、独立于 RunManager；事件 `run-health` + API `listRunHealth`；HTTP 检查用 Node 自带 fetch，无新依赖
   - 批量执行新增继续条件「HTTP 返回成功」（http / https 地址，2xx）
   - 测试：状态机（假时钟）、检查目标、真实 HTTP 服务（2xx / 404 / 重定向 / 超时）、配置字段、条件；E2E 1 个（先监听但返回 503 → 仍为启动中 → 2xx 后就绪 → 停止后徽标消失）
+- 运行历史（M3）：脚本行「历史」按钮弹出最近的运行（今天 / 昨天 / 日期 + 时间、时长、已完成 / 已停止 / 退出码 N），打开时有运行结束会自动刷新
+  - `core/history/run-history.ts` 订阅运行事件，脚本退出时记录，每个脚本保留最近 20 次，存 `run-history.json`（跨重启）；交互式终端不记录；退出 DevHub 时等待最后的记录写完
+  - API `listRunHistory(projectId, scriptId)`；新增 shadcn `popover` 组件（来自已有的 radix-ui，无新依赖）
+  - 测试：6 个单元测试（记录与排序、忽略运行中 / shell / 重复退出、按脚本截断、跨会话读取、无效 id、写入失败仍可用）；E2E 1 个（失败与停止的运行、打开时刷新、重启后保留）；Windows + Linux 均通过
 
 ### 下一步（M1）
 
 1. 发布一个新版本（含 latest.yml），再发布下一个版本，实测自动更新全流程
-2. M3：运行历史（每个脚本最近 N 次的开始时间、时长、退出码）
-3. 技术债：E2E 中版本号显示为 Electron 版本；Linux 安装包多带了 Windows / macOS 的 `pty.node` 预编译包
-4. 脚本识别：monorepo 子包 lockfile、Maven 多模块、Gradle 多项目
-5. M4 远程暂缓，等以上完成后再评估
-6. 推送后确认 CI 在 Ubuntu（xvfb）也通过（真实 Linux 桌面已验证）
+2. 技术债：E2E 中版本号显示为 Electron 版本；Linux 安装包多带了 Windows / macOS 的 `pty.node` 预编译包
+3. 脚本识别：monorepo 子包 lockfile、Maven 多模块、Gradle 多项目
+4. M4 远程暂缓，等以上完成后再评估
+5. 推送后确认 CI 在 Ubuntu（xvfb）也通过（真实 Linux 桌面已验证）
 
 ### 已知问题 / 待定
 
 - npm 探测只看项目根目录：monorepo 子包作为项目添加时，根目录的 lockfile 识别不到，会回退为 npm
 - 脚本命令目前是字符串（经 shell 执行）；进程管理时再决定是否改为 argv 形式
+- E2E 偶发：Windows 上 `groups.spec.ts` 的串行用例在整套连续运行时偶尔超时（结束时关闭应用超过 60 秒，约 1/20），单独重复运行未复现；原因未查明
+- 运行历史：脚本运行到一半 DevHub 崩溃时，这次运行不会进入历史；移除项目后它的历史记录仍留在 `run-history.json` 中（数量有上限，未清理）
 - Maven 多模块 / Gradle 多项目：只读根目录构建文件，子模块中的 `spring-boot:run` / `bootRun` 识别不到，且在根目录执行会作用于所有模块；以后扫描子模块并用 `-pl <module>` / `:<project>:bootRun`
 - Android 项目的 `assembleDebug`、`installDebug` 等任务暂不识别
 - Linux 上自己 `setsid` 脱离进程组的守护进程杀不到；崩溃后的遗留进程只有当记录的根进程本身存活时才能发现（子进程脱离后根进程已退出的情况发现不了）

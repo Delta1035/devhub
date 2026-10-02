@@ -13,6 +13,7 @@ import { createEditorLocator } from './editors/editor-locator'
 import { isFile } from './fs/is-file'
 import { systemDeps, writeFileEnsuringDir } from './fs/system-deps'
 import { createHealthMonitor } from './health/health-monitor'
+import { createRunHistory, emptyRunHistoryFile, runHistoryFileSchema } from './history/run-history'
 import { healthTargetOf } from './health/health-target'
 import { checkHttpOk, checkLocalHttp } from './net/http-check'
 import { checkLocalPort } from './net/local-port'
@@ -171,6 +172,15 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     )
   })
 
+  const history = createRunHistory({
+    store: createJsonStore({
+      filePath: join(env.dataDir, 'run-history.json'),
+      schema: runHistoryFileSchema,
+      fallback: emptyRunHistoryFile
+    }),
+    subscribe: (listener) => events.subscribe(listener)
+  })
+
   const health = createHealthMonitor({
     subscribe: (listener) => events.subscribe(listener),
     resolveTarget: async (run) =>
@@ -201,6 +211,7 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     listOrphanedRuns: () => runRegistry.orphans(),
     killOrphanedRuns: () => runRegistry.killOrphans(),
     dismissOrphanedRuns: () => runRegistry.dismissOrphans(),
+    listRunHistory: (projectId, scriptId) => history.list(projectId, scriptId),
     listRunHealth: async () => health.list(),
     getRunOutput: async (runId) => runs.output(runId),
     writeRunInput: async (runId, data) => runs.writeInput(runId, data),
@@ -226,6 +237,8 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
       groupRunner.dispose()
       health.dispose()
       await runs.dispose()
+      // The runs just stopped are recorded as they exit; let those writes finish.
+      await history.flush()
     }
   }
 }

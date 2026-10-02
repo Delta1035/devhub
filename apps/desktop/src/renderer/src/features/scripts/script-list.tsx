@@ -6,6 +6,7 @@ import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Skeleton } from '@renderer/components/ui/skeleton'
 import { RunControls } from '@renderer/features/runs/run-controls'
+import { RunHistoryButton } from '@renderer/features/runs/run-history-button'
 import { useRuns } from '@renderer/features/runs/use-runs'
 import { useProjectScripts } from './use-scripts'
 
@@ -191,6 +192,7 @@ function ScriptGroup({
                 </p>
               )}
             </div>
+            <RunHistoryButton projectId={projectId} scriptId={script.id} scriptName={script.name} />
             <RunControls
               projectId={projectId}
               scriptId={script.id}

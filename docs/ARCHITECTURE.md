@@ -27,6 +27,7 @@ devhub/                        pnpm monorepo
 │       │       ├── settings/        核心设置（settings.json）（ADR 0007）
 │       │       ├── ports/           推断脚本端口、查找占用进程、启动前冲突检测
 │       │       ├── health/          运行中脚本的就绪检查：启动中 / 就绪 / 无响应（ADR 0011）
+│       │       ├── history/         脚本运行历史：每个脚本最近 20 次的结束情况（run-history.json）
 │       │       ├── net/             本地端口连通性检测、HTTP 检查
 │       │       └── fs/              文件系统小工具；finder.ts：按候选位置查找已安装程序
 │       ├── preload/           暴露 window.devhub（DevhubApi）、window.devhubEvents（事件订阅）与 window.devhubShell（ShellApi）
@@ -78,6 +79,7 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 | Run            | 终端标签里的一个进程：`script`（识别出的脚本）或 `shell`（交互式终端）；状态、PID、退出码 |
 | `.devhub.yaml` | 项目内可选配置：自定义脚本（ADR 0008），由 `detectors/config-detector.ts` 读取            |
 | RunHealth      | 运行中脚本的就绪状态：starting / ready / unhealthy，与 Run 分开推送（ADR 0011）           |
+| RunRecord      | 一次已结束的脚本运行：起止时间、退出码、是否用户停止；存于 `run-history.json`             |
 
 ## 脚本探测
 

@@ -9,6 +9,7 @@ import {
 import { describePortConflicts, type PortConflict, type Run } from '@devhub/shared'
 import { api, events } from '@renderer/api'
 import { applyHealthEvent } from './use-run-health'
+import { refreshHistoryOnExit } from './use-run-history'
 
 const runsKey = ['runs'] as const
 
@@ -36,6 +37,7 @@ export function useRunEventsSync(): void {
             const others = runs.filter((run) => run.id !== event.run.id)
             return [...others, event.run]
           })
+          refreshHistoryOnExit(queryClient, event.run)
         } else if (event.type === 'run-removed') {
           queryClient.setQueryData<Run[]>(runsKey, (runs = []) =>
             runs.filter((run) => run.id !== event.runId)
