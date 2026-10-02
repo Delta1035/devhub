@@ -41,6 +41,11 @@ renderer 只传 `projectId` + `scriptId`，core 重新扫描并按 id 找到脚�
 - `tree-kill` 等库：逻辑只有几十行且需要按平台精细控制（两阶段、超时），自己实现更透明，不额外引入依赖。
 - Windows Job Object：能保证 DevHub 崩溃时子进程也退出，但需要额外原生代码；暂不做，崩溃遗留进程记入已知问题。
 
+## 补充（2026-10-02）：移除 desktop 的 `postinstall: electron-builder install-app-deps`
+
+该脚本会调用 @electron/rebuild 从源码重新编译 node-pty，在 Windows 上编译 winpty 失败（`GetCommitHash.bat` 找不到），导致 `pnpm install` 整体失败、新依赖被回滚。
+node-pty 是 N-API 模块，本来就不需要针对 Electron 重新编译，因此移除该脚本。以后若引入需要针对 Electron ABI 编译的原生模块，再重新评估。
+
 ## 已知限制
 
 - 自己调用 `setsid` / 脱离进程组的守护进程在 Linux 上杀不到。

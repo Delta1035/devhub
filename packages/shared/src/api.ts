@@ -1,4 +1,5 @@
 import type { Project, ProjectScripts, Run } from './domain'
+import type { RunOutputSnapshot } from './events'
 
 /**
  * The contract between any UI (desktop renderer, future mobile/PWA) and the DevHub core.
@@ -20,6 +21,14 @@ export interface DevhubApi {
   restartRun(runId: string): Promise<Run>
   /** Active runs plus the latest exited run of each script. */
   listRuns(): Promise<Run[]>
+  /** Recent output; combine with `run-output` events through `OutputCursor`. */
+  getRunOutput(runId: string): Promise<RunOutputSnapshot>
+  /** Sends terminal input (keystrokes) to an active run. */
+  writeRunInput(runId: string, data: string): Promise<void>
+  /** Resizes the run's pseudo-terminal; ignored once the run has exited. */
+  resizeRun(runId: string, cols: number, rows: number): Promise<void>
+  /** Forgets an exited run (closes its terminal tab). */
+  removeRun(runId: string): Promise<void>
 }
 
 export interface AppInfo {
@@ -39,7 +48,11 @@ export const devhubApiMethods = [
   'startScript',
   'stopRun',
   'restartRun',
-  'listRuns'
+  'listRuns',
+  'getRunOutput',
+  'writeRunInput',
+  'resizeRun',
+  'removeRun'
 ] as const satisfies readonly DevhubApiMethod[]
 
 type MissingMethods = Exclude<DevhubApiMethod, (typeof devhubApiMethods)[number]>

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import type { Project } from '@devhub/shared'
 import { Button } from '@renderer/components/ui/button'
@@ -7,6 +8,7 @@ import { TerminalPanel } from '@renderer/features/terminal/terminal-panel'
 
 export function ProjectDetail({ project }: { project: Project }): React.JSX.Element {
   const scripts = useProjectScripts(project.id)
+  const [activeRunId, setActiveRunId] = useState<string | null>(null)
 
   return (
     <div className="flex h-full flex-col">
@@ -32,9 +34,13 @@ export function ProjectDetail({ project }: { project: Project }): React.JSX.Elem
         </Button>
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-        <ScriptList project={project} />
+        <ScriptList project={project} onRunStarted={(run) => setActiveRunId(run.id)} />
       </div>
-      <TerminalPanel />
+      <TerminalPanel
+        projectId={project.id}
+        activeRunId={activeRunId}
+        onActiveRunChange={setActiveRunId}
+      />
     </div>
   )
 }

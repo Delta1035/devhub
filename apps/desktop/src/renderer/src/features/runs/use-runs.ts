@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import {
   useMutation,
   useQuery,
@@ -6,21 +7,34 @@ import {
   type UseQueryResult
 } from '@tanstack/react-query'
 import type { Run } from '@devhub/shared'
-import { api } from '@renderer/api'
+import { api, events } from '@renderer/api'
 
 const runsKey = ['runs'] as const
 
-/**
- * Polls while any run is active so status changes show up.
- * Temporary: replaced by pushed events once log streaming lands.
- */
 export function useRuns(): UseQueryResult<Run[]> {
-  return useQuery({
-    queryKey: runsKey,
-    queryFn: () => api.listRuns(),
-    refetchInterval: (query) =>
-      query.state.data?.some((run) => run.status !== 'exited') ? 1000 : false
-  })
+  return useQuery({ queryKey: runsKey, queryFn: () => api.listRuns() })
+}
+
+/** Keeps the runs cache in sync with pushed events. Mount once, near the app root. */
+export function useRunEventsSync(): void {
+  const queryClient = useQueryClient()
+
+  useEffect(
+    () =>
+      events.subscribe((event) => {
+        if (event.type === 'run-updated') {
+          queryClient.setQueryData<Run[]>(runsKey, (runs = []) => {
+            const others = runs.filter((run) => run.id !== event.run.id)
+            return [...others, event.run]
+          })
+        } else if (event.type === 'run-removed') {
+          queryClient.setQueryData<Run[]>(runsKey, (runs = []) =>
+            runs.filter((run) => run.id !== event.runId)
+          )
+        }
+      }),
+    [queryClient]
+  )
 }
 
 export interface StartScriptInput {
@@ -28,29 +42,22 @@ export interface StartScriptInput {
   scriptId: string
 }
 
+// Mutations need no cache updates: the core pushes run-updated / run-removed events.
+
 export function useStartScript(): UseMutationResult<Run, Error, StartScriptInput> {
-  const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ projectId, scriptId }) => api.startScript(projectId, scriptId),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: runsKey })
+    mutationFn: ({ projectId, scriptId }) => api.startScript(projectId, scriptId)
   })
 }
 
 export function useStopRun(): UseMutationResult<void, Error, string> {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (runId) => api.stopRun(runId),
-    // Refresh right away so the "stopping" state shows while the tree shuts down.
-    onMutate: () => queryClient.invalidateQueries({ queryKey: runsKey }),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: runsKey })
-  })
+  return useMutation({ mutationFn: (runId) => api.stopRun(runId) })
 }
 
 export function useRestartRun(): UseMutationResult<Run, Error, string> {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (runId) => api.restartRun(runId),
-    onMutate: () => queryClient.invalidateQueries({ queryKey: runsKey }),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: runsKey })
-  })
+  return useMutation({ mutationFn: (runId) => api.restartRun(runId) })
+}
+
+export function useRemoveRun(): UseMutationResult<void, Error, string> {
+  return useMutation({ mutationFn: (runId) => api.removeRun(runId) })
 }

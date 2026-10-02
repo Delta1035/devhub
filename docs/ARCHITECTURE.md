@@ -17,8 +17,9 @@ devhub/                        pnpm monorepo
 │       │       ├── projects/        项目注册与持久化
 │       │       ├── detectors/       脚本探测器：每种项目类型一个文件
 │       │       ├── scripts/         按项目扫描脚本（listScripts）
-│       │       └── process/         进程管理：PTY、杀进程树、RunManager（见 ADR 0003）
-│       ├── preload/           暴露 window.devhub（DevhubApi）与 window.devhubShell（ShellApi）
+│       │       ├── process/         进程管理：PTY、杀进程树、RunManager、输出缓冲（ADR 0003）
+│       │       └── events/          事件总线：把 core 事件分发给各传输层（ADR 0004）
+│       ├── preload/           暴露 window.devhub（DevhubApi）、window.devhubEvents（事件订阅）与 window.devhubShell（ShellApi）
 │       └── renderer/src/      React UI
 │           ├── api/           ★ UI 访问核心的唯一入口
 │           ├── features/<x>/  按功能组织：组件 + hooks（projects、scripts、terminal）
@@ -85,9 +86,11 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 - `createDevhubCore` 返回 `DevhubCore`（`DevhubApi` + `dispose`）；主进程在 `before-quit` 中等待 `dispose()`（最多 10 秒）。
 - renderer 只传 id，命令由 core 重新扫描得到。
 
-## 规划中的模块（M1）
+## 事件推送（见 ADR 0004）
 
-- 事件推送（日志、状态变化）：契约中以订阅接口表达，IPC 用 `webContents.send`，远程用 WebSocket。
+- `DevhubEvents.subscribe` 独立于 `DevhubApi`：请求-响应走自动映射的 IPC，推送走 `devhubEventChannel`（主进程 `webContents.send` → preload → `@renderer/api` 的 `events`）。远程端将改用 WebSocket。
+- 事件：`run-updated`、`run-removed`、`run-output`（带流偏移量）。renderer 用事件直接更新 TanStack Query 缓存（`useRunEventsSync`，在 App 挂载一次）。
+- 终端：先订阅再取 `getRunOutput` 快照，用 shared 的 `OutputCursor` 去重拼接；core 中输出按 16 ms 合并后推送。
 
 ## 安全
 

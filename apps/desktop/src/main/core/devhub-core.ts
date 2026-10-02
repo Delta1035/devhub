@@ -1,5 +1,5 @@
 import { join } from 'path'
-import type { DevhubApi } from '@devhub/shared'
+import type { DevhubApi, DevhubEvents } from '@devhub/shared'
 import { createJsonStore } from './storage/json-store'
 import {
   createProjectService,
@@ -7,6 +7,7 @@ import {
   projectsFileSchema
 } from './projects/project-service'
 import { createDefaultDetectors } from './detectors/detect-scripts'
+import { createEventBus } from './events/event-bus'
 import { createProcessKiller } from './process/process-killer'
 import { nodePtySpawner } from './process/pty'
 import { createRunManager } from './process/run-manager'
@@ -19,7 +20,7 @@ export interface CoreEnvironment {
   dataDir: string
 }
 
-export interface DevhubCore extends DevhubApi {
+export interface DevhubCore extends DevhubApi, DevhubEvents {
   /** Stops all runs. Call before the host process exits so no orphans are left behind. */
   dispose(): Promise<void>
 }
@@ -44,11 +45,14 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     detectors: createDefaultDetectors(env.platform)
   })
 
+  const events = createEventBus((error) => console.error('[core] event listener failed', error))
+
   const runs = createRunManager({
     scripts,
     spawn: nodePtySpawner,
     killer: createProcessKiller({ platform: env.platform }),
-    platform: env.platform
+    platform: env.platform,
+    emit: (event) => events.emit(event)
   })
 
   return {
@@ -63,6 +67,11 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     stopRun: (runId) => runs.stop(runId),
     restartRun: (runId) => runs.restart(runId),
     listRuns: async () => runs.list(),
+    getRunOutput: async (runId) => runs.output(runId),
+    writeRunInput: async (runId, data) => runs.writeInput(runId, data),
+    resizeRun: async (runId, cols, rows) => runs.resize(runId, cols, rows),
+    removeRun: async (runId) => runs.remove(runId),
+    subscribe: (listener) => events.subscribe(listener),
     dispose: () => runs.dispose()
   }
 }

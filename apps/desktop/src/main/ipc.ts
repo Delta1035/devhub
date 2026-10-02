@@ -2,16 +2,27 @@ import { BrowserWindow, dialog, ipcMain } from 'electron'
 import {
   DevhubError,
   devhubApiMethods,
+  devhubEventChannel,
   ipcChannel,
   shellChannel,
   type DevhubApi,
+  type DevhubEvents,
   type IpcResult
 } from '@devhub/shared'
 
 type AnyApiMethod = (...args: unknown[]) => Promise<unknown>
 
-/** Exposes every DevhubApi method over IPC, wrapping results in an IpcResult envelope. */
-export function registerIpcHandlers(core: DevhubApi): void {
+/**
+ * Exposes every DevhubApi method over IPC, wrapping results in an IpcResult envelope,
+ * and forwards core events to every window (hidden ones too, so state stays current).
+ */
+export function registerIpcHandlers(core: DevhubApi & DevhubEvents): void {
+  core.subscribe((event) => {
+    for (const window of BrowserWindow.getAllWindows()) {
+      if (!window.webContents.isDestroyed()) window.webContents.send(devhubEventChannel, event)
+    }
+  })
+
   for (const method of devhubApiMethods) {
     const handler = core[method] as AnyApiMethod
     ipcMain.handle(ipcChannel(method), (_event, ...args: unknown[]) =>

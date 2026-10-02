@@ -16,7 +16,13 @@ const sourceLabels: Record<ScriptSource, string> = {
   custom: '自定义'
 }
 
-export function ScriptList({ project }: { project: Project }): React.JSX.Element {
+interface ScriptListProps {
+  project: Project
+  /** Called with a freshly started run so the terminal panel can switch to it. */
+  onRunStarted: (run: Run) => void
+}
+
+export function ScriptList({ project, onRunStarted }: ScriptListProps): React.JSX.Element {
   const scripts = useProjectScripts(project.id)
   const runs = useRuns()
   const [runError, setRunError] = useState<Error | null>(null)
@@ -105,6 +111,7 @@ export function ScriptList({ project }: { project: Project }): React.JSX.Element
           scripts={group}
           runs={runs.data ?? []}
           onRunError={setRunError}
+          onRunStarted={onRunStarted}
         />
       ))}
     </div>
@@ -117,6 +124,7 @@ interface ScriptGroupProps {
   scripts: Script[]
   runs: Run[]
   onRunError: (error: Error) => void
+  onRunStarted: (run: Run) => void
 }
 
 function ScriptGroup({
@@ -124,7 +132,8 @@ function ScriptGroup({
   source,
   scripts,
   runs,
-  onRunError
+  onRunError,
+  onRunStarted
 }: ScriptGroupProps): React.JSX.Element {
   // All scripts of one source share the executable, e.g. "pnpm" or "mvnw.cmd".
   const executable = scripts[0]?.command.split(' ')[0]
@@ -157,6 +166,7 @@ function ScriptGroup({
               scriptName={script.name}
               run={runs.find((run) => run.projectId === projectId && run.scriptId === script.id)}
               onError={onRunError}
+              onStarted={onRunStarted}
             />
           </li>
         ))}

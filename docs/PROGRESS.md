@@ -31,10 +31,15 @@
   - 每个脚本保留最新一次运行，输出在 core 中保留最近 512 KB（尚未推送到 UI）
   - UI：脚本行运行 / 停止 / 重启按钮 + 状态徽标；有活动运行时每秒轮询 `listRuns`（临时方案）
   - 真实进程集成测试（当前平台）+ 手动验证：真实 `pnpm run` 启停（1.1 秒优雅退出）、重启、非零退出码、退出 DevHub 后无遗留进程
+- M1-7 日志推送 + 终端（ADR 0004）：`DevhubEvents.subscribe` 推送运行状态与输出，替换轮询；新增 `getRunOutput` / `writeRunInput` / `resizeRun` / `removeRun`
+  - 输出按流偏移量拼接快照与实时事件（`OutputCursor`），core 中 16 ms 合并后推送
+  - 终端面板：xterm.js，每个运行一个标签页（状态圆点、关闭已结束的），启动后自动切换，可输入，高度可拖拽并记住
+  - 移除 desktop 的 `postinstall`（@electron/rebuild 会从源码编译 node-pty 并失败，见 ADR 0003 补充）
+  - 手动验证：彩色 + 中文输出、交互输入、1 MB 输出（合并为 51 条事件、顺序正确、快照截断到 512 KB）、切换标签页连续无重复、整页刷新后恢复、关闭标签、退出无遗留
 
 ### 下一步（M1）
 
-1. 日志推送：在 DevhubApi 中设计订阅接口（输出 + 状态变化），替换 `listRuns` 轮询；终端面板用 xterm.js（需先征得同意并补 ADR），每个运行一个标签页，面板高度可拖拽
+1. 终端中的链接可点击（`@xterm/addon-web-links` + ShellApi `openExternal`，仅允许 http/https）
 2. 接入 Playwright E2E（目前用 DevTools 协议手动验证过：添加、重复报错、重启后持久化、点击移除）
 
 ### 已知问题 / 待定
@@ -47,5 +52,7 @@
 - Linux 上自己 `setsid` 脱离进程组的守护进程杀不到；DevHub 崩溃（非正常退出）时已启动的进程会遗留，以后可记录 pid 并在启动时清理
 - Windows 上 node-pty 在进程自然退出后会在 stderr 打印 `AttachConsole failed`（释放资源时的辅助进程），不影响功能
 - Windows 上 Ctrl+C 中断 `.cmd` 批处理会触发「终止批处理操作吗」提示，需等 5 秒超时后强制结束
+- Windows 上 Node.js 子进程在 ConPTY 下收不到新尺寸（`process.stdout.columns` 不更新，libuv 行为）；调整终端大小后 Node 工具的换行可能仍按旧宽度
+- Windows 上 `npm` / `yarn` 是 `.cmd` 批处理：停止或退出 DevHub 时会等满 5 秒才强制结束（pnpm 实测 1 秒）；可考虑在 Ctrl+C 后自动应答批处理提示
 - Linux 上的真实进程集成测试尚未运行过（本机是 Windows），需推送后由 CI（ubuntu）验证
 - 在 VSCode 集成终端中启动 `pnpm dev` 需先清除 `ELECTRON_RUN_AS_NODE`（VSCode 会设置它，导致 Electron 以 Node 模式运行）：`env -u ELECTRON_RUN_AS_NODE pnpm dev`

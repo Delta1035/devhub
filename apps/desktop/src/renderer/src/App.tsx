@@ -3,9 +3,11 @@ import { useAppInfo } from '@renderer/features/app-info/use-app-info'
 import { ProjectDetail } from '@renderer/features/projects/project-detail'
 import { ProjectList } from '@renderer/features/projects/project-list'
 import { useProjects } from '@renderer/features/projects/use-projects'
+import { useRunEventsSync } from '@renderer/features/runs/use-runs'
 
 function App(): React.JSX.Element {
   const { data: appInfo } = useAppInfo()
+  useRunEventsSync()
   const { data: projects } = useProjects()
   const [selectedId, setSelectedId] = useState<string | null>(null)
 

@@ -8,6 +8,8 @@ export type DevhubErrorCode =
   | 'SCRIPT_ALREADY_RUNNING'
   | 'SPAWN_FAILED'
   | 'RUN_NOT_FOUND'
+  | 'RUN_NOT_ACTIVE'
+  | 'RUN_STILL_ACTIVE'
   | 'INTERNAL'
 
 /** Expected, user-facing failure. `message` is shown in the UI as-is. */

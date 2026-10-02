@@ -1,95 +1,23 @@
-import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
-import { DevhubError, type Project, type Script } from '@devhub/shared'
-import type { ProcessKiller } from './process-killer'
-import type { PtyProcess, PtySpawnOptions } from './pty'
-import { createRunManager, type RunManagerDeps } from './run-manager'
-
-class FakePty implements PtyProcess {
-  written: string[] = []
-  private dataListeners: ((data: string) => void)[] = []
-  private exitListeners: ((exitCode: number) => void)[] = []
-
-  constructor(readonly pid: number) {}
-
-  onData(listener: (data: string) => void): void {
-    this.dataListeners.push(listener)
-  }
-  onExit(listener: (exitCode: number) => void): void {
-    this.exitListeners.push(listener)
-  }
-  write(data: string): void {
-    this.written.push(data)
-  }
-  emitData(data: string): void {
-    for (const listener of this.dataListeners) listener(data)
-  }
-  emitExit(exitCode: number): void {
-    for (const listener of this.exitListeners) listener(exitCode)
-  }
-}
-
-const project: Project = {
-  id: 'p1',
-  name: 'web',
-  path: '/repo',
-  addedAt: '2026-10-02T00:00:00.000Z'
-}
-const scriptsById: Record<string, Script> = {
-  'npm:dev': { id: 'npm:dev', name: 'dev', source: 'npm', command: 'pnpm run dev' },
-  'npm:api': { id: 'npm:api', name: 'api', source: 'npm', command: 'pnpm run api', cwd: 'server' }
-}
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { DevhubError } from '@devhub/shared'
+import { createHarness, type TestHarness } from './run-manager.fixtures'
 
 describe('createRunManager', () => {
-  let ptys: FakePty[]
-  let spawned: PtySpawnOptions[]
-  let killer: {
-    interrupt: Mock<ProcessKiller['interrupt']>
-    forceKill: Mock<ProcessKiller['forceKill']>
-  }
-  let nextPid: number
-  let nextId: number
+  let harness: TestHarness
+  let makeManager: TestHarness['makeManager']
+  let ptys: TestHarness['ptys']
+  let spawned: TestHarness['spawned']
+  let killer: TestHarness['killer']
 
   beforeEach(() => {
     vi.useFakeTimers()
-    ptys = []
-    spawned = []
-    nextPid = 100
-    nextId = 0
-    killer = {
-      interrupt: vi.fn<ProcessKiller['interrupt']>(),
-      forceKill: vi.fn<ProcessKiller['forceKill']>(async () => undefined)
-    }
+    harness = createHarness()
+    ;({ makeManager, ptys, spawned, killer } = harness)
   })
 
   afterEach(() => {
     vi.useRealTimers()
   })
-
-  const makeManager = (overrides: Partial<RunManagerDeps> = {}) =>
-    createRunManager({
-      scripts: {
-        async find(projectId, scriptId) {
-          const script = typeof scriptId === 'string' ? scriptsById[scriptId] : undefined
-          if (projectId !== 'p1' || !script) throw new DevhubError('SCRIPT_NOT_FOUND', 'nope')
-          return { project, script }
-        }
-      },
-      spawn: (options) => {
-        spawned.push(options)
-        const pty = new FakePty(nextPid++)
-        ptys.push(pty)
-        return pty
-      },
-      killer,
-      platform: 'linux',
-      env: { PATH: '/bin', EMPTY: undefined },
-      graceMs: 1000,
-      forceTimeoutMs: 500,
-      outputLimit: 10,
-      now: () => new Date('2026-10-02T12:00:00.000Z'),
-      newId: () => `run-${++nextId}`,
-      ...overrides
-    })
 
   it('spawns the resolved command in the project directory', async () => {
     const manager = makeManager()
@@ -168,7 +96,7 @@ describe('createRunManager', () => {
     const run = await manager.start('p1', 'npm:dev')
     ptys[0]?.emitData('hello ')
     ptys[0]?.emitData('world!')
-    expect(manager.output(run.id)).toBe('llo world!')
+    expect(manager.output(run.id)).toEqual({ data: 'llo world!', end: 12 })
   })
 
   it('stops gracefully when the process exits after the interrupt', async () => {

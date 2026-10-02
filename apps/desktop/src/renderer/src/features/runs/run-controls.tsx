@@ -12,6 +12,8 @@ interface RunControlsProps {
   run: Run | undefined
   /** Receives start/stop failures so the list can show them in one place. */
   onError: (error: Error) => void
+  /** Called with the new run after a start or restart, e.g. to focus its terminal tab. */
+  onStarted: (run: Run) => void
 }
 
 export function RunControls({
@@ -19,7 +21,8 @@ export function RunControls({
   scriptId,
   scriptName,
   run,
-  onError
+  onError,
+  onStarted
 }: RunControlsProps): React.JSX.Element {
   const start = useStartScript()
   const stop = useStopRun()
@@ -36,7 +39,7 @@ export function RunControls({
             variant="outline"
             size="icon-sm"
             disabled={busy || run.status === 'stopping'}
-            onClick={() => restart.mutate(run.id, { onError })}
+            onClick={() => restart.mutate(run.id, { onError, onSuccess: onStarted })}
             title="重启"
             aria-label={`重启 ${scriptName}`}
           >
@@ -58,7 +61,7 @@ export function RunControls({
           variant="outline"
           size="icon-sm"
           disabled={busy}
-          onClick={() => start.mutate({ projectId, scriptId }, { onError })}
+          onClick={() => start.mutate({ projectId, scriptId }, { onError, onSuccess: onStarted })}
           title="运行"
           aria-label={`运行 ${scriptName}`}
         >

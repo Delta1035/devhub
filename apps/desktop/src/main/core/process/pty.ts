@@ -6,6 +6,7 @@ export interface PtyProcess {
   onData(listener: (data: string) => void): void
   onExit(listener: (exitCode: number) => void): void
   write(data: string): void
+  resize(cols: number, rows: number): void
 }
 
 export interface PtySpawnOptions {
@@ -67,6 +68,7 @@ export const nodePtySpawner: PtySpawner = ({ command, cwd, env, platform }) => {
     pid: pty.pid,
     onData: (listener) => void pty.onData(listener),
     onExit: (listener) => void pty.onExit(({ exitCode }) => listener(exitCode)),
-    write: (data) => pty.write(data)
+    write: (data) => pty.write(data),
+    resize: (cols, rows) => pty.resize(cols, rows)
   }
 }

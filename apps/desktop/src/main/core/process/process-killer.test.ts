@@ -7,7 +7,8 @@ const fakePty = (pid: number) =>
     pid,
     onData: vi.fn<PtyProcess['onData']>(),
     onExit: vi.fn<PtyProcess['onExit']>(),
-    write: vi.fn<PtyProcess['write']>()
+    write: vi.fn<PtyProcess['write']>(),
+    resize: vi.fn<PtyProcess['resize']>()
   }) satisfies PtyProcess
 
 const errno = (code: string): NodeJS.ErrnoException => Object.assign(new Error(code), { code })
