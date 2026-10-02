@@ -47,7 +47,8 @@ export interface RunManagerDeps {
   emit?: (event: DevhubEvent) => void
   env?: NodeJS.ProcessEnv
   /** How long a run may take to exit after the interrupt before it is force-killed. */
-  graceMs?: number
+  /** A function is read at each stop, so a changed setting applies to the next stop. */
+  graceMs?: number | (() => number)
   /** How long to wait for the exit event after a forced kill before giving up on it. */
   forceTimeoutMs?: number
   outputLimit?: number
@@ -260,7 +261,8 @@ export function createRunManager({
         }
       }
       try {
-        if (!(await settlesWithin(entry.exited, graceMs))) {
+        const grace = typeof graceMs === 'function' ? graceMs() : graceMs
+        if (!(await settlesWithin(entry.exited, grace))) {
           await killer.forceKill(entry.run.pid)
           // Never leave a run stuck in "stopping" if the exit event is lost.
           if (!(await settlesWithin(entry.exited, forceTimeoutMs))) entry.markExited(null)

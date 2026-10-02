@@ -68,10 +68,13 @@
 - 与远端合并：本地 6 个提交 rebase 到 dependabot 的 TypeScript 6.0.3 / @types/node 26 之上，check 与 E2E 全部通过；ADR 0001 更新 TS 版本约束
 - Windows 上停止 npm / yarn 脚本时自动回答「终止批处理操作吗(Y/N)?」：从 6 秒多降到约 1 秒（ADR 0003 补充）
 - 崩溃后遗留进程：记录运行的 pid + 启动时间，下次启动若仍存活则提示「全部结束 / 忽略」（ADR 0003 补充）；E2E 模拟崩溃覆盖
+- 设置页（ADR 0007）：顶栏齿轮进入；外观（主题）、终端（默认 shell、字号、回滚行数、GPU 渲染）、编辑器（手动指定 VS Code / IDEA 路径，可恢复自动检测）、进程（停止等待时间、关闭窗口时最小化到托盘 / 退出）；修改即时生效
+  - 核心设置存 `settings.json`（API `getSettings` / `updateSettings`），显示偏好存本地；E2E 3 个（生效与重启后保留、编辑器路径、关闭即退出）
 
 ### 下一步（M1）
 
-1. 推送后确认 CI 在 Windows + Ubuntu 都通过（Linux 上的杀进程树集成测试、E2E 与打包都是首次运行），然后 M1 收尾、规划 M2（Profile、`.devhub.yaml`）
+1. monorepo 子包 / 多模块项目的脚本识别（暂缓）；M2（暂缓）
+2. 推送后确认 CI 在 Windows + Ubuntu 都通过（Linux 上的杀进程树集成测试、E2E 与打包都是首次运行），然后 M1 收尾、规划 M2（Profile、`.devhub.yaml`）
 
 ### 已知问题 / 待定
 
@@ -87,8 +90,8 @@
 - 在 VSCode 集成终端中启动 `pnpm dev` 需先清除 `ELECTRON_RUN_AS_NODE`（VSCode 会设置它，导致 Electron 以 Node 模式运行）：`env -u ELECTRON_RUN_AS_NODE pnpm dev`
 - 批量：「输出中出现文字」不支持正则；执行状态不持久化（重启后不显示上次结果）
 - 终端：Windows 上清屏后若终端尺寸变化，ConPTY 会重发旧屏幕内容
-- 终端：自定义 shell 路径与默认 shell 暂无设置项；Linux 上 shell 的 SIGHUP / 会话扫描只在 CI 中验证
-- 编辑器：本机未安装 IDEA，用 IDEA 打开只经过单元测试，尚未在真实环境验证；检测不到时暂不支持手动指定路径（以后放进设置）；`reg query` 输出按系统代码页解码，安装路径含中文时可能识别不到
+- 终端：自定义 shell 路径与参数暂不支持（默认 shell 已可在设置中选择）；Linux 上 shell 的 SIGHUP / 会话扫描只在 CI 中验证
+- 编辑器：本机未安装 IDEA，用 IDEA 打开只经过单元测试，尚未在真实环境验证；检测不到时可在设置中手动指定；`reg query` 输出按系统代码页解码，安装路径含中文时可能识别不到
 - CI 待办：缓存 Electron 二进制（每次 install 下载 100MB+）
 - 发布待办（GitHub 仓库设置，非代码）：开启 Immutable releases；为 `v*` tag 加 ruleset 限制创建者
 - 发布：安装包未签名（Windows SmartScreen 提示）；无应用内自动更新（需引入 electron-updater，届时补 ADR）

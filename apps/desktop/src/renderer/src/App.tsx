@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Settings as SettingsIcon } from 'lucide-react'
+import { Button } from '@renderer/components/ui/button'
 import { useAppInfo } from '@renderer/features/app-info/use-app-info'
 import { ProjectDetail } from '@renderer/features/projects/project-detail'
 import { GroupList } from '@renderer/features/groups/group-list'
@@ -7,6 +9,7 @@ import { ProjectList } from '@renderer/features/projects/project-list'
 import { useProjects } from '@renderer/features/projects/use-projects'
 import { OrphansBanner } from '@renderer/features/runs/orphans-banner'
 import { useRunEventsSync } from '@renderer/features/runs/use-runs'
+import { SettingsPage } from '@renderer/features/settings/settings-page'
 
 function App(): React.JSX.Element {
   const { data: appInfo } = useAppInfo()
@@ -14,6 +17,12 @@ function App(): React.JSX.Element {
   useGroupEventsSync()
   const { data: projects } = useProjects()
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [showSettings, setShowSettings] = useState(false)
+  // Choosing a project in the sidebar leaves the settings page.
+  const selectProject = (projectId: string): void => {
+    setSelectedId(projectId)
+    setShowSettings(false)
+  }
 
   // Derived rather than synced: falls back to the first project when nothing is selected
   // or the selected one was removed.
@@ -21,19 +30,35 @@ function App(): React.JSX.Element {
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
-      <header className="flex items-baseline gap-3 border-b px-6 py-3">
+      <header className="flex items-center gap-3 border-b px-6 py-2.5">
         <h1 className="font-heading text-lg font-semibold">DevHub</h1>
         {appInfo && <span className="text-xs text-muted-foreground">v{appInfo.version}</span>}
+        <Button
+          variant={showSettings ? 'secondary' : 'ghost'}
+          size="icon-sm"
+          className="ml-auto"
+          onClick={() => setShowSettings(!showSettings)}
+          aria-label="设置"
+          aria-pressed={showSettings}
+          title="设置"
+        >
+          <SettingsIcon />
+        </Button>
       </header>
       <div className="flex min-h-0 flex-1">
         <aside className="flex w-64 shrink-0 flex-col gap-6 overflow-y-auto border-r p-3">
-          <ProjectList selectedId={selected?.id ?? null} onSelect={setSelectedId} />
-          <GroupList selectedProjectId={selected?.id ?? null} onSelectProject={setSelectedId} />
+          <ProjectList
+            selectedId={showSettings ? null : (selected?.id ?? null)}
+            onSelect={selectProject}
+          />
+          <GroupList selectedProjectId={selected?.id ?? null} onSelectProject={selectProject} />
         </aside>
         <main className="flex min-w-0 flex-1 flex-col">
           <OrphansBanner />
           <div className="min-h-0 flex-1">
-            {selected ? (
+            {showSettings ? (
+              <SettingsPage onClose={() => setShowSettings(false)} />
+            ) : selected ? (
               <ProjectDetail key={selected.id} project={selected} />
             ) : (
               <p className="flex h-full items-center justify-center text-sm text-muted-foreground">

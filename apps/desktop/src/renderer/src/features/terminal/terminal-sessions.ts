@@ -51,7 +51,7 @@ export class TerminalSession {
       allowProposedApi: true, // Unicode 11 widths and search highlights
       fontFamily: terminalFontFamily,
       fontSize: terminalPrefs.fontSize(),
-      scrollback: 5000,
+      scrollback: terminalPrefs.scrollback(),
       cursorBlink: true,
       theme: terminalPrefs.theme()
     })
@@ -111,7 +111,6 @@ export class TerminalSession {
       if (this.terminal.element) this.terminal.element.style.padding = '6px 8px'
     }
     this.applyPrefs()
-    if (terminalPrefs.useWebgl()) this.enableWebgl()
 
     this.observer = new ResizeObserver(() => {
       clearTimeout(this.resizeTimer)
@@ -126,8 +125,7 @@ export class TerminalSession {
     this.observer?.disconnect()
     this.observer = null
     clearTimeout(this.resizeTimer)
-    this.webgl?.dispose()
-    this.webgl = null
+    this.disableWebgl()
     this.host.remove()
   }
 
@@ -179,12 +177,23 @@ export class TerminalSession {
     }
   }
 
+  private disableWebgl(): void {
+    this.webgl?.dispose()
+    this.webgl = null
+  }
+
   private applyPrefs(): void {
     const theme = terminalPrefs.theme()
     this.terminal.options.theme = theme
     this.terminal.options.fontSize = terminalPrefs.fontSize()
+    this.terminal.options.scrollback = terminalPrefs.scrollback()
     this.host.style.backgroundColor = theme.background ?? ''
-    if (this.host.isConnected) this.syncSize()
+    if (this.host.isConnected) {
+      // Only the visible terminal holds a WebGL context; follow the renderer setting live.
+      if (terminalPrefs.useWebgl()) this.enableWebgl()
+      else this.disableWebgl()
+      this.syncSize()
+    }
   }
 
   /** Keeps the PTY size in step with the panel so full-screen output wraps correctly. */

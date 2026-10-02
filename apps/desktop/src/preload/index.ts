@@ -26,6 +26,7 @@ const api = Object.fromEntries(
 
 const shell: ShellApi = {
   pickDirectory: () => invoke(shellChannel.pickDirectory) as Promise<string | null>,
+  pickFile: (title) => invoke(shellChannel.pickFile, title) as Promise<string | null>,
   openExternal: async (url) => {
     await invoke(shellChannel.openExternal, url)
   }

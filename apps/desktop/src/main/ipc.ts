@@ -42,6 +42,20 @@ export function registerIpcHandlers(core: DevhubApi & DevhubEvents): void {
     })
   )
 
+  ipcMain.handle(shellChannel.pickFile, (event, title: unknown) =>
+    toIpcResult('pickFile', async () => {
+      const window = BrowserWindow.fromWebContents(event.sender)
+      const options = {
+        title: typeof title === 'string' ? title.slice(0, 100) : undefined,
+        properties: ['openFile' as const]
+      }
+      const result = window
+        ? await dialog.showOpenDialog(window, options)
+        : await dialog.showOpenDialog(options)
+      return result.canceled ? null : (result.filePaths[0] ?? null)
+    })
+  )
+
   ipcMain.handle(shellChannel.openExternal, (_event, url: unknown) =>
     toIpcResult('openExternal', () => shell.openExternal(parseExternalUrl(url)))
   )

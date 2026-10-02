@@ -21,7 +21,9 @@ describe('createEditorService', () => {
   const makeService = (
     installed: Partial<Record<EditorId, EditorLauncher>>,
     launch = vi.fn<(spec: LaunchSpec, cwd: string) => Promise<void>>(async () => undefined),
-    projectPath = dir
+    projectPath = dir,
+    custom: Partial<Record<EditorId, string>> = {},
+    existingFiles: string[] = []
   ) => ({
     launch,
     service: createEditorService({
@@ -33,15 +35,18 @@ describe('createEditorService', () => {
       },
       locator: { locate: async (editor) => installed[editor] ?? null },
       launch,
-      env: { PATH: '/bin' }
+      env: { PATH: '/bin' },
+      platform: 'win32',
+      customPath: async (editor) => custom[editor] ?? null,
+      isFile: async (path) => existingFiles.includes(path)
     })
   })
 
   it('reports which editors are installed', async () => {
     const { service } = makeService({ vscode: { kind: 'executable', path: '/usr/bin/code' } })
     await expect(service.list()).resolves.toEqual([
-      { id: 'vscode', name: 'VS Code', available: true },
-      { id: 'idea', name: 'IntelliJ IDEA', available: false }
+      { id: 'vscode', name: 'VS Code', available: true, path: '/usr/bin/code', custom: false },
+      { id: 'idea', name: 'IntelliJ IDEA', available: false, path: null, custom: false }
     ])
   })
 
@@ -98,5 +103,47 @@ describe('createEditorService', () => {
       code: 'EDITOR_LAUNCH_FAILED',
       message: '无法启动 VS Code：spawn EACCES'
     })
+  })
+
+  it('prefers a configured editor path over auto-detection', async () => {
+    const chosen = 'D:/tools/IDEA/bin/idea64.exe'
+    const { service, launch } = makeService(
+      { idea: { kind: 'executable', path: '/auto/idea' } },
+      undefined,
+      dir,
+      { idea: chosen },
+      [chosen]
+    )
+    await expect(service.list()).resolves.toContainEqual({
+      id: 'idea',
+      name: 'IntelliJ IDEA',
+      available: true,
+      path: chosen,
+      custom: true
+    })
+    await service.open('p1', 'idea')
+    expect(launch).toHaveBeenCalledWith(expect.objectContaining({ file: chosen }), dir)
+  })
+
+  it('runs a configured .cmd launcher through cmd', async () => {
+    const script = 'C:/Toolbox/scripts/idea.cmd'
+    const { service, launch } = makeService({}, undefined, dir, { idea: script }, [script])
+    await service.open('p1', 'idea')
+    expect(launch).toHaveBeenCalledWith(
+      expect.objectContaining({ windowsVerbatimArguments: true }),
+      dir
+    )
+  })
+
+  it('falls back to auto-detection when the configured file is gone', async () => {
+    const { service } = makeService(
+      { vscode: { kind: 'executable', path: '/usr/bin/code' } },
+      undefined,
+      dir,
+      { vscode: 'D:/moved/Code.exe' }
+    )
+    await expect(service.list()).resolves.toContainEqual(
+      expect.objectContaining({ id: 'vscode', path: '/usr/bin/code', custom: false })
+    )
   })
 })

@@ -10,6 +10,7 @@ import { createDefaultDetectors } from './detectors/detect-scripts'
 import { launchDetached } from './editors/editor-launch'
 import { createEditorService } from './editors/editor-service'
 import { createEditorLocator } from './editors/editor-locator'
+import { isFile } from './fs/is-file'
 import { systemDeps, writeFileEnsuringDir } from './fs/system-deps'
 import { checkLocalPort } from './groups/conditions'
 import { createGroupRunner } from './groups/group-runner'
@@ -21,6 +22,12 @@ import { nodePtySpawner } from './process/pty'
 import { createRunManager } from './process/run-manager'
 import { createRunRegistry, emptyRunsFile, runsFileSchema } from './process/run-registry'
 import { createScriptService } from './scripts/script-service'
+import {
+  createSettingsService,
+  emptySettingsFile,
+  settingsFileSchema
+} from './settings/settings-service'
+import { withPreferredShell } from './shells/prefer-shell'
 import { createShellLocator } from './shells/shell-locator'
 
 export interface CoreEnvironment {
@@ -57,17 +64,42 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
 
   const events = createEventBus((error) => console.error('[core] event listener failed', error))
 
-  const system = systemDeps(env.platform, process.env)
-  const shells = createShellLocator({
-    ...system,
-    startupDir: join(env.dataDir, 'shell'),
-    writeFile: writeFileEnsuringDir
+  const settings = createSettingsService({
+    store: createJsonStore({
+      filePath: join(env.dataDir, 'settings.json'),
+      schema: settingsFileSchema,
+      fallback: emptySettingsFile
+    }),
+    isFile,
+    emit: (event) => events.emit(event)
   })
+  // Read synchronously at every stop; kept current by the settings events.
+  let stopGraceMs = 5000
+  const applySettings = (value: { stopGraceSeconds: number }): void => {
+    stopGraceMs = value.stopGraceSeconds * 1000
+  }
+  settings.get().then(applySettings, () => undefined)
+  events.subscribe((event) => {
+    if (event.type === 'settings-updated') applySettings(event.settings)
+  })
+
+  const system = systemDeps(env.platform, process.env)
+  const shells = withPreferredShell(
+    createShellLocator({
+      ...system,
+      startupDir: join(env.dataDir, 'shell'),
+      writeFile: writeFileEnsuringDir
+    }),
+    async () => (await settings.get()).defaultShell
+  )
   const editors = createEditorService({
     projects,
     locator: createEditorLocator(system),
     launch: launchDetached,
-    env: process.env
+    env: process.env,
+    platform: env.platform,
+    customPath: async (editor) => (await settings.get()).editorPaths[editor],
+    isFile
   })
 
   const killer = createProcessKiller({ platform: env.platform })
@@ -90,7 +122,8 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     spawn: nodePtySpawner,
     killer,
     platform: env.platform,
-    emit: (event) => events.emit(event)
+    emit: (event) => events.emit(event),
+    graceMs: () => stopGraceMs
   })
 
   const groupService = createGroupService({
@@ -130,6 +163,8 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     writeRunInput: async (runId, data) => runs.writeInput(runId, data),
     resizeRun: async (runId, cols, rows) => runs.resize(runId, cols, rows),
     removeRun: async (runId) => runs.remove(runId),
+    getSettings: () => settings.get(),
+    updateSettings: (patch) => settings.update(patch),
     listGroups: () => groupService.list(),
     saveGroup: (input) => groupService.save(input),
     deleteGroup: async (groupId) => {

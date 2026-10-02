@@ -11,6 +11,8 @@ let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let isQuitting = false
 let core: DevhubCore | null = null
+// From settings; read synchronously when the window closes.
+let closeAction: 'tray' | 'quit' = 'tray'
 let disposed = false
 
 // Upper bound for stopping managed processes on quit; a stuck process must not block exit.
@@ -18,7 +20,7 @@ const disposeTimeoutMs = 10_000
 
 function showMainWindow(): void {
   if (!mainWindow) {
-    mainWindow = createMainWindow(() => !isQuitting)
+    mainWindow = createMainWindow(() => !isQuitting && closeAction === 'tray')
     return
   }
   if (mainWindow.isMinimized()) mainWindow.restore()
@@ -51,6 +53,13 @@ if (!app.requestSingleInstanceLock()) {
       dataDir: app.getPath('userData')
     })
     registerIpcHandlers(core)
+    core.getSettings().then(
+      (settings) => (closeAction = settings.closeAction),
+      () => undefined
+    )
+    core.subscribe((event) => {
+      if (event.type === 'settings-updated') closeAction = event.settings.closeAction
+    })
 
     tray = createTray({ show: showMainWindow, quit: () => app.quit() })
     showMainWindow()
@@ -71,6 +80,8 @@ if (!app.requestSingleInstanceLock()) {
       .finally(() => app.quit())
   })
 
-  // Keep running in the tray when all windows are closed.
-  app.on('window-all-closed', () => {})
+  // With "keep in tray" the window only hides, so this fires only for "quit on close".
+  app.on('window-all-closed', () => {
+    if (closeAction === 'quit') app.quit()
+  })
 }

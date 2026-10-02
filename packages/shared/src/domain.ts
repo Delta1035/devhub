@@ -121,7 +121,11 @@ export const editorInfoSchema = z.object({
   id: editorIdSchema,
   name: z.string(),
   /** False when no installation was found on this machine. */
-  available: z.boolean()
+  available: z.boolean(),
+  /** The executable that will be launched, if any. */
+  path: z.string().nullable(),
+  /** True when `path` comes from the user's settings rather than auto-detection. */
+  custom: z.boolean()
 })
 export type EditorInfo = z.infer<typeof editorInfoSchema>
 

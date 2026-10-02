@@ -2,7 +2,7 @@ import { DevhubError, editorIdSchema, type EditorId, type EditorInfo } from '@de
 import { isDirectory } from '../fs/is-directory'
 import type { ProjectService } from '../projects/project-service'
 import { buildLaunchSpec, type LaunchSpec } from './editor-launch'
-import type { EditorLocator } from './editor-locator'
+import type { EditorLauncher, EditorLocator } from './editor-locator'
 
 const editorNames: Record<EditorId, string> = {
   vscode: 'VS Code',
@@ -19,22 +19,47 @@ export interface EditorServiceDeps {
   locator: EditorLocator
   launch: (spec: LaunchSpec, cwd: string) => Promise<void>
   env: NodeJS.ProcessEnv
+  platform: NodeJS.Platform
+  /** The user's chosen executable from settings, or null to auto-detect. */
+  customPath: (editor: EditorId) => Promise<string | null>
+  isFile: (path: string) => Promise<boolean>
 }
 
 export function createEditorService({
   projects,
   locator,
   launch,
-  env
+  env,
+  platform,
+  customPath,
+  isFile
 }: EditorServiceDeps): EditorService {
+  /** A configured path wins while the file exists; otherwise auto-detection takes over. */
+  const resolve = async (
+    editor: EditorId
+  ): Promise<{ launcher: EditorLauncher; custom: boolean } | null> => {
+    const path = await customPath(editor)
+    if (path && (await isFile(path))) {
+      const batch = platform === 'win32' && /\.(cmd|bat)$/i.test(path)
+      return { launcher: { kind: batch ? 'batch' : 'executable', path }, custom: true }
+    }
+    const launcher = await locator.locate(editor)
+    return launcher ? { launcher, custom: false } : null
+  }
+
   return {
     async list() {
       return Promise.all(
-        editorIdSchema.options.map(async (id) => ({
-          id,
-          name: editorNames[id],
-          available: (await locator.locate(id)) !== null
-        }))
+        editorIdSchema.options.map(async (id) => {
+          const found = await resolve(id)
+          return {
+            id,
+            name: editorNames[id],
+            available: found !== null,
+            path: found?.launcher.path ?? null,
+            custom: found?.custom ?? false
+          }
+        })
       )
     },
 
@@ -48,8 +73,9 @@ export function createEditorService({
       }
 
       const name = editorNames[editor.data]
-      const launcher = await locator.locate(editor.data)
-      if (!launcher) throw new DevhubError('EDITOR_NOT_FOUND', `未检测到 ${name}`)
+      const found = await resolve(editor.data)
+      if (!found) throw new DevhubError('EDITOR_NOT_FOUND', `未检测到 ${name}`)
+      const { launcher } = found
 
       try {
         await launch(buildLaunchSpec(launcher, project.path, env), project.path)

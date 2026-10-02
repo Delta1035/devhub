@@ -10,6 +10,7 @@ import type {
 } from './domain'
 import type { RunOutputSnapshot } from './events'
 import type { Group, GroupInput, GroupRunState } from './groups'
+import type { Settings, SettingsPatch } from './settings'
 
 /**
  * The contract between any UI (desktop renderer, future mobile/PWA) and the DevHub core.
@@ -49,6 +50,9 @@ export interface DevhubApi {
   resizeRun(runId: string, cols: number, rows: number): Promise<void>
   /** Forgets an exited run (closes its terminal tab). */
   removeRun(runId: string): Promise<void>
+  getSettings(): Promise<Settings>
+  /** Validates and applies a partial update; takes effect immediately. */
+  updateSettings(patch: SettingsPatch): Promise<Settings>
   listGroups(): Promise<Group[]>
   /** Creates a group (input without id) or replaces an existing one. */
   saveGroup(input: GroupInput): Promise<Group>
@@ -92,6 +96,8 @@ export const devhubApiMethods = [
   'writeRunInput',
   'resizeRun',
   'removeRun',
+  'getSettings',
+  'updateSettings',
   'listGroups',
   'saveGroup',
   'deleteGroup',
@@ -122,11 +128,14 @@ export type IpcResult<T> =
 export interface ShellApi {
   /** Opens a native folder picker; resolves to null when cancelled. */
   pickDirectory(): Promise<string | null>
+  /** Opens a native file picker; resolves to null when cancelled. */
+  pickFile(title: string): Promise<string | null>
   /** Opens an http(s) URL in the default browser; other protocols are rejected. */
   openExternal(url: string): Promise<void>
 }
 
 export const shellChannel = {
   pickDirectory: 'shell:pickDirectory',
+  pickFile: 'shell:pickFile',
   openExternal: 'shell:openExternal'
 } as const
