@@ -36,11 +36,13 @@
   - 终端面板：xterm.js，每个运行一个标签页（状态圆点、关闭已结束的），启动后自动切换，可输入，高度可拖拽并记住
   - 移除 desktop 的 `postinstall`（@electron/rebuild 会从源码编译 node-pty 并失败，见 ADR 0003 补充）
   - 手动验证：彩色 + 中文输出、交互输入、1 MB 输出（合并为 51 条事件、顺序正确、快照截断到 512 KB）、切换标签页连续无重复、整页刷新后恢复、关闭标签、退出无遗留
+- M1-8 终端链接可点击：`@xterm/addon-web-links`，Ctrl/⌘+点击打开；ShellApi `openExternal` 只允许 http/https（校验在 `core/shell/external-url.ts`）
+  - 修复安全问题：`setWindowOpenHandler` 原先会把任意协议的 URL 交给系统打开
+  - 手动验证：普通点击不打开、Ctrl+点击打开、URL 结尾标点不误入、`file:` / `javascript:` / `ms-settings:` 经 IPC 与 `window.open` 均被拒绝
 
 ### 下一步（M1）
 
-1. 终端中的链接可点击（`@xterm/addon-web-links` + ShellApi `openExternal`，仅允许 http/https）
-2. 接入 Playwright E2E（目前用 DevTools 协议手动验证过：添加、重复报错、重启后持久化、点击移除）
+1. 接入 Playwright E2E（目前用 DevTools 协议手动验证过：添加、重复报错、重启后持久化、点击移除）
 
 ### 已知问题 / 待定
 

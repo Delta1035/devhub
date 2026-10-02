@@ -2,6 +2,7 @@ import { BrowserWindow, shell } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { parseExternalUrl } from './core/shell/external-url'
 
 export function createMainWindow(shouldHideOnClose: () => boolean): BrowserWindow {
   const window = new BrowserWindow({
@@ -28,8 +29,14 @@ export function createMainWindow(shouldHideOnClose: () => boolean): BrowserWindo
     }
   })
 
+  // Never open new Electron windows; hand safe (http/https) links to the browser and drop
+  // everything else, since a URL may originate from untrusted process output.
   window.webContents.setWindowOpenHandler((details) => {
-    void shell.openExternal(details.url)
+    try {
+      void shell.openExternal(parseExternalUrl(details.url))
+    } catch {
+      console.warn('[window] blocked opening', details.url)
+    }
     return { action: 'deny' }
   })
 

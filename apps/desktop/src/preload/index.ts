@@ -25,7 +25,10 @@ const api = Object.fromEntries(
 ) as unknown as DevhubApi
 
 const shell: ShellApi = {
-  pickDirectory: () => invoke(shellChannel.pickDirectory) as Promise<string | null>
+  pickDirectory: () => invoke(shellChannel.pickDirectory) as Promise<string | null>,
+  openExternal: async (url) => {
+    await invoke(shellChannel.openExternal, url)
+  }
 }
 
 const events: DevhubEvents = {

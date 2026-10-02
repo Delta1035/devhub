@@ -75,6 +75,11 @@ export type IpcResult<T> =
 export interface ShellApi {
   /** Opens a native folder picker; resolves to null when cancelled. */
   pickDirectory(): Promise<string | null>
+  /** Opens an http(s) URL in the default browser; other protocols are rejected. */
+  openExternal(url: string): Promise<void>
 }
 
-export const shellChannel = { pickDirectory: 'shell:pickDirectory' } as const
+export const shellChannel = {
+  pickDirectory: 'shell:pickDirectory',
+  openExternal: 'shell:openExternal'
+} as const

@@ -1,4 +1,4 @@
-import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import {
   DevhubError,
   devhubApiMethods,
@@ -9,6 +9,7 @@ import {
   type DevhubEvents,
   type IpcResult
 } from '@devhub/shared'
+import { parseExternalUrl } from './core/shell/external-url'
 
 type AnyApiMethod = (...args: unknown[]) => Promise<unknown>
 
@@ -39,6 +40,10 @@ export function registerIpcHandlers(core: DevhubApi & DevhubEvents): void {
         : await dialog.showOpenDialog(options)
       return result.canceled ? null : (result.filePaths[0] ?? null)
     })
+  )
+
+  ipcMain.handle(shellChannel.openExternal, (_event, url: unknown) =>
+    toIpcResult('openExternal', () => shell.openExternal(parseExternalUrl(url)))
   )
 }
 

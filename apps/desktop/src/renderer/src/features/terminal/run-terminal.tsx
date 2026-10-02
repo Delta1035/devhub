@@ -1,9 +1,10 @@
 import '@xterm/xterm/css/xterm.css'
 import { useEffect, useRef } from 'react'
 import { FitAddon } from '@xterm/addon-fit'
+import { WebLinksAddon } from '@xterm/addon-web-links'
 import { Terminal, type ITheme } from '@xterm/xterm'
 import { OutputCursor } from '@devhub/shared'
-import { api, events } from '@renderer/api'
+import { api, events, shell } from '@renderer/api'
 
 // Opaque on purpose: xterm renders a transparent background as black. The wrapper uses the
 // same color so the padding around the grid blends in.
@@ -18,6 +19,17 @@ const darkTheme: ITheme = {
   foreground: '#e4e4e7',
   cursor: '#e4e4e7',
   selectionBackground: '#52525b'
+}
+
+const isMac = navigator.userAgent.includes('Mac')
+const linkHint = isMac ? '⌘+点击打开链接' : 'Ctrl+点击打开链接'
+
+/** Desktop opens through the validated ShellApi; a remote client falls back to the browser. */
+function openLink(event: MouseEvent, uri: string): void {
+  // Require the modifier (VS Code convention) so selecting text never opens a page by accident.
+  if (!(isMac ? event.metaKey : event.ctrlKey)) return
+  if (shell) shell.openExternal(uri).catch((error: unknown) => console.warn(error))
+  else window.open(uri, '_blank', 'noopener')
 }
 
 interface RunTerminalProps {
@@ -47,6 +59,16 @@ export function RunTerminal({ runId, acceptsInput }: RunTerminalProps): React.JS
     })
     const fit = new FitAddon()
     terminal.loadAddon(fit)
+    terminal.loadAddon(
+      new WebLinksAddon(openLink, {
+        hover: () => {
+          container.title = linkHint
+        },
+        leave: () => {
+          container.title = ''
+        }
+      })
+    )
     terminal.open(container)
     terminalRef.current = terminal
 

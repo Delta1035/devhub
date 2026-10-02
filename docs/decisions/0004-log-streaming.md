@@ -39,6 +39,13 @@
 - 每个标签页常驻一个 xterm 实例：切换更快，但每个实例持有完整 scrollback，运行多时内存可观；512 KB 的快照重写只需几十毫秒。
 - 不合并输出、逐块推送：实现最简单，但高频输出时每秒可能上千次 IPC。
 
+## 补充（2026-10-02）：终端链接可点击
+
+- 引入 `@xterm/addon-web-links` 0.12.0（官方插件，无其他依赖，`devDependencies`）。自己用 `registerLinkProvider` + 正则也能实现，但 URL 边界（括号、结尾标点、跨行）由插件处理更可靠。
+- Ctrl+点击（macOS ⌘+点击）才打开，与 VS Code 一致，避免选中文字时误触；悬停时提示。
+- 桌面端通过 ShellApi `openExternal` 打开；主进程用 `core/shell/external-url.ts` 校验，只允许 http / https（终端输出不可信，`file:`、`javascript:`、自定义协议一律拒绝）。远程客户端没有 ShellApi，回退到 `window.open`。
+- `setWindowOpenHandler` 原先把任意 URL 交给 `shell.openExternal`，现改为同一校验，不合法的直接拒绝。
+
 ## 已知限制
 
 - Windows 上 Node.js 子进程在 ConPTY 下收到 resize 事件后，`process.stdout.columns/rows` 不会更新（PowerShell 等能读到新尺寸，确认是 libuv 的行为，不是 DevHub 的问题）。影响：调整面板大小后，Node 工具的输出换行可能仍按旧宽度。
