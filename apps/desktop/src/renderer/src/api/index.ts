@@ -1,8 +1,9 @@
-import type { DevhubApi } from '@devhub/shared'
+import type { DevhubApi, ShellApi } from '@devhub/shared'
 
 declare global {
   interface Window {
     devhub: DevhubApi
+    devhubShell?: ShellApi
   }
 }
 
@@ -11,3 +12,6 @@ declare global {
  * Today it is the Electron preload bridge; a mobile/PWA build swaps in an HTTP client here.
  */
 export const api: DevhubApi = window.devhub
+
+/** Local desktop capabilities (native dialogs). Null when running as a remote client. */
+export const shell: ShellApi | null = window.devhubShell ?? null

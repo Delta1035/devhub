@@ -30,7 +30,13 @@ if (!app.requestSingleInstanceLock()) {
     electronApp.setAppUserModelId('com.devhub.desktop')
     app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
 
-    registerIpcHandlers(createDevhubCore({ version: app.getVersion(), platform: process.platform }))
+    registerIpcHandlers(
+      createDevhubCore({
+        version: app.getVersion(),
+        platform: process.platform,
+        dataDir: app.getPath('userData')
+      })
+    )
 
     tray = createTray({ show: showMainWindow, quit: () => app.quit() })
     showMainWindow()

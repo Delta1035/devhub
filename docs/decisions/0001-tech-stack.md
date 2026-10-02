@@ -32,3 +32,9 @@
 - Wails + Go：Go 易写，但 Wails 小众，移动端无成熟路径。
 - Electron 的内存开销（约 150–300MB）可接受：它替代的是多个 IDE 实例（VSCode 本身也是 Electron）。
 - 暂不引入 Turborepo：只有两个包时 `pnpm -r` 足够，增加移动端后再评估。
+
+## 补充（2026-10-02）
+
+- shadcn/ui 使用 `radix-nova` 风格（Radix + Lucide 图标 + Geist 字体）。CLI 无法自动识别 electron-vite，已手动生成 `apps/desktop/components.json`；之后在 `apps/desktop` 下用 `pnpm dlx shadcn@latest add <组件>` 添加组件即可。
+- shadcn 新版用官方的 `cn` 包（shadcn 维护，替代 `clsx + tailwind-merge`），生成的组件直接从 `cn` 导入，因此跟随官方、移除了 clsx 与 tailwind-merge。该包仍是 0.x，升级时留意变更。
+- 被 Vite 打包进 renderer 的库一律放 `devDependencies`；`dependencies` 只放主进程运行时需要的包（electron-builder 会把它们打进安装包）。

@@ -10,15 +10,18 @@ devhub/                        pnpm monorepo
 │       │   ├── index.ts       应用生命周期：单实例、托盘、窗口
 │       │   ├── window.ts      主窗口（关闭 = 隐藏到托盘）
 │       │   ├── tray.ts        托盘菜单
-│       │   ├── ipc.ts         把 DevhubApi 自动映射为 IPC 通道
+│       │   ├── ipc.ts         把 DevhubApi 自动映射为 IPC 通道；ShellApi 处理器
 │       │   └── core/          ★ 业务核心，不依赖 Electron
-│       ├── preload/           把 DevhubApi 以 window.devhub 暴露给 UI（sandbox）
+│       │       ├── devhub-core.ts   组装各服务，实现 DevhubApi
+│       │       ├── storage/         通用 JSON 存储（见 ADR 0002）
+│       │       └── projects/        项目注册与持久化
+│       ├── preload/           暴露 window.devhub（DevhubApi）与 window.devhubShell（ShellApi）
 │       └── renderer/src/      React UI
 │           ├── api/           ★ UI 访问核心的唯一入口
 │           ├── features/<x>/  按功能组织：组件 + hooks
-│           ├── components/    通用 UI 组件（shadcn/ui）
+│           ├── components/ui/ shadcn 生成的组件（由 CLI 管理，不手改）
 │           └── lib/           工具函数
-└── packages/shared/           平台无关：API 契约、领域模型（zod schema）
+└── packages/shared/           平台无关：API 契约、领域模型（zod schema）、错误类型
 ```
 
 ## 核心原则：API 契约 + 可替换传输层
@@ -38,15 +41,27 @@ React UI ──> @renderer/api ──> DevhubApi (packages/shared)
 
 这些边界由 ESLint 强制（见根目录 `eslint.config.mjs`）。
 
+### 错误处理
+
+- 预期内的失败在 core 中抛出 `DevhubError(code, message)`（`packages/shared/src/errors.ts`）；`message` 面向用户，直接显示在 UI。
+- IPC 上传输 `IpcResult` 信封 `{ ok, value | error }`，preload 解包后在 renderer 抛出干净的 `Error`（避免 Electron 给错误信息加前缀）。
+- 非预期异常在主进程记录日志，以 `INTERNAL` 返回。
+
+### ShellApi：仅桌面端可用的能力
+
+原生对话框等只在本机有意义的能力放在 `ShellApi`（`window.devhubShell`），不进入 `DevhubApi`。
+UI 通过 `@renderer/api` 的 `shell` 访问；远程客户端中它为 `null`，UI 需据此隐藏相关入口。
+ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动映射）。
+
 ## 领域模型（`packages/shared/src/domain.ts`）
 
-| 概念           | 说明                                            |
-| -------------- | ----------------------------------------------- |
-| Project        | 一个被管理的代码目录                            |
-| Script         | 可运行命令，来源：npm / maven / gradle / custom |
-| Profile        | 一组环境变量与参数覆盖，用于切换对接的后端      |
-| Run（M1）      | 一次运行：状态、PID、日志                       |
-| `.devhub.yaml` | 项目内可选配置：自定义脚本 + Profile            |
+| 概念           | 说明                                                 |
+| -------------- | ---------------------------------------------------- |
+| Project        | 一个被管理的代码目录（已实现，存于 `projects.json`） |
+| Script         | 可运行命令，来源：npm / maven / gradle / custom      |
+| Profile        | 一组环境变量与参数覆盖，用于切换对接的后端           |
+| Run（M1）      | 一次运行：状态、PID、日志                            |
+| `.devhub.yaml` | 项目内可选配置：自定义脚本 + Profile                 |
 
 ## 规划中的模块（M1）
 
@@ -56,5 +71,6 @@ React UI ──> @renderer/api ──> DevhubApi (packages/shared)
 
 ## 安全
 
-- renderer 运行在 sandbox + contextIsolation 下，只能访问 `window.devhub`。
+- renderer 运行在 sandbox + contextIsolation 下，只能访问 `window.devhub` 与 `window.devhubShell`。
+- 来自 renderer 的参数一律视为不可信，在 core 中用 zod 校验。
 - 远程 API 默认关闭；开启时必须 Token 鉴权。

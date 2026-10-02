@@ -36,3 +36,13 @@ export const projectConfigSchema = z.object({
   profiles: z.array(profileSchema).default([])
 })
 export type ProjectConfig = z.infer<typeof projectConfigSchema>
+
+/** A local code directory managed by DevHub. */
+export const projectSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  /** Absolute, normalized directory path. */
+  path: z.string().min(1),
+  addedAt: z.iso.datetime()
+})
+export type Project = z.infer<typeof projectSchema>
