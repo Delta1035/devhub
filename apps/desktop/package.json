@@ -20,7 +20,8 @@
     "build:linux": "pnpm build && electron-builder --linux"
   },
   "dependencies": {
-    "@electron-toolkit/utils": "^4.0.0"
+    "@electron-toolkit/utils": "^4.0.0",
+    "node-pty": "1.1.0"
   },
   "devDependencies": {
     "@devhub/shared": "workspace:*",

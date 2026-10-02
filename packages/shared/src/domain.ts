@@ -31,6 +31,30 @@ export const projectScriptsSchema = z.object({
 })
 export type ProjectScripts = z.infer<typeof projectScriptsSchema>
 
+/**
+ * One execution of a script. DevHub keeps the latest run per script; starting the script
+ * again replaces an exited run.
+ */
+export const runStatusSchema = z.enum(['running', 'stopping', 'exited'])
+export type RunStatus = z.infer<typeof runStatusSchema>
+
+export const runSchema = z.object({
+  id: z.string().min(1),
+  projectId: z.string().min(1),
+  scriptId: z.string().min(1),
+  scriptName: z.string().min(1),
+  command: z.string().min(1),
+  status: runStatusSchema,
+  pid: z.number().int(),
+  /** Null while running, or when the process was force-killed without reporting a code. */
+  exitCode: z.number().int().nullable(),
+  /** True when the run ended because the user stopped it (not a crash or normal exit). */
+  stopped: z.boolean(),
+  startedAt: z.iso.datetime(),
+  endedAt: z.iso.datetime().optional()
+})
+export type Run = z.infer<typeof runSchema>
+
 /** A named set of overrides used to point a project at a different backend. */
 export const profileSchema = z.object({
   name: z.string().min(1),

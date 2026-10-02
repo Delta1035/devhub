@@ -1,8 +1,12 @@
-import { FolderX, TriangleAlert } from 'lucide-react'
-import type { Project, Script, ScriptSource } from '@devhub/shared'
-import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
+import { useState } from 'react'
+import { FolderX, TriangleAlert, X } from 'lucide-react'
+import type { Project, Run, Script, ScriptSource } from '@devhub/shared'
+import { Alert, AlertAction, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Badge } from '@renderer/components/ui/badge'
+import { Button } from '@renderer/components/ui/button'
 import { Skeleton } from '@renderer/components/ui/skeleton'
+import { RunControls } from '@renderer/features/runs/run-controls'
+import { useRuns } from '@renderer/features/runs/use-runs'
 import { useProjectScripts } from './use-scripts'
 
 const sourceLabels: Record<ScriptSource, string> = {
@@ -14,6 +18,8 @@ const sourceLabels: Record<ScriptSource, string> = {
 
 export function ScriptList({ project }: { project: Project }): React.JSX.Element {
   const scripts = useProjectScripts(project.id)
+  const runs = useRuns()
+  const [runError, setRunError] = useState<Error | null>(null)
 
   if (scripts.isPending) {
     return (
@@ -50,6 +56,24 @@ export function ScriptList({ project }: { project: Project }): React.JSX.Element
 
   return (
     <div className="flex flex-col gap-4">
+      {runError && (
+        <Alert variant="destructive">
+          <TriangleAlert />
+          <AlertTitle>操作失败</AlertTitle>
+          <AlertDescription>{runError.message}</AlertDescription>
+          <AlertAction>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => setRunError(null)}
+              aria-label="关闭"
+            >
+              <X />
+            </Button>
+          </AlertAction>
+        </Alert>
+      )}
+
       {warnings.length > 0 && (
         <Alert>
           <TriangleAlert />
@@ -74,19 +98,34 @@ export function ScriptList({ project }: { project: Project }): React.JSX.Element
       )}
 
       {groupBySource(items).map(([source, group]) => (
-        <ScriptGroup key={source} source={source} scripts={group} />
+        <ScriptGroup
+          key={source}
+          projectId={project.id}
+          source={source}
+          scripts={group}
+          runs={runs.data ?? []}
+          onRunError={setRunError}
+        />
       ))}
     </div>
   )
 }
 
-function ScriptGroup({
-  source,
-  scripts
-}: {
+interface ScriptGroupProps {
+  projectId: string
   source: ScriptSource
   scripts: Script[]
-}): React.JSX.Element {
+  runs: Run[]
+  onRunError: (error: Error) => void
+}
+
+function ScriptGroup({
+  projectId,
+  source,
+  scripts,
+  runs,
+  onRunError
+}: ScriptGroupProps): React.JSX.Element {
   // All scripts of one source share the executable, e.g. "pnpm" or "mvnw.cmd".
   const executable = scripts[0]?.command.split(' ')[0]
 
@@ -98,7 +137,7 @@ function ScriptGroup({
       </h3>
       <ul className="divide-y rounded-lg border bg-card">
         {scripts.map((script) => (
-          <li key={script.id} className="flex items-baseline gap-4 px-4 py-2.5">
+          <li key={script.id} className="flex items-center gap-4 px-4 py-2.5">
             <span className="w-40 shrink-0 truncate font-medium" title={script.name}>
               {script.name}
             </span>
@@ -112,6 +151,13 @@ function ScriptGroup({
                 </p>
               )}
             </div>
+            <RunControls
+              projectId={projectId}
+              scriptId={script.id}
+              scriptName={script.name}
+              run={runs.find((run) => run.projectId === projectId && run.scriptId === script.id)}
+              onError={onRunError}
+            />
           </li>
         ))}
       </ul>

@@ -1,4 +1,4 @@
-import type { Project, ProjectScripts } from './domain'
+import type { Project, ProjectScripts, Run } from './domain'
 
 /**
  * The contract between any UI (desktop renderer, future mobile/PWA) and the DevHub core.
@@ -13,6 +13,13 @@ export interface DevhubApi {
   removeProject(projectId: string): Promise<void>
   /** Scans the project directory for runnable scripts. Never cached: reflects the files on disk. */
   listScripts(projectId: string): Promise<ProjectScripts>
+  /** Starts a detected script. The core resolves the command itself; the UI only sends ids. */
+  startScript(projectId: string, scriptId: string): Promise<Run>
+  /** Stops the whole process tree; resolves once the process has exited. */
+  stopRun(runId: string): Promise<void>
+  restartRun(runId: string): Promise<Run>
+  /** Active runs plus the latest exited run of each script. */
+  listRuns(): Promise<Run[]>
 }
 
 export interface AppInfo {
@@ -28,7 +35,11 @@ export const devhubApiMethods = [
   'listProjects',
   'addProject',
   'removeProject',
-  'listScripts'
+  'listScripts',
+  'startScript',
+  'stopRun',
+  'restartRun',
+  'listRuns'
 ] as const satisfies readonly DevhubApiMethod[]
 
 type MissingMethods = Exclude<DevhubApiMethod, (typeof devhubApiMethods)[number]>

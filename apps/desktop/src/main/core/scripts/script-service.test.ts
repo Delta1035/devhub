@@ -98,6 +98,26 @@ describe('createScriptService', () => {
     expect(called).toBe(false)
   })
 
+  it('finds a script by id from a fresh scan', async () => {
+    await writeFile(join(dir, 'package.json'), JSON.stringify({ scripts: { dev: 'vite' } }))
+    const { project, script } = await makeService(dir).find('p1', 'npm:dev')
+    expect(project.id).toBe('p1')
+    expect(script.command).toBe('npm run dev')
+  })
+
+  it.each([['npm:missing'], [42]])('rejects unknown script id %s', async (scriptId) => {
+    await writeFile(join(dir, 'package.json'), JSON.stringify({ scripts: { dev: 'vite' } }))
+    await expect(makeService(dir).find('p1', scriptId)).rejects.toMatchObject({
+      code: 'SCRIPT_NOT_FOUND'
+    })
+  })
+
+  it('refuses to find scripts when the project directory is missing', async () => {
+    await expect(makeService(join(dir, 'gone')).find('p1', 'npm:dev')).rejects.toMatchObject({
+      code: 'PROJECT_PATH_NOT_FOUND'
+    })
+  })
+
   it('propagates PROJECT_NOT_FOUND for unknown projects', async () => {
     await expect(makeService(dir).list('nope')).rejects.toMatchObject({
       code: 'PROJECT_NOT_FOUND'

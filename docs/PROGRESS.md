@@ -26,12 +26,16 @@
   - macOS：`build/icon.icns`（按 Apple 网格留白，源 `build/icon-mac.svg`），菜单栏用单色 `resources/trayTemplate(@2x).png`（源 `build/tray-template.svg`），dev 模式设置 Dock 图标
   - Web：`src/renderer/public/` 下 favicon（ico + svg）、apple-touch-icon、192/512 + maskable（源 `build/icon-square.svg`）、`manifest.webmanifest`
   - 改了 `build/*.svg` 后运行 `pnpm --filter @devhub/desktop icons` 一键重新生成全部 PNG / ICO / ICNS / Web 图标（`scripts/generate-icons.mjs`，用 Electron 离屏渲染，无额外依赖）
+- M1-6 进程管理（ADR 0003）：node-pty 1.1.0 运行脚本，API `startScript` / `stopRun` / `restartRun` / `listRuns`
+  - 停止先优雅（Windows Ctrl+C，Linux 进程组 SIGTERM），5 秒后强制杀整棵树（`taskkill /T /F` / SIGKILL）；退出 DevHub 时停止全部运行
+  - 每个脚本保留最新一次运行，输出在 core 中保留最近 512 KB（尚未推送到 UI）
+  - UI：脚本行运行 / 停止 / 重启按钮 + 状态徽标；有活动运行时每秒轮询 `listRuns`（临时方案）
+  - 真实进程集成测试（当前平台）+ 手动验证：真实 `pnpm run` 启停（1.1 秒优雅退出）、重启、非零退出码、退出 DevHub 后无遗留进程
 
 ### 下一步（M1）
 
-1. 进程管理：启动/停止/重启，杀进程树（Windows + Linux 测试），引入 node-pty；脚本行加运行按钮
-2. 日志推送：在 DevhubApi 中设计订阅接口；终端面板用 xterm.js（需先征得同意并补 ADR），面板高度可拖拽
-3. 接入 Playwright E2E（目前用 DevTools 协议手动验证过：添加、重复报错、重启后持久化、点击移除）
+1. 日志推送：在 DevhubApi 中设计订阅接口（输出 + 状态变化），替换 `listRuns` 轮询；终端面板用 xterm.js（需先征得同意并补 ADR），每个运行一个标签页，面板高度可拖拽
+2. 接入 Playwright E2E（目前用 DevTools 协议手动验证过：添加、重复报错、重启后持久化、点击移除）
 
 ### 已知问题 / 待定
 
@@ -40,4 +44,8 @@
 - Maven 多模块 / Gradle 多项目：只读根目录构建文件，子模块中的 `spring-boot:run` / `bootRun` 识别不到，且在根目录执行会作用于所有模块；以后扫描子模块并用 `-pl <module>` / `:<project>:bootRun`
 - Linux 上 `mvnw` / `gradlew` 若无执行权限（如从 zip 解压），`./mvnw` 会失败；进程管理阶段再决定是否改为 `sh mvnw`
 - Android 项目的 `assembleDebug`、`installDebug` 等任务暂不识别
+- Linux 上自己 `setsid` 脱离进程组的守护进程杀不到；DevHub 崩溃（非正常退出）时已启动的进程会遗留，以后可记录 pid 并在启动时清理
+- Windows 上 node-pty 在进程自然退出后会在 stderr 打印 `AttachConsole failed`（释放资源时的辅助进程），不影响功能
+- Windows 上 Ctrl+C 中断 `.cmd` 批处理会触发「终止批处理操作吗」提示，需等 5 秒超时后强制结束
+- Linux 上的真实进程集成测试尚未运行过（本机是 Windows），需推送后由 CI（ubuntu）验证
 - 在 VSCode 集成终端中启动 `pnpm dev` 需先清除 `ELECTRON_RUN_AS_NODE`（VSCode 会设置它，导致 Electron 以 Node 模式运行）：`env -u ELECTRON_RUN_AS_NODE pnpm dev`

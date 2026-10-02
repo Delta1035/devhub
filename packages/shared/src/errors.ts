@@ -4,6 +4,10 @@ export type DevhubErrorCode =
   | 'PROJECT_PATH_NOT_DIRECTORY'
   | 'PROJECT_ALREADY_ADDED'
   | 'PROJECT_NOT_FOUND'
+  | 'SCRIPT_NOT_FOUND'
+  | 'SCRIPT_ALREADY_RUNNING'
+  | 'SPAWN_FAILED'
+  | 'RUN_NOT_FOUND'
   | 'INTERNAL'
 
 /** Expected, user-facing failure. `message` is shown in the UI as-is. */

@@ -16,7 +16,8 @@ devhub/                        pnpm monorepo
 │       │       ├── storage/         通用 JSON 存储（见 ADR 0002）
 │       │       ├── projects/        项目注册与持久化
 │       │       ├── detectors/       脚本探测器：每种项目类型一个文件
-│       │       └── scripts/         按项目扫描脚本（listScripts）
+│       │       ├── scripts/         按项目扫描脚本（listScripts）
+│       │       └── process/         进程管理：PTY、杀进程树、RunManager（见 ADR 0003）
 │       ├── preload/           暴露 window.devhub（DevhubApi）与 window.devhubShell（ShellApi）
 │       └── renderer/src/      React UI
 │           ├── api/           ★ UI 访问核心的唯一入口
@@ -57,14 +58,14 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 
 ## 领域模型（`packages/shared/src/domain.ts`）
 
-| 概念           | 说明                                                 |
-| -------------- | ---------------------------------------------------- |
-| Project        | 一个被管理的代码目录（已实现，存于 `projects.json`） |
-| Script         | 可运行命令，来源：npm / maven / gradle / custom      |
-| ProjectScripts | 扫描结果：`status`（ok/missing）、脚本、探测器警告   |
-| Profile        | 一组环境变量与参数覆盖，用于切换对接的后端           |
-| Run（M1）      | 一次运行：状态、PID、日志                            |
-| `.devhub.yaml` | 项目内可选配置：自定义脚本 + Profile                 |
+| 概念           | 说明                                                   |
+| -------------- | ------------------------------------------------------ |
+| Project        | 一个被管理的代码目录（已实现，存于 `projects.json`）   |
+| Script         | 可运行命令，来源：npm / maven / gradle / custom        |
+| ProjectScripts | 扫描结果：`status`（ok/missing）、脚本、探测器警告     |
+| Profile        | 一组环境变量与参数覆盖，用于切换对接的后端             |
+| Run            | 一次运行：状态（running/stopping/exited）、PID、退出码 |
+| `.devhub.yaml` | 项目内可选配置：自定义脚本 + Profile                   |
 
 ## 脚本探测
 
@@ -76,9 +77,16 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 - 脚本 id 形如 `<source>:<name>`，重新扫描保持稳定，供进程管理关联运行状态。
 - 不缓存：每次 `listScripts` 都读磁盘。
 
+## 进程管理（`core/process/`，见 ADR 0003）
+
+- `pty.ts`：`PtySpawner` 接口 + node-pty 实现；命令经平台 shell 执行。
+- `process-killer.ts`：两阶段停止。Windows：Ctrl+C → `taskkill /T /F`；Linux：进程组 SIGTERM → SIGKILL。
+- `run-manager.ts`：每个脚本只保留最新一次运行；输出缓冲（最近 512 KB）；`dispose()` 停止全部运行。
+- `createDevhubCore` 返回 `DevhubCore`（`DevhubApi` + `dispose`）；主进程在 `before-quit` 中等待 `dispose()`（最多 10 秒）。
+- renderer 只传 id，命令由 core 重新扫描得到。
+
 ## 规划中的模块（M1）
 
-- `core/process/`：进程管理。Windows 用进程树终止（taskkill /T 或 Job Object），Linux 用进程组；PTY 采用 `node-pty`。
 - 事件推送（日志、状态变化）：契约中以订阅接口表达，IPC 用 `webContents.send`，远程用 WebSocket。
 
 ## 安全
