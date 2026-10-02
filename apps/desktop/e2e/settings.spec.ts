@@ -87,3 +87,39 @@ test('"quit on close" ends DevHub when the window is closed', async ({ launchDev
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.close())
   await expect(exited).resolves.toBeUndefined()
 })
+
+test('a custom shell can be added and opened from the terminal menu', async ({
+  launchDevhub,
+  createProject
+}) => {
+  const dir = await createProject('app', { 'package.json': packageJson({ dev: 'node -v' }) })
+  const { app, page } = await launchDevhub()
+  await addProjectViaApi(page, dir)
+  await openSettings(page)
+
+  // Node's REPL stands in for any interactive program; the picker returns its path.
+  const nodePath = process.execPath
+  await app.evaluate(({ dialog }, picked) => {
+    Object.assign(dialog, {
+      showOpenDialog: async () => ({ canceled: false, filePaths: [picked] })
+    })
+  }, nodePath)
+  const section = page.getByRole('region', { name: '自定义 shell' })
+  await section.getByRole('button', { name: '添加' }).click()
+  await section.getByLabel('名称').fill('Node REPL')
+  await section.getByRole('button', { name: '选择…' }).click()
+  await expect(section.getByLabel('程序路径')).toHaveValue(nodePath)
+  await section.getByLabel('参数').fill('-i')
+  await section.getByRole('button', { name: '保存' }).click()
+  await expect(section.getByRole('button', { name: '保存' })).toBeHidden()
+
+  await page.getByRole('button', { name: '返回' }).click()
+  await page.getByRole('button', { name: '选择终端类型' }).click()
+  await page.getByRole('menuitem', { name: 'Node REPL' }).click()
+  await expect(page.getByRole('button', { name: '终端 1', exact: true })).toBeVisible()
+  await expect(page.locator('.xterm-rows')).toContainText('>')
+  await page.locator('.xterm').click()
+  await page.keyboard.type('6*7')
+  await page.keyboard.press('Enter')
+  await expect(page.locator('.xterm-rows')).toContainText('42')
+})

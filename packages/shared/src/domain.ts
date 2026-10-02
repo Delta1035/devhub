@@ -48,7 +48,7 @@ export const projectScriptsSchema = z.object({
 export type ProjectScripts = z.infer<typeof projectScriptsSchema>
 
 /** Interactive shells a user can open in a project's terminal panel. */
-export const shellIdSchema = z.enum([
+export const builtinShellIdSchema = z.enum([
   'git-bash',
   'pwsh',
   'powershell',
@@ -58,6 +58,11 @@ export const shellIdSchema = z.enum([
   'fish',
   'sh'
 ])
+
+/** Ids of shells the user added in settings. */
+export const customShellIdSchema = z.string().regex(/^custom-[a-z0-9]{1,24}$/)
+
+export const shellIdSchema = z.union([builtinShellIdSchema, customShellIdSchema])
 export type ShellId = z.infer<typeof shellIdSchema>
 
 export const shellInfoSchema = z.object({ id: shellIdSchema, name: z.string() })

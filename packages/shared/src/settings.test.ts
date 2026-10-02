@@ -26,3 +26,20 @@ describe('settingsPatchSchema', () => {
     expect(settingsPatchSchema.parse({})).toEqual({})
   })
 })
+
+describe('custom shells in settings', () => {
+  it('loads settings files written before custom shells existed', () => {
+    const { customShells: _ignored, ...older } = defaultSettings
+    void _ignored
+    expect(settingsSchema.parse(older).customShells).toEqual([])
+  })
+
+  it('does not add customShells to a patch that does not mention them', () => {
+    expect(settingsPatchSchema.parse({ stopGraceSeconds: 3 })).toEqual({ stopGraceSeconds: 3 })
+  })
+
+  it('accepts a custom shell as the default shell, and rejects malformed ids', () => {
+    expect(settingsPatchSchema.safeParse({ defaultShell: 'custom-wsl' }).success).toBe(true)
+    expect(settingsPatchSchema.safeParse({ defaultShell: 'custom-../x' }).success).toBe(false)
+  })
+})

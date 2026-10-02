@@ -34,6 +34,7 @@ import {
   emptySettingsFile,
   settingsFileSchema
 } from './settings/settings-service'
+import { withCustomShells } from './shells/custom-shells'
 import { withPreferredShell } from './shells/prefer-shell'
 import { createShellLocator } from './shells/shell-locator'
 
@@ -92,11 +93,15 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
 
   const system = systemDeps(env.platform, process.env)
   const shells = withPreferredShell(
-    createShellLocator({
-      ...system,
-      startupDir: join(env.dataDir, 'shell'),
-      writeFile: writeFileEnsuringDir
-    }),
+    withCustomShells(
+      createShellLocator({
+        ...system,
+        startupDir: join(env.dataDir, 'shell'),
+        writeFile: writeFileEnsuringDir
+      }),
+      async () => (await settings.get()).customShells,
+      isFile
+    ),
     async () => (await settings.get()).defaultShell
   )
   const editors = createEditorService({

@@ -12,6 +12,7 @@ import {
   terminalPrefs
 } from '@renderer/features/terminal/terminal-prefs'
 import { appearance, type ThemePreference } from '@renderer/lib/appearance'
+import { CustomShellsEditor } from './custom-shells-editor'
 import { NumberSetting, Segmented, SettingRow, SettingsSection } from './settings-controls'
 import { usePreference, useSettings, useUpdateSettings } from './use-settings'
 
@@ -48,6 +49,11 @@ export function SettingsPage({ onClose }: { onClose: () => void }): React.JSX.El
           {settings.data && (
             <>
               <TerminalSection settings={settings.data} save={save} />
+              <CustomShellsEditor
+                shells={settings.data.customShells}
+                save={save}
+                onError={setError}
+              />
               <EditorsSection save={save} onError={setError} />
               <ProcessSection settings={settings.data} save={save} />
             </>

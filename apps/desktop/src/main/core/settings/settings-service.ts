@@ -51,12 +51,20 @@ export function createSettingsService({
         if (!parsed.success) throw new DevhubError('SETTINGS_INVALID', '设置的值无效')
         const patch = parsed.data
 
-        // An editor path makes DevHub launch that program, so it must be a real executable.
-        for (const path of Object.values(patch.editorPaths ?? {})) {
+        // Editor and shell paths make DevHub launch that program, so each must be a real file.
+        const programs = [
+          ...Object.values(patch.editorPaths ?? {}),
+          ...(patch.customShells ?? []).map((shell) => shell.path)
+        ]
+        for (const path of programs) {
           if (path === null || path === undefined) continue
           if (!isAbsolute(path) || !(await isFile(path))) {
             throw new DevhubError('SETTINGS_INVALID', `找不到这个程序：${path}`)
           }
+        }
+        const shellIds = (patch.customShells ?? []).map((shell) => shell.id)
+        if (new Set(shellIds).size !== shellIds.length) {
+          throw new DevhubError('SETTINGS_INVALID', '自定义 shell 的 id 重复')
         }
 
         const current = await load()
