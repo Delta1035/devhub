@@ -43,6 +43,10 @@
   - 已确认用例能真实失败（故意改错断言 → 失败并保存 trace）；CI 在 Windows + Ubuntu（xvfb）运行，失败上传 trace
 - M1-10 CI 加固：新增 `package` job（两平台 `build:unpack`，并校验 node-pty 的 `pty.node` 已解包到 `app.asar.unpacked`）；`permissions: contents: read`、PR 上取消被覆盖的运行、job 超时 20 分钟
   - 本机验证 Windows 打包与 `.node` 路径；Linux 路径（`build/Release/pty.node`，无预编译包、安装时编译）待 CI 首次运行确认
+- M1-11 自动发布：`release.yml`，推送 `v*` tag → 校验 tag 与版本一致 → 两平台打安装包 → 创建草稿 Release（步骤见 README）；手动触发只打包
+  - 修复：安装包名用了 `${name}`（`@devhub/desktop`，含 `/`），NSIS 输出到不存在的子目录导致 `build:win` 失败；改为固定的 `devhub-*`
+  - 安装包不再包含 e2e、playwright 配置、`components.json`、`scripts/`
+  - 本机验证 Windows 安装包生成；Linux 安装包与 Release 创建待首次推 tag 时确认
 
 ### 下一步（M1）
 
@@ -62,4 +66,5 @@
 - Windows 上 `npm` / `yarn` 是 `.cmd` 批处理：停止或退出 DevHub 时会等满 5 秒才强制结束（pnpm 实测 1 秒）；可考虑在 Ctrl+C 后自动应答批处理提示
 - Linux 上的真实进程集成测试、E2E 与打包尚未运行过（本机是 Windows），需推送后由 CI（ubuntu）验证
 - 在 VSCode 集成终端中启动 `pnpm dev` 需先清除 `ELECTRON_RUN_AS_NODE`（VSCode 会设置它，导致 Electron 以 Node 模式运行）：`env -u ELECTRON_RUN_AS_NODE pnpm dev`
-- CI 待办：缓存 Electron 二进制（每次 install 下载 100MB+）、Dependabot（actions 与 npm 依赖）、tag 触发的 Release 工作流
+- CI 待办：缓存 Electron 二进制（每次 install 下载 100MB+）、Dependabot（actions 与 npm 依赖）
+- 发布：安装包未签名（Windows SmartScreen 提示）；无应用内自动更新（需引入 electron-updater，届时补 ADR）
