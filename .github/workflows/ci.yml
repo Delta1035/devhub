@@ -5,6 +5,14 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Superseded PR pushes are cancelled; every commit on main still gets a full run.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   check:
     strategy:
@@ -12,6 +20,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -34,3 +43,37 @@ jobs:
           name: e2e-traces-${{ matrix.os }}
           path: apps/desktop/test-results
           if-no-files-found: ignore
+
+  # Packages the app without an installer so problems with native modules
+  # (node-pty, npmRebuild: false) show up before a release build.
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @devhub/desktop build:unpack
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - name: Verify node-pty native module is unpacked
+        shell: bash
+        run: |
+          # Windows ships prebuilds; Linux has none, so node-pty is compiled into build/Release.
+          case "$RUNNER_OS" in
+            Windows) native=apps/desktop/dist/win-unpacked/resources/app.asar.unpacked/node_modules/node-pty/prebuilds/win32-x64/pty.node ;;
+            Linux) native=apps/desktop/dist/linux-unpacked/resources/app.asar.unpacked/node_modules/node-pty/build/Release/pty.node ;;
+          esac
+          if [ ! -f "$native" ]; then
+            echo "::error::node-pty native module missing from package: $native"
+            exit 1
+          fi
+          echo "found $native"

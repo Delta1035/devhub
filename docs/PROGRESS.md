@@ -41,10 +41,12 @@
   - 手动验证：普通点击不打开、Ctrl+点击打开、URL 结尾标点不误入、`file:` / `javascript:` / `ms-settings:` 经 IPC 与 `window.open` 均被拒绝
 - M1-9 Playwright E2E（`pnpm e2e`，6 个用例约 22 秒）：添加/重复/重启后保留/移除项目、脚本列表与包管理器、目录缺失、运行-输出-停止-退出码、终端输入、退出后整棵进程树被结束
   - 已确认用例能真实失败（故意改错断言 → 失败并保存 trace）；CI 在 Windows + Ubuntu（xvfb）运行，失败上传 trace
+- M1-10 CI 加固：新增 `package` job（两平台 `build:unpack`，并校验 node-pty 的 `pty.node` 已解包到 `app.asar.unpacked`）；`permissions: contents: read`、PR 上取消被覆盖的运行、job 超时 20 分钟
+  - 本机验证 Windows 打包与 `.node` 路径；Linux 路径（`build/Release/pty.node`，无预编译包、安装时编译）待 CI 首次运行确认
 
 ### 下一步（M1）
 
-1. 推送后确认 CI 在 Windows + Ubuntu 都通过（Linux 上的杀进程树集成测试与 E2E 都是首次运行），然后 M1 收尾、规划 M2（Profile、`.devhub.yaml`）
+1. 推送后确认 CI 在 Windows + Ubuntu 都通过（Linux 上的杀进程树集成测试、E2E 与打包都是首次运行），然后 M1 收尾、规划 M2（Profile、`.devhub.yaml`）
 
 ### 已知问题 / 待定
 
@@ -58,5 +60,6 @@
 - Windows 上 Ctrl+C 中断 `.cmd` 批处理会触发「终止批处理操作吗」提示，需等 5 秒超时后强制结束
 - Windows 上 Node.js 子进程在 ConPTY 下收不到新尺寸（`process.stdout.columns` 不更新，libuv 行为）；调整终端大小后 Node 工具的换行可能仍按旧宽度
 - Windows 上 `npm` / `yarn` 是 `.cmd` 批处理：停止或退出 DevHub 时会等满 5 秒才强制结束（pnpm 实测 1 秒）；可考虑在 Ctrl+C 后自动应答批处理提示
-- Linux 上的真实进程集成测试与 E2E 尚未运行过（本机是 Windows），需推送后由 CI（ubuntu）验证
+- Linux 上的真实进程集成测试、E2E 与打包尚未运行过（本机是 Windows），需推送后由 CI（ubuntu）验证
 - 在 VSCode 集成终端中启动 `pnpm dev` 需先清除 `ELECTRON_RUN_AS_NODE`（VSCode 会设置它，导致 Electron 以 Node 模式运行）：`env -u ELECTRON_RUN_AS_NODE pnpm dev`
+- CI 待办：缓存 Electron 二进制（每次 install 下载 100MB+）、Dependabot（actions 与 npm 依赖）、tag 触发的 Release 工作流
