@@ -15,8 +15,9 @@ test('the title bar replaces the system frame and drives the window', async ({ l
   const titleBar = page.getByRole('banner')
   await expect(titleBar.getByRole('heading', { name: 'DevHub' })).toBeVisible()
 
-  // xvfb on Linux CI has no window manager, so maximize / minimize never take effect there.
-  if (process.platform !== 'linux') {
+  // xvfb on Linux CI has no window manager, so maximize / minimize never take effect there;
+  // a real Linux desktop runs them.
+  if (!(process.platform === 'linux' && process.env.CI)) {
     await titleBar.getByRole('button', { name: '最大化' }).click()
     await expect.poll(windowState).toMatchObject({ maximized: true })
     await titleBar.getByRole('button', { name: '还原' }).click()
