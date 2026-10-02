@@ -93,18 +93,36 @@ export const runSchema = z.discriminatedUnion('kind', [
 ])
 export type Run = z.infer<typeof runSchema>
 
+/** A command, or one per platform (`mvnw.cmd …` on Windows, `./mvnw …` on Linux). */
+const configCommandSchema = z.union([
+  z.string().trim().min(1),
+  z
+    .object({ windows: z.string().trim().min(1), linux: z.string().trim().min(1) })
+    .partial()
+    .refine((command) => command.windows || command.linux, '至少填写 windows 或 linux')
+])
+
 /** Schema of the optional `.devhub.yaml` file committed in a managed project. */
-export const projectConfigSchema = z.object({
-  scripts: z
-    .record(
-      z.string(),
-      z.object({
-        command: z.string().min(1),
-        cwd: z.string().optional()
-      })
-    )
-    .default({})
-})
+export const projectConfigSchema = z
+  .object({
+    scripts: z
+      .record(
+        z.string().trim().min(1).max(60),
+        z
+          .object({
+            command: configCommandSchema,
+            /** Relative to the project; must stay inside it. */
+            cwd: z.string().optional(),
+            description: z.string().optional(),
+            /** Ports checked before starting; inferred from the command when omitted. */
+            port: z.number().int().min(1).max(65535).optional(),
+            ports: z.array(z.number().int().min(1).max(65535)).optional()
+          })
+          .strict()
+      )
+      .default({})
+  })
+  .strict()
 export type ProjectConfig = z.infer<typeof projectConfigSchema>
 
 /**

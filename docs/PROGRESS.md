@@ -72,10 +72,12 @@
   - 核心设置存 `settings.json`（API `getSettings` / `updateSettings`），显示偏好存本地；E2E 3 个（生效与重启后保留、编辑器路径、关闭即退出）
 - 启动前端口冲突检测（M2）：从脚本推断端口（`--port` / `-p` / `PORT=`、vite / next / nuxt / react-scripts / vue-cli / webpack / angular / astro 默认端口、Spring Boot 的 `server.port`，默认 8080），脚本行显示「端口 N」；启动前检测，被占用时提示占用进程与 PID，可「仍然启动」；批量执行遇到冲突该步失败并说明
   - 占用进程：Windows `Get-NetTCPConnection`，Linux `ss -ltnp`；E2E 用真实占用的端口覆盖
+- `.devhub.yaml` 自定义脚本（M2，ADR 0008，新依赖 `yaml`）：command（可按平台区分）、cwd（限制在项目内）、description、port；写错时以警告显示行号或字段路径；脚本列表底部有格式示例
+  - 也可用来补上 monorepo 子包 / 多模块项目中识别不到的启动命令
 
 ### 下一步（M1）
 
-1. 依次：`.devhub.yaml` 自定义脚本 → 批量执行正则与状态持久化 → 自定义 shell 路径与参数 → Linux 下 `mvnw` / `gradlew` 无执行权限 → CI 缓存 Electron → 自动更新（electron-updater）
+1. 依次：批量执行正则与状态持久化 → 自定义 shell 路径与参数 → Linux 下 `mvnw` / `gradlew` 无执行权限 → CI 缓存 Electron → 自动更新（electron-updater）
 2. monorepo 子包 / 多模块项目的脚本识别（暂缓）
 3. 推送后确认 CI 在 Windows + Ubuntu 都通过（Linux 上的杀进程树集成测试、E2E 与打包都是首次运行）
 

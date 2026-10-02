@@ -25,7 +25,8 @@
   },
   "dependencies": {
     "@electron-toolkit/utils": "^4.0.0",
-    "node-pty": "1.1.0"
+    "node-pty": "1.1.0",
+    "yaml": "2.9.1"
   },
   "devDependencies": {
     "@devhub/shared": "workspace:*",

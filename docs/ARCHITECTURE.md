@@ -74,7 +74,7 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 | ProjectScripts | 扫描结果：`status`（ok/missing）、脚本、探测器警告                                        |
 | Group          | 批量任务：跨项目的脚本列表，并行或串行（带继续条件）；存于 `groups.json`                  |
 | Run            | 终端标签里的一个进程：`script`（识别出的脚本）或 `shell`（交互式终端）；状态、PID、退出码 |
-| `.devhub.yaml` | 项目内可选配置：自定义脚本（规划中）                                                      |
+| `.devhub.yaml` | 项目内可选配置：自定义脚本（ADR 0008），由 `detectors/config-detector.ts` 读取            |
 
 ## 脚本探测
 

@@ -115,8 +115,8 @@ export function ScriptList({ project, onRunStarted }: ScriptListProps): React.JS
 
       {items.length === 0 && warnings.length === 0 && (
         <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-          没有识别到脚本。目前支持 package.json（npm / pnpm / yarn）、pom.xml（Maven）和
-          build.gradle（Gradle）。
+          没有识别到脚本。目前支持 package.json（npm / pnpm / yarn）、pom.xml（Maven）、
+          build.gradle（Gradle），以及项目根目录的 .devhub.yaml（自定义脚本）。
         </p>
       )}
 
@@ -131,6 +131,8 @@ export function ScriptList({ project, onRunStarted }: ScriptListProps): React.JS
           onRunStarted={onRunStarted}
         />
       ))}
+
+      <ConfigHint />
     </div>
   )
 }
@@ -216,4 +218,34 @@ function groupBySource(scripts: Script[]): [ScriptSource, Script[]][] {
     else groups.set(script.source, [script])
   }
   return [...groups]
+}
+
+const configExample = `scripts:
+  api:
+    command: mvnw.cmd spring-boot:run -pl server
+    description: 后端（server 模块）
+    port: 8081
+  compose:
+    command: docker compose up
+    cwd: deploy
+  mock:
+    command:            # 按平台区分
+      windows: mock.bat
+      linux: ./mock.sh`
+
+/** How to add commands no detector finds; collapsed by default. */
+function ConfigHint(): React.JSX.Element {
+  return (
+    <details className="text-xs text-muted-foreground">
+      <summary className="cursor-pointer select-none">
+        需要其他命令？在项目根目录添加 .devhub.yaml
+      </summary>
+      <pre className="mt-2 overflow-x-auto rounded-md border bg-muted/40 p-3 font-mono">
+        {configExample}
+      </pre>
+      <p className="mt-1">
+        cwd 相对于项目目录；port 省略时会从命令推断。保存后点「刷新」或切回 DevHub 即生效。
+      </p>
+    </details>
+  )
 }

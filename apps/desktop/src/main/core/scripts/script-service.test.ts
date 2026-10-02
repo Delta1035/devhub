@@ -57,12 +57,14 @@ describe('createScriptService', () => {
     })
   })
 
-  it('combines scripts from npm, maven and gradle in one project', async () => {
+  it('combines .devhub.yaml, npm, maven and gradle scripts in one project', async () => {
+    await writeFile(join(dir, '.devhub.yaml'), 'scripts:\n  mock:\n    command: node mock.js\n')
     await writeFile(join(dir, 'package.json'), JSON.stringify({ scripts: { dev: 'vite' } }))
     await writeFile(join(dir, 'pom.xml'), '<project />')
     await writeFile(join(dir, 'build.gradle'), '')
     const { scripts } = await makeService(dir).list('p1')
     expect(scripts.map((script) => script.id)).toEqual([
+      'custom:mock',
       'npm:dev',
       'maven:clean',
       'maven:compile',
