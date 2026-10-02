@@ -1,8 +1,13 @@
 import type { Script, ScriptWarning } from '@devhub/shared'
+import { createMavenDetector } from './maven-detector'
 import { npmDetector } from './npm-detector'
 import type { ScriptDetector } from './types'
 
-export const defaultDetectors: readonly ScriptDetector[] = [npmDetector]
+/** All built-in detectors. Order here is the order scripts are listed in. */
+export const createDefaultDetectors = (platform: NodeJS.Platform): ScriptDetector[] => [
+  npmDetector,
+  createMavenDetector({ platform })
+]
 
 export interface DetectionResult {
   scripts: Script[]
@@ -12,7 +17,7 @@ export interface DetectionResult {
 /** Runs all detectors in parallel; a failing detector becomes a warning instead of an error. */
 export async function detectScripts(
   dir: string,
-  detectors: readonly ScriptDetector[] = defaultDetectors
+  detectors: readonly ScriptDetector[]
 ): Promise<DetectionResult> {
   const results = await Promise.all(
     detectors.map(async (detector) => {

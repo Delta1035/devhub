@@ -69,7 +69,9 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 ## 脚本探测
 
 - `ScriptDetector { source, detect(dir) }`（`core/detectors/types.ts`）：不适用返回 `[]`；构建文件损坏时抛出面向用户的 `Error`。
-- 新增项目类型 = 新增一个探测器文件，并加入 `detect-scripts.ts` 的 `defaultDetectors`。
+- 新增项目类型 = 新增一个探测器文件，并加入 `detect-scripts.ts` 的 `createDefaultDetectors(platform)`。
+- 需要平台信息的探测器（如选择 `mvnw` / `mvnw.cmd`）用工厂函数注入 `platform`，以便在任一系统上测试两个平台。
+- 读取构建文件、判断文件存在的公共逻辑在 `detectors/fs-utils.ts`。
 - `detectScripts` 并行执行所有探测器，失败的探测器转为 `warnings`，不影响其他结果。
 - 脚本 id 形如 `<source>:<name>`，重新扫描保持稳定，供进程管理关联运行状态。
 - 不缓存：每次 `listScripts` 都读磁盘。

@@ -1,6 +1,6 @@
 import { stat } from 'fs/promises'
 import type { ProjectScripts } from '@devhub/shared'
-import { defaultDetectors, detectScripts } from '../detectors/detect-scripts'
+import { detectScripts } from '../detectors/detect-scripts'
 import type { ScriptDetector } from '../detectors/types'
 import type { ProjectService } from '../projects/project-service'
 
@@ -11,13 +11,10 @@ export interface ScriptService {
 
 export interface ScriptServiceDeps {
   projects: Pick<ProjectService, 'get'>
-  detectors?: readonly ScriptDetector[]
+  detectors: readonly ScriptDetector[]
 }
 
-export function createScriptService({
-  projects,
-  detectors = defaultDetectors
-}: ScriptServiceDeps): ScriptService {
+export function createScriptService({ projects, detectors }: ScriptServiceDeps): ScriptService {
   return {
     async list(projectId) {
       const project = await projects.get(projectId)

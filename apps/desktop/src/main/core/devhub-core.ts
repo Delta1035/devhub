@@ -6,6 +6,7 @@ import {
   emptyProjectsFile,
   projectsFileSchema
 } from './projects/project-service'
+import { createDefaultDetectors } from './detectors/detect-scripts'
 import { createScriptService } from './scripts/script-service'
 
 export interface CoreEnvironment {
@@ -30,7 +31,10 @@ export function createDevhubCore(env: CoreEnvironment): DevhubApi {
     platform: env.platform
   })
 
-  const scripts = createScriptService({ projects })
+  const scripts = createScriptService({
+    projects,
+    detectors: createDefaultDetectors(env.platform)
+  })
 
   return {
     async getAppInfo() {

@@ -3,6 +3,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DevhubError, type Project } from '@devhub/shared'
+import { createDefaultDetectors } from '../detectors/detect-scripts'
 import type { ScriptDetector } from '../detectors/types'
 import { createScriptService } from './script-service'
 
@@ -24,7 +25,10 @@ describe('createScriptService', () => {
     addedAt: '2026-10-02T00:00:00.000Z'
   })
 
-  const makeService = (path: string, detectors?: ScriptDetector[]) =>
+  const makeService = (
+    path: string,
+    detectors: ScriptDetector[] = createDefaultDetectors('linux')
+  ) =>
     createScriptService({
       projects: {
         async get(id) {
@@ -44,6 +48,20 @@ describe('createScriptService', () => {
       ],
       warnings: []
     })
+  })
+
+  it('combines scripts from npm and maven in one project', async () => {
+    await writeFile(join(dir, 'package.json'), JSON.stringify({ scripts: { dev: 'vite' } }))
+    await writeFile(join(dir, 'pom.xml'), '<project />')
+    const { scripts } = await makeService(dir).list('p1')
+    expect(scripts.map((script) => script.id)).toEqual([
+      'npm:dev',
+      'maven:clean',
+      'maven:compile',
+      'maven:test',
+      'maven:package',
+      'maven:install'
+    ])
   })
 
   it('reports detector failures as warnings', async () => {

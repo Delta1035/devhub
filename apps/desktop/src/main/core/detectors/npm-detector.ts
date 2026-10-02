@@ -1,7 +1,7 @@
-import { access, readFile } from 'fs/promises'
 import { join } from 'path'
 import { z } from 'zod'
 import type { Script } from '@devhub/shared'
+import { exists, readOptionalFile } from './fs-utils'
 import type { ScriptDetector } from './types'
 
 const packageManagerSchema = z.enum(['npm', 'pnpm', 'yarn'])
@@ -27,7 +27,7 @@ export const npmDetector: ScriptDetector = {
   source: 'npm',
 
   async detect(dir) {
-    const raw = await readOptional(join(dir, 'package.json'))
+    const raw = await readOptionalFile(join(dir, 'package.json'))
     if (raw === null) return []
 
     let json: unknown
@@ -69,22 +69,4 @@ export async function detectPackageManager(
     if (await exists(join(dir, file))) return manager
   }
   return 'npm'
-}
-
-async function readOptional(path: string): Promise<string | null> {
-  try {
-    return await readFile(path, 'utf8')
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null
-    throw new Error(`无法读取 package.json：${(error as Error).message}`)
-  }
-}
-
-async function exists(path: string): Promise<boolean> {
-  try {
-    await access(path)
-    return true
-  } catch {
-    return false
-  }
 }
