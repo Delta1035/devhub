@@ -1,3 +1,5 @@
+import { readFile } from 'fs/promises'
+import { resolve } from 'path'
 import { test, expect } from './fixtures'
 
 test('the title bar replaces the system frame and drives the window', async ({ launchDevhub }) => {
@@ -14,6 +16,11 @@ test('the title bar replaces the system frame and drives the window', async ({ l
     })
   const titleBar = page.getByRole('banner')
   await expect(titleBar.getByRole('heading', { name: 'DevHub' })).toBeVisible()
+  // The app's own version, not Electron's.
+  const { version } = JSON.parse(await readFile(resolve(__dirname, '../package.json'), 'utf8')) as {
+    version: string
+  }
+  await expect(titleBar).toContainText(`v${version}`)
 
   // xvfb on Linux CI has no window manager, so maximize / minimize never take effect there;
   // a real Linux desktop runs them.

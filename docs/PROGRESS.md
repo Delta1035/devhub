@@ -95,20 +95,21 @@
   - `core/history/run-history.ts` 订阅运行事件，脚本退出时记录，每个脚本保留最近 20 次，存 `run-history.json`（跨重启）；交互式终端不记录；退出 DevHub 时等待最后的记录写完
   - API `listRunHistory(projectId, scriptId)`；新增 shadcn `popover` 组件（来自已有的 radix-ui，无新依赖）
   - 测试：6 个单元测试（记录与排序、忽略运行中 / shell / 重复退出、按脚本截断、跨会话读取、无效 id、写入失败仍可用）；E2E 1 个（失败与停止的运行、打开时刷新、重启后保留）；Windows + Linux 均通过
+- 修复 E2E 中 `app.getVersion()` 返回 Electron 版本：E2E 原先启动 `out/main/index.js`，Electron 找不到 package.json；改为启动应用目录（经 `main` 进入同一入口）；标题栏用例断言显示的是应用版本
 
 ### 下一步（M1）
 
 1. 发布一个新版本（含 latest.yml），再发布下一个版本，实测自动更新全流程
-2. 技术债：E2E 中版本号显示为 Electron 版本；Linux 安装包多带了 Windows / macOS 的 `pty.node` 预编译包
-3. 脚本识别：monorepo 子包 lockfile、Maven 多模块、Gradle 多项目
-4. M4 远程暂缓，等以上完成后再评估
-5. 推送后确认 CI 在 Ubuntu（xvfb）也通过（真实 Linux 桌面已验证）
+2. 脚本识别：monorepo 子包 lockfile、Maven 多模块、Gradle 多项目
+3. M4 远程暂缓，等以上完成后再评估
+4. 推送后确认 CI 在 Ubuntu（xvfb）也通过（真实 Linux 桌面已验证）
 
 ### 已知问题 / 待定
 
 - npm 探测只看项目根目录：monorepo 子包作为项目添加时，根目录的 lockfile 识别不到，会回退为 npm
 - 脚本命令目前是字符串（经 shell 执行）；进程管理时再决定是否改为 argv 形式
 - E2E 偶发：Windows 上 `groups.spec.ts` 的串行用例在整套连续运行时偶尔超时（结束时关闭应用超过 60 秒，约 1/20），单独重复运行未复现；原因未查明
+- 安装包多带了 node-pty 的其他平台预编译文件与源码 / 测试（Linux 包约 2 MB 未压缩，`.pdb` 已被 electron-builder 默认排除）；已评估收益小（安装包 100+ MB），且排除规则写错只会在打包版中暴露，暂缓到下次修改打包配置时处理
 - 运行历史：脚本运行到一半 DevHub 崩溃时，这次运行不会进入历史；移除项目后它的历史记录仍留在 `run-history.json` 中（数量有上限，未清理）
 - Maven 多模块 / Gradle 多项目：只读根目录构建文件，子模块中的 `spring-boot:run` / `bootRun` 识别不到，且在根目录执行会作用于所有模块；以后扫描子模块并用 `-pl <module>` / `:<project>:bootRun`
 - Android 项目的 `assembleDebug`、`installDebug` 等任务暂不识别

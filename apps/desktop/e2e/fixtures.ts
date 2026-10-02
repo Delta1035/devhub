@@ -11,7 +11,9 @@ import type { DevhubApi } from '@devhub/shared'
 
 export { expect } from '@playwright/test'
 
-const mainEntry = resolve(__dirname, '../out/main/index.js')
+// The app directory, not out/main/index.js: given a bare script, Electron finds no package.json
+// and reports its own version and name. Its "main" points at the same built entry.
+const appDir = resolve(__dirname, '..')
 
 export interface DevhubApp {
   app: ElectronApplication
@@ -40,7 +42,7 @@ export const test = base.extend<Fixtures>({
     await use(async () => {
       const app = await electron.launch({
         args: [
-          mainEntry,
+          appDir,
           // A private profile: isolates projects.json and the single-instance lock from any
           // DevHub the developer is running.
           `--user-data-dir=${join(workDir, 'userdata')}`,
