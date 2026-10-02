@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SquareTerminal, X } from 'lucide-react'
+import { Maximize2, Minimize2, SquareTerminal, X } from 'lucide-react'
 import type { Run } from '@devhub/shared'
 import { Button } from '@renderer/components/ui/button'
 import { useRuns } from '@renderer/features/runs/use-runs'
@@ -14,12 +14,17 @@ interface TerminalPanelProps {
   /** Tab to show; falls back to the most recently started run. */
   activeRunId: string | null
   onActiveRunChange: (runId: string) => void
+  /** Fills the whole detail area, hiding the script list. */
+  maximized: boolean
+  onToggleMaximized: () => void
 }
 
 export function TerminalPanel({
   projectId,
   activeRunId,
-  onActiveRunChange
+  onActiveRunChange,
+  maximized,
+  onToggleMaximized
 }: TerminalPanelProps): React.JSX.Element {
   const { height, startResize } = useResizableHeight('devhub.terminalHeight', 260, 120)
   const closeRun = useCloseRun()
@@ -30,15 +35,29 @@ export function TerminalPanel({
   const active = runs.find((run) => run.id === activeRunId) ?? runs.at(-1)
 
   return (
-    <section className="flex shrink-0 flex-col border-t bg-muted/30" style={{ height }}>
-      <div
-        role="separator"
-        aria-orientation="horizontal"
-        aria-label="拖动调整终端高度"
-        onPointerDown={startResize}
-        className="h-1 shrink-0 cursor-row-resize touch-none hover:bg-ring/40"
-      />
-      <header className="flex shrink-0 items-center gap-1 border-b px-3 py-1">
+    <section
+      className={cn(
+        'flex flex-col border-t bg-muted/30',
+        maximized ? 'min-h-0 flex-1' : 'shrink-0'
+      )}
+      style={maximized ? undefined : { height }}
+    >
+      {!maximized && (
+        <div
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="拖动调整终端高度"
+          onPointerDown={startResize}
+          className="h-1 shrink-0 cursor-row-resize touch-none hover:bg-ring/40"
+        />
+      )}
+      <header
+        className="flex shrink-0 items-center gap-1 border-b px-3 py-1"
+        // Double-clicking empty space in the tab bar toggles maximize, as in VS Code.
+        onDoubleClick={(event) => {
+          if (!(event.target as HTMLElement).closest('button')) onToggleMaximized()
+        }}
+      >
         <SquareTerminal className="mr-1 size-4 shrink-0 text-muted-foreground" />
         <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
           {runs.length === 0 && <span className="text-sm font-medium">终端</span>}
@@ -58,8 +77,9 @@ export function TerminalPanel({
           onStarted={(run) => onActiveRunChange(run.id)}
           onError={setError}
         />
+        <div className="flex-1" />
         {error && (
-          <p className="ml-auto flex min-w-0 items-center gap-1 text-xs text-destructive">
+          <p className="flex min-w-0 items-center gap-1 text-xs text-destructive">
             <span className="truncate" title={error.message}>
               {error.message}
             </span>
@@ -68,6 +88,15 @@ export function TerminalPanel({
             </Button>
           </p>
         )}
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          onClick={onToggleMaximized}
+          title={maximized ? '还原终端面板' : '最大化终端面板'}
+          aria-label={maximized ? '还原终端面板' : '最大化终端面板'}
+        >
+          {maximized ? <Minimize2 /> : <Maximize2 />}
+        </Button>
       </header>
       <div className="min-h-0 flex-1 p-2">
         {active ? (

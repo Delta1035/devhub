@@ -7,11 +7,13 @@ import { EditorButtons } from '@renderer/features/editors/editor-buttons'
 import { ScriptList } from '@renderer/features/scripts/script-list'
 import { useProjectScripts } from '@renderer/features/scripts/use-scripts'
 import { TerminalPanel } from '@renderer/features/terminal/terminal-panel'
+import { cn } from '@renderer/lib/utils'
 
 export function ProjectDetail({ project }: { project: Project }): React.JSX.Element {
   const scripts = useProjectScripts(project.id)
   const [activeRunId, setActiveRunId] = useState<string | null>(null)
   const [editorError, setEditorError] = useState<Error | null>(null)
+  const [terminalMaximized, setTerminalMaximized] = useState(false)
 
   return (
     <div className="flex h-full flex-col">
@@ -42,7 +44,9 @@ export function ProjectDetail({ project }: { project: Project }): React.JSX.Elem
           刷新
         </Button>
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+      <div
+        className={cn('min-h-0 flex-1 overflow-y-auto px-6 py-4', terminalMaximized && 'hidden')}
+      >
         {editorError && (
           <Alert variant="destructive" className="mb-4">
             <TriangleAlert />
@@ -66,6 +70,8 @@ export function ProjectDetail({ project }: { project: Project }): React.JSX.Elem
         projectId={project.id}
         activeRunId={activeRunId}
         onActiveRunChange={setActiveRunId}
+        maximized={terminalMaximized}
+        onToggleMaximized={() => setTerminalMaximized(!terminalMaximized)}
       />
     </div>
   )

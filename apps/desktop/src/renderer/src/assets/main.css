@@ -128,3 +128,9 @@
     @apply font-sans;
   }
 }
+
+/* xterm paints its scroll viewport black by default, which shows around the padded grid.
+   The terminal host already carries the theme background, so let it show through. */
+[data-terminal-run] .xterm .xterm-viewport {
+  background-color: transparent;
+}

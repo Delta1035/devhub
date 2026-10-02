@@ -1,36 +1,18 @@
 import '@xterm/xterm/css/xterm.css'
-import { useEffect, useRef } from 'react'
-import { FitAddon } from '@xterm/addon-fit'
-import { WebLinksAddon } from '@xterm/addon-web-links'
-import { Terminal, type ITheme } from '@xterm/xterm'
-import { OutputCursor } from '@devhub/shared'
-import { api, events, shell } from '@renderer/api'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuTrigger
+} from '@renderer/components/ui/context-menu'
+import { isMac } from './terminal-keys'
+import { TerminalSearch } from './terminal-search'
+import { getTerminalSession } from './terminal-sessions'
 
-// Opaque on purpose: xterm renders a transparent background as black. The wrapper uses the
-// same color so the padding around the grid blends in.
-const lightTheme: ITheme = {
-  background: '#fafafa',
-  foreground: '#27272a',
-  cursor: '#27272a',
-  selectionBackground: '#d4d4d8'
-}
-const darkTheme: ITheme = {
-  background: '#18181b',
-  foreground: '#e4e4e7',
-  cursor: '#e4e4e7',
-  selectionBackground: '#52525b'
-}
-
-const isMac = navigator.userAgent.includes('Mac')
-const linkHint = isMac ? '⌘+点击打开链接' : 'Ctrl+点击打开链接'
-
-/** Desktop opens through the validated ShellApi; a remote client falls back to the browser. */
-function openLink(event: MouseEvent, uri: string): void {
-  // Require the modifier (VS Code convention) so selecting text never opens a page by accident.
-  if (!(isMac ? event.metaKey : event.ctrlKey)) return
-  if (shell) shell.openExternal(uri).catch((error: unknown) => console.warn(error))
-  else window.open(uri, '_blank', 'noopener')
-}
+const mod = isMac ? '⌘' : 'Ctrl+'
 
 interface RunTerminalProps {
   runId: string
@@ -39,109 +21,53 @@ interface RunTerminalProps {
 }
 
 /**
- * Renders one run's output. Created per tab: switching tabs rebuilds it from the snapshot,
- * which keeps memory flat no matter how many runs exist.
+ * Shows a run's terminal. The xterm instance outlives this component (see terminal-sessions),
+ * so unmounting on a tab switch keeps its screen, scrollback and selection.
  */
 export function RunTerminal({ runId, acceptsInput }: RunTerminalProps): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null)
-  const terminalRef = useRef<Terminal | null>(null)
+  const session = useMemo(() => getTerminalSession(runId), [runId])
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [hasSelection, setHasSelection] = useState(false)
 
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
+    session.attach(container, () => setSearchOpen(true))
+    session.focus()
+    return () => session.detach()
+  }, [session])
 
-    const darkQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const terminal = new Terminal({
-      fontFamily: 'ui-monospace, "Cascadia Mono", Consolas, "DejaVu Sans Mono", monospace',
-      fontSize: 12,
-      scrollback: 5000,
-      theme: darkQuery.matches ? darkTheme : lightTheme
-    })
-    const fit = new FitAddon()
-    terminal.loadAddon(fit)
-    terminal.loadAddon(
-      new WebLinksAddon(openLink, {
-        hover: () => {
-          container.title = linkHint
-        },
-        leave: () => {
-          container.title = ''
-        }
-      })
-    )
-    terminal.open(container)
-    terminalRef.current = terminal
+  useEffect(() => session.setAcceptsInput(acceptsInput), [session, acceptsInput])
 
-    // Subscribe before fetching the snapshot and hold live chunks until it arrives;
-    // OutputCursor then drops whatever the snapshot already contained.
-    let disposed = false
-    const cursor = new OutputCursor()
-    let held: { offset: number; data: string }[] | null = []
-    const unsubscribe = events.subscribe((event) => {
-      if (event.type !== 'run-output' || event.runId !== runId) return
-      if (held) held.push(event)
-      else terminal.write(cursor.accept(event.offset, event.data))
-    })
-    api
-      .getRunOutput(runId)
-      .then((snapshot) => {
-        if (disposed) return
-        terminal.write(cursor.acceptSnapshot(snapshot))
-        for (const chunk of held ?? []) terminal.write(cursor.accept(chunk.offset, chunk.data))
-      })
-      // The run was removed meanwhile; live events (if any) still render.
-      .catch(() => undefined)
-      .finally(() => {
-        held = null
-      })
-
-    const input = terminal.onData((data) => {
-      api.writeRunInput(runId, data).catch(() => undefined)
-    })
-
-    // Keep the PTY size in step with the panel so full-screen output wraps correctly.
-    let lastSize = ''
-    let resizeTimer: ReturnType<typeof setTimeout> | undefined
-    const syncSize = (): void => {
-      fit.fit()
-      const size = `${terminal.cols}x${terminal.rows}`
-      if (size === lastSize) return
-      lastSize = size
-      api.resizeRun(runId, terminal.cols, terminal.rows).catch(() => undefined)
-    }
-    const observer = new ResizeObserver(() => {
-      clearTimeout(resizeTimer)
-      resizeTimer = setTimeout(syncSize, 50)
-    })
-    observer.observe(container)
-    syncSize()
-
-    const applyTheme = (): void => {
-      const theme = darkQuery.matches ? darkTheme : lightTheme
-      terminal.options.theme = theme
-      container.style.backgroundColor = theme.background ?? ''
-    }
-    applyTheme()
-    darkQuery.addEventListener('change', applyTheme)
-
-    return () => {
-      disposed = true
-      unsubscribe()
-      input.dispose()
-      observer.disconnect()
-      clearTimeout(resizeTimer)
-      darkQuery.removeEventListener('change', applyTheme)
-      terminalRef.current = null
-      terminal.dispose()
-    }
-  }, [runId])
-
-  useEffect(() => {
-    const terminal = terminalRef.current
-    if (!terminal) return
-    terminal.options.disableStdin = !acceptsInput
-    terminal.options.cursorStyle = acceptsInput ? 'block' : 'underline'
-  }, [acceptsInput, runId])
-
-  return <div ref={containerRef} className="h-full w-full rounded-md p-2" />
+  return (
+    <ContextMenu onOpenChange={(open) => open && setHasSelection(session.terminal.hasSelection())}>
+      <ContextMenuTrigger asChild>
+        <div className="relative h-full w-full overflow-hidden rounded-md">
+          <div ref={containerRef} className="h-full w-full" data-terminal-run={runId} />
+          {searchOpen && <TerminalSearch session={session} onClose={() => setSearchOpen(false)} />}
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-52">
+        <ContextMenuItem disabled={!hasSelection} onSelect={() => void session.copy()}>
+          复制
+          <ContextMenuShortcut>{mod}C</ContextMenuShortcut>
+        </ContextMenuItem>
+        <ContextMenuItem disabled={!acceptsInput} onSelect={() => void session.paste()}>
+          粘贴
+          <ContextMenuShortcut>{mod}V</ContextMenuShortcut>
+        </ContextMenuItem>
+        <ContextMenuItem onSelect={() => session.terminal.selectAll()}>全选</ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem onSelect={() => setSearchOpen(true)}>
+          搜索
+          <ContextMenuShortcut>{mod}F</ContextMenuShortcut>
+        </ContextMenuItem>
+        <ContextMenuItem onSelect={() => session.terminal.clear()}>
+          清屏
+          <ContextMenuShortcut>{isMac ? '⌘K' : 'Ctrl+Shift+K'}</ContextMenuShortcut>
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  )
 }

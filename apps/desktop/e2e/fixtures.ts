@@ -53,6 +53,8 @@ export const test = base.extend<Fixtures>({
       await app.context().tracing.start({ screenshots: true, snapshots: true })
       const page = await app.firstWindow()
       await page.waitForLoadState('domcontentloaded')
+      // WebGL draws terminal text on a canvas that tests cannot read; use the DOM renderer.
+      await page.evaluate(() => localStorage.setItem('devhub.terminalRenderer', 'dom'))
       return { app, page }
     })
 
