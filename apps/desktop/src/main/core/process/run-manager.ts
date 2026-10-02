@@ -9,17 +9,22 @@ import {
   type Run,
   type PortConflict,
   type RunOutputSnapshot,
-  type Script,
-  type ShellId
+  type Script
 } from '@devhub/shared'
 import { isDirectory as isDirectoryOnDisk } from '../fs/is-directory'
 import type { ProjectService } from '../projects/project-service'
 import type { ScriptService } from '../scripts/script-service'
 import type { ShellLocator } from '../shells/shell-locator'
 import type { ProcessKiller } from './process-killer'
-import { shellInvocation, type PtyProcess, type PtySpawner } from './pty'
-import { answerBatchPrompt } from './batch-prompt'
-import { RunOutput } from './run-output'
+import { shellInvocation, type PtySpawner } from './pty'
+import {
+  announceRun,
+  launchEntry,
+  snapshotRun,
+  type LaunchParams,
+  type RunEntry
+} from './run-entry'
+import { stopEntry as stopRunEntry } from './stop-run'
 
 export interface RunManager {
   start(projectId: unknown, scriptId: unknown, options?: unknown): Promise<Run>
@@ -62,29 +67,6 @@ export interface RunManagerDeps {
   newId?: () => string
 }
 
-/** What a run executes; becomes the kind-specific half of `Run`. */
-type RunIdentity = { kind: 'script'; scriptId: string } | { kind: 'shell'; shellId: ShellId }
-
-interface LaunchParams {
-  projectId: string
-  identity: RunIdentity
-  title: string
-  /** Shown to the user: the script's command line or the shell executable. */
-  command: string
-  file: string
-  args: string | string[]
-  cwd: string
-  env: Record<string, string>
-}
-
-interface Entry {
-  run: Run
-  pty: PtyProcess
-  output: RunOutput
-  exited: Promise<void>
-  markExited: (exitCode: number | null) => void
-}
-
 const idInput = z.string().min(1)
 const startOptions = z.object({ ignorePortConflicts: z.boolean().optional() })
 // Keystrokes and pastes; generous but bounded.
@@ -112,72 +94,26 @@ export function createRunManager({
   now = () => new Date(),
   newId = randomUUID
 }: RunManagerDeps): RunManager {
-  const entries = new Map<string, Entry>()
+  const entries = new Map<string, RunEntry>()
 
-  const getEntry = (rawId: unknown): Entry => {
+  const getEntry = (rawId: unknown): RunEntry => {
     const parsed = idInput.safeParse(rawId)
     const entry = parsed.success ? entries.get(parsed.data) : undefined
     if (!entry) throw new DevhubError('RUN_NOT_FOUND', '运行记录不存在')
     return entry
   }
 
-  const snapshot = (entry: Entry): Run => ({ ...entry.run })
-  const announce = (entry: Entry): void => emit({ type: 'run-updated', run: snapshot(entry) })
-
-  const getActiveEntry = (rawId: unknown): Entry => {
+  const getActiveEntry = (rawId: unknown): RunEntry => {
     const entry = getEntry(rawId)
     if (entry.run.status === 'exited') throw new DevhubError('RUN_NOT_ACTIVE', '进程已结束')
     return entry
   }
 
   const launch = (params: LaunchParams): Run => {
-    let pty: PtyProcess
-    try {
-      pty = spawn({ file: params.file, args: params.args, cwd: params.cwd, env: params.env })
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error)
-      throw new DevhubError('SPAWN_FAILED', `无法启动 ${params.title}：${detail}`)
-    }
-
-    let resolveExited = (): void => undefined
-    const runId = newId()
-    const entry: Entry = {
-      run: {
-        id: runId,
-        projectId: params.projectId,
-        title: params.title,
-        command: params.command,
-        status: 'running',
-        pid: pty.pid,
-        exitCode: null,
-        stopped: false,
-        startedAt: now().toISOString(),
-        ...params.identity
-      },
-      pty,
-      output: new RunOutput({
-        limit: outputLimit,
-        flushMs: outputFlushMs,
-        onFlush: (offset, data) => emit({ type: 'run-output', runId, offset, data })
-      }),
-      exited: new Promise((resolveFn) => (resolveExited = resolveFn)),
-      markExited: (exitCode) => {
-        if (entry.run.status === 'exited') return
-        // Last output first, so the UI shows it before the "exited" state.
-        entry.output.flush()
-        entry.run.status = 'exited'
-        entry.run.exitCode = exitCode
-        entry.run.endedAt = now().toISOString()
-        resolveExited()
-        announce(entry)
-      }
-    }
-
-    pty.onData((data) => entry.output.append(data))
-    pty.onExit((exitCode) => entry.markExited(exitCode))
-    entries.set(runId, entry)
-    announce(entry)
-    return snapshot(entry)
+    const entry = launchEntry(params, { spawn, emit, outputLimit, outputFlushMs, now, newId })
+    entries.set(entry.run.id, entry)
+    announceRun(entry, emit)
+    return snapshotRun(entry)
   }
 
   const start = async (
@@ -267,36 +203,14 @@ export function createRunManager({
     return number
   }
 
-  const stopEntry = async (entry: Entry): Promise<void> => {
-    if (entry.run.status === 'running') {
-      entry.run.status = 'stopping'
-      entry.run.stopped = true
-      announce(entry)
-      let stopAnswering = (): void => undefined
-      // Ctrl+C does not end an interactive shell; hang it up like closing a terminal window.
-      if (entry.run.kind === 'shell') await killer.hangup(entry.pty)
-      else {
-        killer.interrupt(entry.pty)
-        if (platform === 'win32') {
-          stopAnswering = answerBatchPrompt(
-            () => entry.output.snapshot(),
-            (data) => entry.pty.write(data)
-          )
-        }
-      }
-      try {
-        const grace = typeof graceMs === 'function' ? graceMs() : graceMs
-        if (!(await settlesWithin(entry.exited, grace))) {
-          await killer.forceKill(entry.run.pid)
-          // Never leave a run stuck in "stopping" if the exit event is lost.
-          if (!(await settlesWithin(entry.exited, forceTimeoutMs))) entry.markExited(null)
-        }
-      } finally {
-        stopAnswering()
-      }
-    }
-    await entry.exited
+  const stopDeps = {
+    killer,
+    platform,
+    emit,
+    graceMs: () => (typeof graceMs === 'function' ? graceMs() : graceMs),
+    forceTimeoutMs
   }
+  const stopEntry = (entry: RunEntry): Promise<void> => stopRunEntry(entry, stopDeps)
 
   return {
     start,
@@ -317,7 +231,7 @@ export function createRunManager({
         : startShell(run.projectId, run.shellId)
     },
 
-    list: () => [...entries.values()].map(snapshot),
+    list: () => [...entries.values()].map(snapshotRun),
 
     output: (runId) => getEntry(runId).output.snapshot(),
 
@@ -352,17 +266,6 @@ export function createRunManager({
     async dispose() {
       await Promise.all([...entries.values()].map(stopEntry))
     }
-  }
-}
-
-/** Resolves true if `promise` settles within `ms`, false on timeout. */
-async function settlesWithin(promise: Promise<void>, ms: number): Promise<boolean> {
-  let timer: NodeJS.Timeout | undefined
-  const timeout = new Promise<false>((resolveFn) => (timer = setTimeout(resolveFn, ms, false)))
-  try {
-    return await Promise.race([promise.then(() => true), timeout])
-  } finally {
-    clearTimeout(timer)
   }
 }
 

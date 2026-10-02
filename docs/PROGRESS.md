@@ -90,12 +90,11 @@
 ### 下一步（M1）
 
 1. 发布一个新版本（含 latest.yml），再发布下一个版本，实测自动更新全流程
-2. 拆分 `run-manager.ts`（接近 400 行），为健康检查做准备
-3. M3：健康检查（端口 / HTTP，脚本显示启动中 / 就绪 / 无响应）→ 运行历史（每个脚本最近 N 次）
-4. 技术债：E2E 中版本号显示为 Electron 版本；Linux 安装包多带了 Windows / macOS 的 `pty.node` 预编译包
-5. 脚本识别：monorepo 子包 lockfile、Maven 多模块、Gradle 多项目
-6. M4 远程暂缓，等以上完成后再评估
-7. 推送后确认 CI 在 Ubuntu（xvfb）也通过（真实 Linux 桌面已验证）
+2. M3：健康检查（端口 / HTTP，脚本显示启动中 / 就绪 / 无响应）→ 运行历史（每个脚本最近 N 次）
+3. 技术债：E2E 中版本号显示为 Electron 版本；Linux 安装包多带了 Windows / macOS 的 `pty.node` 预编译包
+4. 脚本识别：monorepo 子包 lockfile、Maven 多模块、Gradle 多项目
+5. M4 远程暂缓，等以上完成后再评估
+6. 推送后确认 CI 在 Ubuntu（xvfb）也通过（真实 Linux 桌面已验证）
 
 ### 已知问题 / 待定
 
@@ -113,4 +112,4 @@
 - 发布待办（GitHub 仓库设置，非代码）：开启 Immutable releases；为 `v*` tag 加 ruleset 限制创建者
 - 发布：安装包不做签名（已决定，Windows SmartScreen 会提示）；v0.1.2 及更早版本没有 latest.yml，需手动升级一次
 - 自制标题栏：Win11 悬停最大化按钮的贴靠布局菜单不再出现
-- 端口推断是启发式的：脚本里没写端口、也不是已知工具时不检查；`run-manager.ts` 已接近 400 行，下次改动时拆分
+- 端口推断是启发式的：脚本里没写端口、也不是已知工具时不检查
