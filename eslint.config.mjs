@@ -1,0 +1,102 @@
+import { defineConfig } from 'eslint/config'
+import tseslint from '@electron-toolkit/eslint-config-ts'
+import eslintConfigPrettier from '@electron-toolkit/eslint-config-prettier'
+import eslintPluginReact from 'eslint-plugin-react'
+import eslintPluginReactHooks from 'eslint-plugin-react-hooks'
+import eslintPluginReactRefresh from 'eslint-plugin-react-refresh'
+
+const nodeBuiltins = ['fs', 'path', 'child_process', 'os', 'net', 'node:*']
+
+export default defineConfig(
+  { ignores: ['**/node_modules', '**/dist', '**/out', '**/coverage'] },
+  tseslint.configs.recommended,
+  eslintPluginReact.configs.flat.recommended,
+  eslintPluginReact.configs.flat['jsx-runtime'],
+  { settings: { react: { version: '19.2' } } },
+  {
+    files: ['**/*.{ts,tsx}'],
+    plugins: {
+      'react-hooks': eslintPluginReactHooks,
+      'react-refresh': eslintPluginReactRefresh
+    },
+    rules: {
+      ...eslintPluginReactHooks.configs.recommended.rules,
+      ...eslintPluginReactRefresh.configs.vite.rules,
+      // Large files are the first sign of AI-generated sprawl: split before they grow.
+      'max-lines': ['error', { max: 400, skipBlankLines: true, skipComments: true }]
+    }
+  },
+
+  {
+    // Plain JS tooling scripts cannot carry type annotations.
+    files: ['**/*.{js,mjs,cjs}'],
+    rules: { '@typescript-eslint/explicit-function-return-type': 'off' }
+  },
+
+  // ---- Architecture boundaries (see docs/ARCHITECTURE.md) ----
+  {
+    // Shared code must run anywhere: desktop main, renderer, and future mobile clients.
+    files: ['packages/shared/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['electron', ...nodeBuiltins], message: 'shared must stay platform-agnostic.' }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    // The core is transport-agnostic so it can be served over IPC and HTTP alike.
+    files: ['apps/desktop/src/main/core/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['electron', '@electron-toolkit/*'],
+              message: 'core must not depend on Electron; inject what you need.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    files: ['apps/desktop/src/renderer/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['electron', '@electron-toolkit/*', ...nodeBuiltins],
+              message: 'The UI talks to the core only via @renderer/api.'
+            }
+          ]
+        }
+      ],
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'window',
+          property: 'devhub',
+          message: 'Import { api } from @renderer/api instead.'
+        },
+        {
+          object: 'window',
+          property: 'electron',
+          message: 'Import { api } from @renderer/api instead.'
+        }
+      ]
+    }
+  },
+  {
+    files: ['apps/desktop/src/renderer/src/api/**/*.ts'],
+    rules: { 'no-restricted-properties': 'off' }
+  },
+  eslintConfigPrettier
+)
