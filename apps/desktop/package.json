@@ -4,6 +4,9 @@
   "version": "0.1.1",
   "private": true,
   "description": "DevHub desktop client: manage and run scripts across local projects",
+  "homepage": "https://github.com/Delta1035/devhub",
+  "author": "Delta1035",
+  "desktopName": "devhub.desktop",
   "main": "./out/main/index.js",
   "scripts": {
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",

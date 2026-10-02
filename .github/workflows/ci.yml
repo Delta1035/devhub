@@ -46,13 +46,17 @@ jobs:
           path: apps/desktop/test-results
           if-no-files-found: ignore
 
-  # Packages the app without an installer so problems with native modules
-  # (node-pty, npmRebuild: false) show up before a release build.
+  # Builds the real installers so packaging problems (native modules with
+  # npmRebuild: false, installer metadata) show up before a release.
   package:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: windows-latest
+            target: win
+          - os: ubuntu-latest
+            target: linux
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
@@ -65,7 +69,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @devhub/desktop build:unpack
+      - run: pnpm --filter @devhub/desktop build:${{ matrix.target }} --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
       - name: Verify node-pty native module is unpacked

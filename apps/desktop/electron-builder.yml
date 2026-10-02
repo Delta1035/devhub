@@ -28,6 +28,8 @@ linux:
     - AppImage
     - deb
   executableName: devhub
+  # Install devhub.desktop to match desktopName, which Electron uses as app_id / WM_CLASS.
+  syncDesktopName: true
   maintainer: devhub
   category: Development
 appImage:

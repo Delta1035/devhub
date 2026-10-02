@@ -48,6 +48,7 @@
   - 安装包不再包含 e2e、playwright 配置、`components.json`、`scripts/`
   - 本机验证 Windows 安装包生成；Linux 安装包与 Release 创建待首次推 tag 时确认
 - M1-12 发布加固：`pnpm release <patch|minor|major>` 改版本、提交并打 tag（pnpm 自带 `version`，无新依赖）；Release 先跑 `pnpm check` + E2E，附 `SHA256SUMS.txt` 与构建溯源（`actions/attest`）；所有 action 升到 Node 24 版本并固定到 commit SHA；Dependabot 每周更新 actions 与 npm 依赖
+  - 修复：v0.1.1 发布时 deb 打包失败（缺 `homepage`）；补 `homepage` / `author` / `desktopName`（+ `linux.syncDesktopName`）。CI 的 `package` job 改为打真实安装包（原先只打 `--dir`，发现不了安装包元数据问题）
 
 ### 下一步（M1）
 
