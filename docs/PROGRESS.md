@@ -83,13 +83,19 @@
 - 侧栏改为「项目 / 批量」两个标签页（radix Tabs，无新依赖），各自占满侧栏高度并独立滚动；选中的标签记在本地；批量任务执行中时「批量」标签显示脉冲圆点；E2E 覆盖切换、圆点出现与消失、重启后保留标签
 - `@electron-toolkit/eslint-config-ts` 升到 v4（内含 `@eslint/js` v10，ESLint 本体仍为 v9）：新推荐规则 `preserve-caught-error` 要求包装错误时带 `cause`，`no-useless-assignment` 修正了 E2E 重启后多余的 `app` 赋值
 - 自制标题栏（ADR 0010）：Windows / Linux 去掉系统边框，标题栏含 logo、版本、更新提示、设置与最小化 / 最大化（还原）/ 关闭按钮，可拖动窗口；macOS 保留红绿灯（`hiddenInset`）；ShellApi 新增窗口控制与 `onWindowState`
-  - E2E 1 个（最大化 / 还原 / 最小化，关闭后隐藏到托盘；Linux xvfb 无窗口管理器只测关闭）；深浅色与关闭悬停已截图确认
+  - E2E 1 个（最大化 / 还原 / 最小化，关闭后隐藏到托盘；CI 的 xvfb 无窗口管理器只测关闭）；深浅色与关闭悬停已截图确认
+- 真实 Linux 桌面验证（Linux Mint 22.2 / Ubuntu 24.04 基础，X11 + Cinnamon，Node 24）：`pnpm check` 全部通过（含 Linux 杀进程树、SIGHUP 的真实进程集成测试），E2E 20 个通过（崩溃遗留进程用例跳过：pty 关闭时 SIGHUP 已结束脚本），AppImage + deb 打包成功、`pty.node` 从源码编译并正确解包
+  - 打包版手动确认：无系统边框、拖动标题栏移动与贴靠、双击标题栏最大化 / 还原、边缘与四角调整大小、关闭隐藏到托盘并可唤回、Super+方向键贴靠
 
 ### 下一步（M1）
 
 1. 发布一个新版本（含 latest.yml），再发布下一个版本，实测自动更新全流程
-2. monorepo 子包 / 多模块项目的脚本识别（暂缓）
-3. 推送后确认 CI 在 Windows + Ubuntu 都通过（Linux 上的杀进程树集成测试、E2E 与打包都是首次运行）
+2. 拆分 `run-manager.ts`（接近 400 行），为健康检查做准备
+3. M3：健康检查（端口 / HTTP，脚本显示启动中 / 就绪 / 无响应）→ 运行历史（每个脚本最近 N 次）
+4. 技术债：E2E 中版本号显示为 Electron 版本；Linux 安装包多带了 Windows / macOS 的 `pty.node` 预编译包
+5. 脚本识别：monorepo 子包 lockfile、Maven 多模块、Gradle 多项目
+6. M4 远程暂缓，等以上完成后再评估
+7. 推送后确认 CI 在 Ubuntu（xvfb）也通过（真实 Linux 桌面已验证）
 
 ### 已知问题 / 待定
 
@@ -100,12 +106,11 @@
 - Linux 上自己 `setsid` 脱离进程组的守护进程杀不到；崩溃后的遗留进程只有当记录的根进程本身存活时才能发现（子进程脱离后根进程已退出的情况发现不了）
 - Windows 上 node-pty 在进程自然退出后会在 stderr 打印 `AttachConsole failed`（释放资源时的辅助进程），不影响功能
 - Windows 上 Node.js 子进程在 ConPTY 下收不到新尺寸（`process.stdout.columns` 不更新，libuv 行为）；调整终端大小后 Node 工具的换行可能仍按旧宽度
-- Linux 上的真实进程集成测试、E2E 与打包尚未运行过（本机是 Windows），需推送后由 CI（ubuntu）验证
+- Linux 只在 X11（Cinnamon）上验证过，Wayland 会话未测
 - 在 VSCode 集成终端中启动 `pnpm dev` 需先清除 `ELECTRON_RUN_AS_NODE`（VSCode 会设置它，导致 Electron 以 Node 模式运行）：`env -u ELECTRON_RUN_AS_NODE pnpm dev`
 - 终端：Windows 上清屏后若终端尺寸变化，ConPTY 会重发旧屏幕内容
-- 终端：Linux 上 shell 的 SIGHUP / 会话扫描只在 CI 中验证
 - 编辑器：本机已安装 IDEA（D 盘自定义目录），经注册表检测成功；实际打开项目待人工点一次确认；检测不到时可在设置中手动指定；`reg query` 输出按系统代码页解码，安装路径含中文时可能识别不到
 - 发布待办（GitHub 仓库设置，非代码）：开启 Immutable releases；为 `v*` tag 加 ruleset 限制创建者
 - 发布：安装包不做签名（已决定，Windows SmartScreen 会提示）；v0.1.2 及更早版本没有 latest.yml，需手动升级一次
-- 自制标题栏：Linux 上边缘调整大小、双击标题栏最大化依赖窗口管理器，待在真实 Ubuntu 桌面确认；Win11 悬停最大化按钮的贴靠布局菜单不再出现
+- 自制标题栏：Win11 悬停最大化按钮的贴靠布局菜单不再出现
 - 端口推断是启发式的：脚本里没写端口、也不是已知工具时不检查；`run-manager.ts` 已接近 400 行，下次改动时拆分
