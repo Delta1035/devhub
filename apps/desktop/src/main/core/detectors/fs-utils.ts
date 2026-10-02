@@ -8,7 +8,7 @@ export async function readOptionalFile(path: string): Promise<string | null> {
     return await readFile(path, 'utf8')
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null
-    throw new Error(`无法读取 ${basename(path)}：${(error as Error).message}`)
+    throw new Error(`无法读取 ${basename(path)}：${(error as Error).message}`, { cause: error })
   }
 }
 

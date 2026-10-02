@@ -7,7 +7,9 @@ const openSettings = async (page: import('@playwright/test').Page) => {
 
 test('settings apply at once and survive a restart', async ({ launchDevhub, createProject }) => {
   const dir = await createProject('app', { 'package.json': packageJson({ dev: 'node -v' }) })
-  let { app, page } = await launchDevhub()
+  const first = await launchDevhub()
+  const { app } = first
+  let { page } = first
   await addProjectViaApi(page, dir)
   await openSettings(page)
 
@@ -48,7 +50,7 @@ test('settings apply at once and survive a restart', async ({ launchDevhub, crea
     .toBe(18)
 
   await app.close()
-  ;({ app, page } = await launchDevhub())
+  page = (await launchDevhub()).page
   await expect(page.locator('html')).toHaveClass(/dark/)
   await openSettings(page)
   await expect(page.getByLabel('默认 shell')).toHaveValue(chosen)

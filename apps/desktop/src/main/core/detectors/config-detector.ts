@@ -36,7 +36,9 @@ export function createConfigDetector({ platform }: ConfigDetectorDeps): ScriptDe
       } catch (error) {
         const line = error instanceof YAMLParseError ? error.linePos?.[0]?.line : undefined
         const reason = error instanceof Error ? error.message.split('\n')[0] : String(error)
-        throw new Error(`${fileName}${line ? ` 第 ${line} 行` : ''}不是有效的 YAML：${reason}`)
+        throw new Error(`${fileName}${line ? ` 第 ${line} 行` : ''}不是有效的 YAML：${reason}`, {
+          cause: error
+        })
       }
 
       const parsed = projectConfigSchema.safeParse(raw)
