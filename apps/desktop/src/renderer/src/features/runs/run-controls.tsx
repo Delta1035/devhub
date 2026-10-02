@@ -1,7 +1,8 @@
 import { Loader2, Play, RotateCw, Square } from 'lucide-react'
-import type { Run } from '@devhub/shared'
+import type { Run, RunHealth } from '@devhub/shared'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
+import { healthLabels, useHealthOf } from './use-run-health'
 import { PortConflictError, useRestartRun, useStartScript, useStopRun } from './use-runs'
 
 interface RunControlsProps {
@@ -89,7 +90,22 @@ export function RunControls({
   )
 }
 
+/** Colors shared with the terminal tab dot: amber starting, green ready, red unhealthy. */
+const healthBadgeClass: Record<RunHealth['state'], string> = {
+  starting: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
+  ready: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
+  unhealthy: 'bg-destructive/15 text-destructive'
+}
+
 function RunStatusBadge({ run }: { run: Run }): React.JSX.Element {
+  const health = useHealthOf(run.status === 'running' ? run.id : undefined)
+  if (health) {
+    return (
+      <Badge className={healthBadgeClass[health.state]} title={`检查：${health.target}`}>
+        {healthLabels[health.state]}
+      </Badge>
+    )
+  }
   if (run.status === 'running') return <Badge>运行中</Badge>
   if (run.status === 'stopping') return <Badge variant="secondary">停止中</Badge>
   if (run.stopped) return <Badge variant="outline">已停止</Badge>

@@ -68,6 +68,9 @@ export function createConfigDetector({ platform }: ConfigDetectorDeps): ScriptDe
         }
 
         const ports = entry.ports ?? (entry.port ? [entry.port] : inferNpmPorts(command))
+        if (entry.health && ports.length === 0) {
+          throw new Error(`${fileName} 中脚本 ${name} 设置了 health，但不知道端口：请同时填写 port`)
+        }
         scripts.push({
           id: `custom:${name}`,
           name,
@@ -75,7 +78,8 @@ export function createConfigDetector({ platform }: ConfigDetectorDeps): ScriptDe
           command,
           ...(entry.cwd ? { cwd: entry.cwd } : {}),
           ...(entry.description ? { description: entry.description } : {}),
-          ...(ports.length > 0 ? { ports } : {})
+          ...(ports.length > 0 ? { ports } : {}),
+          ...(entry.health ? { healthPath: entry.health } : {})
         })
       }
       return scripts

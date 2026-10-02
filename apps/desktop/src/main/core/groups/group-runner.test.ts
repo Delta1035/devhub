@@ -99,6 +99,7 @@ describe('createGroupRunner', () => {
         return () => (listeners = listeners.filter((l) => l !== listener))
       },
       checkPort: async () => portOpen,
+      checkHttp: async () => false,
       emit
     })
   })

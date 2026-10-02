@@ -53,6 +53,19 @@ scripts:
     await expect(detect()).resolves.toMatchObject([{ ports: [5180] }])
   })
 
+  it('reads an HTTP health path, which needs a known port', async () => {
+    await write(
+      'scripts:\n  api:\n    command: java -jar app.jar\n    port: 8081\n    health: /actuator/health\n'
+    )
+    await expect(detect()).resolves.toMatchObject([
+      { ports: [8081], healthPath: '/actuator/health' }
+    ])
+    await write('scripts:\n  api:\n    command: java -jar app.jar\n    health: /status\n')
+    await expect(detect()).rejects.toThrow('脚本 api 设置了 health，但不知道端口：请同时填写 port')
+    await write('scripts:\n  api:\n    command: x\n    port: 1\n    health: status\n')
+    await expect(detect()).rejects.toThrow('scripts.api.health 必须以 / 开头且不含空白')
+  })
+
   it('also reads .devhub.yml', async () => {
     await write('scripts:\n  a:\n    command: echo a\n', '.devhub.yml')
     await expect(detect()).resolves.toMatchObject([{ id: 'custom:a' }])

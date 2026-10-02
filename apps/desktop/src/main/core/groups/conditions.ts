@@ -8,6 +8,8 @@ export interface ConditionDeps {
   getOutput: (runId: string) => string
   /** True when something accepts TCP connections on this local port. */
   checkPort: (port: number) => Promise<boolean>
+  /** True when a GET to the URL answers 2xx. */
+  checkHttp: (url: string) => Promise<boolean>
 }
 
 /** Thrown when a wait is cancelled (the group was stopped), as opposed to failing. */
@@ -26,12 +28,14 @@ export function describeCondition(condition: ContinueCondition): string {
       return condition.regex ? `等待输出匹配 /${condition.text}/` : `等待输出「${condition.text}」`
     case 'port':
       return `等待端口 ${condition.port} 可连接`
+    case 'http':
+      return `等待 ${condition.url} 返回成功`
     case 'delay':
       return `等待 ${condition.seconds} 秒`
   }
 }
 
-const portPollMs = 500
+const pollMs = 500
 // Keep enough recent output to match text split across chunks without growing forever.
 const outputTailLimit = 64 * 1024
 
@@ -105,12 +109,16 @@ export function waitForCondition(
     const current = deps.getRun(runId)
     if (current?.status === 'exited') return onExited(current)
 
-    if (condition.type === 'port') {
+    if (condition.type === 'port' || condition.type === 'http') {
+      const check =
+        condition.type === 'port'
+          ? () => deps.checkPort(condition.port)
+          : () => deps.checkHttp(condition.url)
       let timer: ReturnType<typeof setTimeout> | undefined
       const poll = async (): Promise<void> => {
-        const open = await deps.checkPort(condition.port).catch(() => false)
+        const open = await check().catch(() => false)
         if (open) finish()
-        else if (!settled) timer = setTimeout(() => void poll(), portPollMs)
+        else if (!settled) timer = setTimeout(() => void poll(), pollMs)
       }
       cleanups.push(() => clearTimeout(timer))
       void poll()

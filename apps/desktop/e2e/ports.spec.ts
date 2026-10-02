@@ -34,10 +34,10 @@ test('warns before starting a script whose port is taken, and can start it anywa
   const alert = page.getByRole('alert').filter({ hasText: '端口已被占用' })
   await expect(alert).toContainText(`端口 ${port} 已被`)
   await expect(alert).toContainText(`PID ${process.pid}`)
-  await expect(row.getByText('运行中')).toBeHidden()
+  await expect(row.getByRole('button', { name: '停止 dev' })).toBeHidden()
 
   await alert.getByRole('button', { name: '仍然启动' }).click()
   await expect(alert).toBeHidden()
-  await expect(row.getByText('运行中')).toBeVisible()
+  await expect(row.getByRole('button', { name: '停止 dev' })).toBeVisible()
   await expect(page.locator('.xterm-rows')).toContainText('started anyway')
 })

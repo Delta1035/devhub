@@ -1,5 +1,6 @@
 import type { Run } from './domain'
 import type { GroupRunState } from './groups'
+import type { RunHealth } from './health'
 import type { Settings } from './settings'
 
 /**
@@ -12,6 +13,8 @@ export type DevhubEvent =
   | { type: 'run-removed'; runId: string }
   | { type: 'run-output'; runId: string; offset: number; data: string }
   | { type: 'group-updated'; state: GroupRunState }
+  /** `health` is null once the run is no longer checked (stopping, exited, removed). */
+  | { type: 'run-health'; runId: string; health: RunHealth | null }
   | { type: 'settings-updated'; settings: Settings }
 
 export interface DevhubEvents {

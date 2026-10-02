@@ -37,6 +37,12 @@ export const continueConditionSchema = z.discriminatedUnion('type', [
     }),
   /** A TCP connection to this local port succeeds. */
   z.object({ type: z.literal('port'), port: z.number().int().min(1).max(65535), timeoutSeconds }),
+  /** A GET to this URL answers 2xx (health endpoints: `/actuator/health`, `/healthz`). */
+  z.object({
+    type: z.literal('http'),
+    url: z.url({ protocol: /^https?$/, error: '请填写 http:// 或 https:// 开头的地址' }).max(500),
+    timeoutSeconds
+  }),
   /** A fixed pause. */
   z.object({ type: z.literal('delay'), seconds: z.number().int().min(0).max(3600) })
 ])

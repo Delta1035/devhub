@@ -225,6 +225,7 @@ const configExample = `scripts:
     command: mvnw.cmd spring-boot:run -pl server
     description: 后端（server 模块）
     port: 8081
+    health: /actuator/health  # 返回 2xx 才算就绪；不写则只检查端口
   compose:
     command: docker compose up
     cwd: deploy

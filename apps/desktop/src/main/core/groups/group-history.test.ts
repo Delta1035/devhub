@@ -80,6 +80,7 @@ describe('group runner with history', () => {
       },
       subscribe: () => () => undefined,
       checkPort: async () => false,
+      checkHttp: async () => false,
       emit: () => undefined,
       history: createGroupHistory(store, () => at),
       now: () => at

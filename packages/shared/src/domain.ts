@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { healthPathSchema } from './health'
 
 /** Where a script was discovered. Each source maps to one detector in the desktop main process. */
 export const scriptSourceSchema = z.enum(['npm', 'maven', 'gradle', 'custom'])
@@ -14,7 +15,9 @@ export const scriptSchema = z.object({
   /** Human-readable detail, e.g. the raw npm script body. */
   description: z.string().optional(),
   /** Ports the script is expected to listen on (inferred), checked before it starts. */
-  ports: z.array(z.number().int().min(1).max(65535)).optional()
+  ports: z.array(z.number().int().min(1).max(65535)).optional(),
+  /** HTTP path checked on the first port to decide readiness; otherwise the ports are. */
+  healthPath: healthPathSchema.optional()
 })
 export type Script = z.infer<typeof scriptSchema>
 
@@ -121,7 +124,9 @@ export const projectConfigSchema = z
             description: z.string().optional(),
             /** Ports checked before starting; inferred from the command when omitted. */
             port: z.number().int().min(1).max(65535).optional(),
-            ports: z.array(z.number().int().min(1).max(65535)).optional()
+            ports: z.array(z.number().int().min(1).max(65535)).optional(),
+            /** HTTP path that must answer 2xx for the script to count as ready. */
+            health: healthPathSchema.optional()
           })
           .strict()
       )

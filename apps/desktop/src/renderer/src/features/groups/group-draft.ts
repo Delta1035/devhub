@@ -18,6 +18,7 @@ export interface DraftStep {
   text: string
   regex: boolean
   port: string
+  url: string
   seconds: string
   timeout: string
 }
@@ -29,12 +30,13 @@ export interface GroupDraft {
   steps: DraftStep[]
 }
 
-export const conditionTypes: ConditionType[] = ['output', 'exit', 'port', 'delay']
+export const conditionTypes: ConditionType[] = ['output', 'exit', 'port', 'http', 'delay']
 
 export const conditionLabels: Record<ConditionType, string> = {
   output: '输出中出现文字',
   exit: '进程成功退出',
   port: '端口可连接',
+  http: 'HTTP 返回成功',
   delay: '等待 N 秒'
 }
 
@@ -51,6 +53,7 @@ export function emptyStep(projectId = ''): DraftStep {
     text: '',
     regex: false,
     port: '',
+    url: '',
     seconds: '5',
     timeout: String(defaultTimeoutSeconds)
   }
@@ -70,6 +73,7 @@ export function draftFromGroup(group: Group): GroupDraft {
         text: condition.type === 'output' ? condition.text : '',
         regex: condition.type === 'output' && condition.regex === true,
         port: condition.type === 'port' ? String(condition.port) : '',
+        url: condition.type === 'http' ? condition.url : '',
         seconds: condition.type === 'delay' ? String(condition.seconds) : '5',
         timeout:
           condition.type === 'delay'
@@ -96,6 +100,8 @@ function conditionOf(step: DraftStep, mode: GroupMode): ContinueCondition {
       return { type: 'exit', timeoutSeconds }
     case 'port':
       return { type: 'port', port: Number(step.port), timeoutSeconds }
+    case 'http':
+      return { type: 'http', url: step.url.trim(), timeoutSeconds }
     case 'delay':
       return { type: 'delay', seconds: Number(step.seconds) }
   }
@@ -125,5 +131,7 @@ export function toGroupInput(draft: GroupDraft): { input: GroupInput } | { error
   const where = typeof index === 'number' ? `第 ${index + 1} 步：` : ''
   const regexIssue = parsed.error.issues.some((issue) => issue.message === '正则表达式无效')
   if (regexIssue) return { error: `${where}正则表达式无效` }
+  const urlIssue = parsed.error.issues.find((issue) => issue.path.at(-1) === 'url')
+  if (urlIssue) return { error: `${where}${urlIssue.message}` }
   return { error: `${where}请检查继续条件（文字不能为空，端口 1–65535，秒数与超时为正整数）` }
 }

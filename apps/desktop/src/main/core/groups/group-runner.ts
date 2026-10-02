@@ -28,6 +28,7 @@ export interface GroupRunnerDeps {
   runs: Pick<RunManager, 'start' | 'stop' | 'list' | 'output'>
   subscribe: (listener: (event: DevhubEvent) => void) => () => void
   checkPort: (port: number) => Promise<boolean>
+  checkHttp: (url: string) => Promise<boolean>
   emit: (event: DevhubEvent) => void
   /** Keeps the last result of each group across restarts. */
   history?: GroupHistory
@@ -47,7 +48,7 @@ const errorMessage = (error: unknown): string =>
  * A script that is already running is reused rather than started twice.
  */
 export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
-  const { groups, runs, subscribe, checkPort, emit } = deps
+  const { groups, runs, subscribe, checkPort, checkHttp, emit } = deps
   const executions = new Map<string, Execution>()
   const now = deps.now ?? (() => new Date())
 
@@ -169,7 +170,8 @@ export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
             subscribe,
             getRun: (runId) => runs.list().find((candidate) => candidate.id === runId),
             getOutput: (runId) => runs.output(runId).data,
-            checkPort
+            checkPort,
+            checkHttp
           },
           signal
         )

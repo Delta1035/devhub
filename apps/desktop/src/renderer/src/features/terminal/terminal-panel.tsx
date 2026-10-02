@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Maximize2, Minimize2, SquareTerminal, X } from 'lucide-react'
 import type { Run } from '@devhub/shared'
 import { Button } from '@renderer/components/ui/button'
+import { healthLabels, useHealthOf } from '@renderer/features/runs/use-run-health'
 import { useRuns } from '@renderer/features/runs/use-runs'
 import { cn } from '@renderer/lib/utils'
 import { NewTerminalButton } from './new-terminal-button'
@@ -129,6 +130,7 @@ function RunTab({ run, selected, closing, onSelect, onClose }: RunTabProps): Rea
   // A shell can be closed any time (that ends it); a script only once it has exited, so a
   // running server is never stopped by a stray click on a tab.
   const closable = exited || run.kind === 'shell'
+  const health = useHealthOf(run.status === 'running' ? run.id : undefined)
 
   return (
     <div
@@ -147,9 +149,12 @@ function RunTab({ run, selected, closing, onSelect, onClose }: RunTabProps): Rea
         )}
       >
         <span
+          title={health ? `${healthLabels[health.state]}（${health.target}）` : undefined}
           className={cn(
             'size-2 rounded-full',
             run.status === 'running' && 'bg-emerald-500',
+            health?.state === 'starting' && 'bg-amber-500',
+            health?.state === 'unhealthy' && 'bg-destructive',
             run.status === 'stopping' && 'animate-pulse bg-amber-500',
             exited && (failed ? 'bg-destructive' : 'bg-muted-foreground/40')
           )}

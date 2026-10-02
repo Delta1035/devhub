@@ -24,6 +24,7 @@ describe('waitForCondition', () => {
   let current: Run
   let output: string
   let portOpen: boolean
+  let healthyUrls: Set<string>
   let controller: AbortController
 
   beforeEach(() => {
@@ -32,6 +33,7 @@ describe('waitForCondition', () => {
     current = run()
     output = ''
     portOpen = false
+    healthyUrls = new Set()
     controller = new AbortController()
   })
 
@@ -46,7 +48,8 @@ describe('waitForCondition', () => {
     },
     getRun: () => current,
     getOutput: () => output,
-    checkPort: async () => portOpen
+    checkPort: async () => portOpen,
+    checkHttp: async (url) => healthyUrls.has(url)
   }
   const emit = (event: DevhubEvent): void => listeners.forEach((listener) => listener(event))
   const exit = (exitCode: number): void => {
@@ -125,6 +128,22 @@ describe('waitForCondition', () => {
     portOpen = true
     await vi.advanceTimersByTimeAsync(500)
     await expect(result).resolves.toBe('ok')
+  })
+
+  it('polls the URL until it answers 2xx', async () => {
+    const url = 'http://localhost:8080/actuator/health'
+    const result = settle(wait({ type: 'http', url, timeoutSeconds: 10 }))
+    await vi.advanceTimersByTimeAsync(1500)
+    healthyUrls.add(url)
+    await vi.advanceTimersByTimeAsync(500)
+    await expect(result).resolves.toBe('ok')
+  })
+
+  it('fails when the URL never answers 2xx in time', async () => {
+    const result = settle(wait({ type: 'http', url: 'http://localhost:1/x', timeoutSeconds: 2 }))
+    await vi.advanceTimersByTimeAsync(2000)
+    await expect(result).resolves.toBe('等待超时（2 秒）')
+    expect(listeners).toEqual([])
   })
 
   it('waits a fixed delay', async () => {

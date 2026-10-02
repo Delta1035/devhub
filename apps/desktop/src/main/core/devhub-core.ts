@@ -12,6 +12,9 @@ import { createEditorService } from './editors/editor-service'
 import { createEditorLocator } from './editors/editor-locator'
 import { isFile } from './fs/is-file'
 import { systemDeps, writeFileEnsuringDir } from './fs/system-deps'
+import { createHealthMonitor } from './health/health-monitor'
+import { healthTargetOf } from './health/health-target'
+import { checkHttpOk, checkLocalHttp } from './net/http-check'
 import { checkLocalPort } from './net/local-port'
 import { createPortGuard } from './ports/port-guard'
 import { createPortOwnerFinder } from './ports/port-owner'
@@ -157,6 +160,7 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     runs,
     subscribe: (listener) => events.subscribe(listener),
     checkPort: checkLocalPort,
+    checkHttp: (url) => checkHttpOk(url),
     emit: (event) => events.emit(event),
     history: createGroupHistory(
       createJsonStore({
@@ -165,6 +169,17 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
         fallback: emptyGroupHistoryFile
       })
     )
+  })
+
+  const health = createHealthMonitor({
+    subscribe: (listener) => events.subscribe(listener),
+    resolveTarget: async (run) =>
+      healthTargetOf((await scripts.find(run.projectId, run.scriptId)).script),
+    checkers: {
+      checkPort: checkLocalPort,
+      checkHttp: (port, path) => checkLocalHttp(port, path)
+    },
+    emit: (event) => events.emit(event)
   })
 
   return {
@@ -186,6 +201,7 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     listOrphanedRuns: () => runRegistry.orphans(),
     killOrphanedRuns: () => runRegistry.killOrphans(),
     dismissOrphanedRuns: () => runRegistry.dismissOrphans(),
+    listRunHealth: async () => health.list(),
     getRunOutput: async (runId) => runs.output(runId),
     writeRunInput: async (runId, data) => runs.writeInput(runId, data),
     resizeRun: async (runId, cols, rows) => runs.resize(runId, cols, rows),
@@ -208,6 +224,7 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     dispose: async () => {
       // Cancel sequences first so no step starts while the runs are being stopped.
       groupRunner.dispose()
+      health.dispose()
       await runs.dispose()
     }
   }

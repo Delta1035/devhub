@@ -143,6 +143,15 @@ export function GroupStepRow({
               onChange={(event) => update({ port: event.target.value })}
             />
           )}
+          {step.type === 'http' && (
+            <Input
+              aria-label={`${label}的地址`}
+              className="h-8 w-72"
+              placeholder="http://localhost:8080/actuator/health"
+              value={step.url}
+              onChange={(event) => update({ url: event.target.value })}
+            />
+          )}
           {step.type === 'delay' ? (
             <>
               <Input

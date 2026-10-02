@@ -32,6 +32,8 @@ describe('continueConditionSchema', () => {
     [{ type: 'exit', timeoutSeconds: 60 }],
     [{ type: 'output', text: 'Started Application', timeoutSeconds: 120 }],
     [{ type: 'port', port: 8080, timeoutSeconds: 120 }],
+    [{ type: 'http', url: 'http://localhost:8080/actuator/health', timeoutSeconds: 120 }],
+    [{ type: 'http', url: 'https://api.example.test/healthz', timeoutSeconds: 120 }],
     [{ type: 'delay', seconds: 0 }]
   ])('accepts %o', (condition) => {
     expect(continueConditionSchema.safeParse(condition).success).toBe(true)
@@ -42,9 +44,23 @@ describe('continueConditionSchema', () => {
     [{ type: 'port', port: 70000, timeoutSeconds: 120 }],
     [{ type: 'exit', timeoutSeconds: 0 }],
     [{ type: 'delay', seconds: -1 }],
-    [{ type: 'http' }]
+    [{ type: 'http' }],
+    [{ type: 'http', url: 'localhost:8080', timeoutSeconds: 120 }],
+    [{ type: 'http', url: 'file:///etc/passwd', timeoutSeconds: 120 }],
+    [{ type: 'http', url: 'javascript:alert(1)', timeoutSeconds: 120 }]
   ])('rejects %o', (condition) => {
     expect(continueConditionSchema.safeParse(condition).success).toBe(false)
+  })
+})
+
+describe('http condition', () => {
+  it('explains a URL without http:// or https://', () => {
+    const parsed = continueConditionSchema.safeParse({
+      type: 'http',
+      url: 'localhost:8080/health',
+      timeoutSeconds: 120
+    })
+    expect(parsed.error?.issues[0]?.message).toBe('请填写 http:// 或 https:// 开头的地址')
   })
 })
 

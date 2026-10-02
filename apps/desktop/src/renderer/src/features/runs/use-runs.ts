@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query'
 import { describePortConflicts, type PortConflict, type Run } from '@devhub/shared'
 import { api, events } from '@renderer/api'
+import { applyHealthEvent } from './use-run-health'
 
 const runsKey = ['runs'] as const
 
@@ -39,6 +40,8 @@ export function useRunEventsSync(): void {
           queryClient.setQueryData<Run[]>(runsKey, (runs = []) =>
             runs.filter((run) => run.id !== event.runId)
           )
+        } else if (event.type === 'run-health') {
+          applyHealthEvent(queryClient, event)
         }
       }),
     [queryClient]

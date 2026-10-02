@@ -86,11 +86,16 @@
   - E2E 1 个（最大化 / 还原 / 最小化，关闭后隐藏到托盘；CI 的 xvfb 无窗口管理器只测关闭）；深浅色与关闭悬停已截图确认
 - 真实 Linux 桌面验证（Linux Mint 22.2 / Ubuntu 24.04 基础，X11 + Cinnamon，Node 24）：`pnpm check` 全部通过（含 Linux 杀进程树、SIGHUP 的真实进程集成测试），E2E 20 个通过（崩溃遗留进程用例跳过：pty 关闭时 SIGHUP 已结束脚本），AppImage + deb 打包成功、`pty.node` 从源码编译并正确解包
   - 打包版手动确认：无系统边框、拖动标题栏移动与贴靠、双击标题栏最大化 / 还原、边缘与四角调整大小、关闭隐藏到托盘并可唤回、Super+方向键贴靠
+- 拆分 `run-manager.ts`（375 → 250 行）：启动一个运行移到 `run-entry.ts`，两阶段停止移到 `stop-run.ts`；纯重构，原测试未改
+- 健康检查（M3，ADR 0011）：运行中的脚本显示启动中 / 就绪 / 无响应，悬停显示检查目标，终端标签圆点同色；默认检查推断出的端口，`.devhub.yaml` 写 `health: /路径` 改为 HTTP 2xx；就绪后连续 3 次失败转为无响应
+  - `core/health/` 订阅运行事件、独立于 RunManager；事件 `run-health` + API `listRunHealth`；HTTP 检查用 Node 自带 fetch，无新依赖
+  - 批量执行新增继续条件「HTTP 返回成功」（http / https 地址，2xx）
+  - 测试：状态机（假时钟）、检查目标、真实 HTTP 服务（2xx / 404 / 重定向 / 超时）、配置字段、条件；E2E 1 个（先监听但返回 503 → 仍为启动中 → 2xx 后就绪 → 停止后徽标消失）
 
 ### 下一步（M1）
 
 1. 发布一个新版本（含 latest.yml），再发布下一个版本，实测自动更新全流程
-2. M3：健康检查（端口 / HTTP，脚本显示启动中 / 就绪 / 无响应）→ 运行历史（每个脚本最近 N 次）
+2. M3：运行历史（每个脚本最近 N 次的开始时间、时长、退出码）
 3. 技术债：E2E 中版本号显示为 Electron 版本；Linux 安装包多带了 Windows / macOS 的 `pty.node` 预编译包
 4. 脚本识别：monorepo 子包 lockfile、Maven 多模块、Gradle 多项目
 5. M4 远程暂缓，等以上完成后再评估
