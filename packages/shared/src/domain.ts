@@ -77,14 +77,6 @@ export const runSchema = z.discriminatedUnion('kind', [
 ])
 export type Run = z.infer<typeof runSchema>
 
-/** A named set of overrides used to point a project at a different backend. */
-export const profileSchema = z.object({
-  name: z.string().min(1),
-  env: z.record(z.string(), z.string()).default({}),
-  args: z.array(z.string()).default([])
-})
-export type Profile = z.infer<typeof profileSchema>
-
 /** Schema of the optional `.devhub.yaml` file committed in a managed project. */
 export const projectConfigSchema = z.object({
   scripts: z
@@ -95,8 +87,7 @@ export const projectConfigSchema = z.object({
         cwd: z.string().optional()
       })
     )
-    .default({}),
-  profiles: z.array(profileSchema).default([])
+    .default({})
 })
 export type ProjectConfig = z.infer<typeof projectConfigSchema>
 

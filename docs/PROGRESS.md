@@ -74,7 +74,7 @@
 ### 下一步（M1）
 
 1. monorepo 子包 / 多模块项目的脚本识别（暂缓）；M2（暂缓）
-2. 推送后确认 CI 在 Windows + Ubuntu 都通过（Linux 上的杀进程树集成测试、E2E 与打包都是首次运行），然后 M1 收尾、规划 M2（Profile、`.devhub.yaml`）
+2. 推送后确认 CI 在 Windows + Ubuntu 都通过（Linux 上的杀进程树集成测试、E2E 与打包都是首次运行）
 
 ### 已知问题 / 待定
 

@@ -3,20 +3,14 @@ import { projectConfigSchema } from './domain'
 
 describe('projectConfigSchema', () => {
   it('fills defaults for an empty config', () => {
-    expect(projectConfigSchema.parse({})).toEqual({ scripts: {}, profiles: [] })
+    expect(projectConfigSchema.parse({})).toEqual({ scripts: {} })
   })
 
-  it('parses custom scripts and profiles', () => {
+  it('parses custom scripts', () => {
     const config = projectConfigSchema.parse({
-      scripts: { api: { command: 'mvn spring-boot:run', cwd: 'server' } },
-      profiles: [{ name: 'staging', env: { API_URL: 'https://staging.example.com' } }]
+      scripts: { api: { command: 'mvn spring-boot:run', cwd: 'server' } }
     })
     expect(config.scripts.api?.cwd).toBe('server')
-    expect(config.profiles[0]).toEqual({
-      name: 'staging',
-      env: { API_URL: 'https://staging.example.com' },
-      args: []
-    })
   })
 
   it('rejects a script without a command', () => {

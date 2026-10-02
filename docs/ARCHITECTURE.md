@@ -71,9 +71,8 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 | Script         | 可运行命令，来源：npm / maven / gradle / custom                                           |
 | ProjectScripts | 扫描结果：`status`（ok/missing）、脚本、探测器警告                                        |
 | Group          | 批量任务：跨项目的脚本列表，并行或串行（带继续条件）；存于 `groups.json`                  |
-| Profile        | 一组环境变量与参数覆盖，用于切换对接的后端                                                |
 | Run            | 终端标签里的一个进程：`script`（识别出的脚本）或 `shell`（交互式终端）；状态、PID、退出码 |
-| `.devhub.yaml` | 项目内可选配置：自定义脚本 + Profile                                                      |
+| `.devhub.yaml` | 项目内可选配置：自定义脚本（规划中）                                                      |
 
 ## 脚本探测
 

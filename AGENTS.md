@@ -1,6 +1,6 @@
 # DevHub — AI 协作规则
 
-DevHub 是一个桌面客户端：自动发现本地项目中的脚本（npm / maven / gradle / 自定义），统一启动、停止、查看日志，并通过 Profile 一键切换对接的后端。目标平台：Windows、Ubuntu；后续 Android 远程管理。
+DevHub 是一个桌面客户端：自动发现本地项目中的脚本（npm / maven / gradle / 自定义），统一启动、停止、查看日志，在内置终端中执行命令，并可把多个项目的脚本组成批量任务一键启动。目标平台：Windows、Ubuntu；后续 Android 远程管理。
 
 开始任何任务前先读：`docs/PROGRESS.md`（当前进度）→ `docs/ARCHITECTURE.md`（结构与边界）→ 需要时读 `docs/PRD.md`。
 
