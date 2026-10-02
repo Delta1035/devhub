@@ -1,0 +1,131 @@
+import { FolderX, TriangleAlert } from 'lucide-react'
+import type { Project, Script, ScriptSource } from '@devhub/shared'
+import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
+import { Badge } from '@renderer/components/ui/badge'
+import { Skeleton } from '@renderer/components/ui/skeleton'
+import { useProjectScripts } from './use-scripts'
+
+const sourceLabels: Record<ScriptSource, string> = {
+  npm: 'npm',
+  maven: 'Maven',
+  gradle: 'Gradle',
+  custom: '自定义'
+}
+
+export function ScriptList({ project }: { project: Project }): React.JSX.Element {
+  const scripts = useProjectScripts(project.id)
+
+  if (scripts.isPending) {
+    return (
+      <div className="flex flex-col gap-2">
+        {[0, 1, 2].map((key) => (
+          <Skeleton key={key} className="h-12" />
+        ))}
+      </div>
+    )
+  }
+
+  if (scripts.isError) {
+    return (
+      <Alert variant="destructive">
+        <TriangleAlert />
+        <AlertTitle>无法读取脚本</AlertTitle>
+        <AlertDescription>{scripts.error.message}</AlertDescription>
+      </Alert>
+    )
+  }
+
+  const { status, scripts: items, warnings } = scripts.data
+  if (status === 'missing') {
+    return (
+      <Alert variant="destructive">
+        <FolderX />
+        <AlertTitle>项目目录不存在</AlertTitle>
+        <AlertDescription>
+          {project.path} 已被删除或移动。可以在左侧移除该项目后重新添加。
+        </AlertDescription>
+      </Alert>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {warnings.length > 0 && (
+        <Alert>
+          <TriangleAlert />
+          <AlertTitle>部分脚本未能识别</AlertTitle>
+          <AlertDescription>
+            <ul>
+              {warnings.map((warning) => (
+                <li key={warning.source}>
+                  {sourceLabels[warning.source]}：{warning.message}
+                </li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {items.length === 0 && warnings.length === 0 && (
+        <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+          没有识别到脚本。目前支持 package.json（npm / pnpm / yarn）、pom.xml（Maven）和
+          build.gradle（Gradle）。
+        </p>
+      )}
+
+      {groupBySource(items).map(([source, group]) => (
+        <ScriptGroup key={source} source={source} scripts={group} />
+      ))}
+    </div>
+  )
+}
+
+function ScriptGroup({
+  source,
+  scripts
+}: {
+  source: ScriptSource
+  scripts: Script[]
+}): React.JSX.Element {
+  // All scripts of one source share the executable, e.g. "pnpm" or "mvnw.cmd".
+  const executable = scripts[0]?.command.split(' ')[0]
+
+  return (
+    <section className="flex flex-col gap-2">
+      <h3 className="flex items-center gap-2 text-sm font-semibold">
+        {sourceLabels[source]}
+        {executable && <Badge variant="secondary">{executable}</Badge>}
+      </h3>
+      <ul className="divide-y rounded-lg border bg-card">
+        {scripts.map((script) => (
+          <li key={script.id} className="flex items-baseline gap-4 px-4 py-2.5">
+            <span className="w-40 shrink-0 truncate font-medium" title={script.name}>
+              {script.name}
+            </span>
+            <div className="min-w-0 flex-1">
+              <code className="block truncate font-mono text-xs" title={script.command}>
+                {script.command}
+              </code>
+              {script.description && (
+                <p className="truncate text-xs text-muted-foreground" title={script.description}>
+                  {script.description}
+                </p>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+/** Keeps the order the core returned, which is detector order. */
+function groupBySource(scripts: Script[]): [ScriptSource, Script[]][] {
+  const groups = new Map<ScriptSource, Script[]>()
+  for (const script of scripts) {
+    const group = groups.get(script.source)
+    if (group) group.push(script)
+    else groups.set(script.source, [script])
+  }
+  return [...groups]
+}

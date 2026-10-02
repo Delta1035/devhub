@@ -3,9 +3,15 @@ import type { Project } from '@devhub/shared'
 import { shell } from '@renderer/api'
 import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
+import { cn } from '@renderer/lib/utils'
 import { useAddProject, useProjects, useRemoveProject } from './use-projects'
 
-export function ProjectList(): React.JSX.Element {
+interface ProjectListProps {
+  selectedId: string | null
+  onSelect: (projectId: string) => void
+}
+
+export function ProjectList({ selectedId, onSelect }: ProjectListProps): React.JSX.Element {
   const projects = useProjects()
   const addProject = useAddProject()
   const removeProject = useRemoveProject()
@@ -13,17 +19,17 @@ export function ProjectList(): React.JSX.Element {
 
   const handleAdd = async (): Promise<void> => {
     const path = await shell?.pickDirectory()
-    if (path) addProject.mutate(path)
+    if (path) addProject.mutate(path, { onSuccess: (project) => onSelect(project.id) })
   }
 
   return (
-    <section className="flex flex-col gap-4">
+    <section className="flex flex-col gap-3">
       <header className="flex items-center justify-between">
-        <h2 className="font-heading text-lg font-semibold">项目</h2>
+        <h2 className="font-heading text-sm font-semibold">项目</h2>
         {shell && (
-          <Button onClick={handleAdd} disabled={addProject.isPending}>
+          <Button size="sm" onClick={handleAdd} disabled={addProject.isPending}>
             <FolderPlus data-icon="inline-start" />
-            添加项目
+            添加
           </Button>
         )}
       </header>
@@ -36,16 +42,18 @@ export function ProjectList(): React.JSX.Element {
       )}
 
       {projects.data?.length === 0 && (
-        <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-          还没有项目。点击「添加项目」选择一个代码目录。
+        <p className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
+          还没有项目。点击「添加」选择一个代码目录。
         </p>
       )}
 
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col gap-1">
         {projects.data?.map((project) => (
           <ProjectItem
             key={project.id}
             project={project}
+            selected={project.id === selectedId}
+            onSelect={() => onSelect(project.id)}
             onRemove={() => removeProject.mutate(project.id)}
             removing={removeProject.isPending && removeProject.variables === project.id}
           />
@@ -57,27 +65,48 @@ export function ProjectList(): React.JSX.Element {
 
 interface ProjectItemProps {
   project: Project
+  selected: boolean
+  onSelect: () => void
   onRemove: () => void
   removing: boolean
 }
 
-function ProjectItem({ project, onRemove, removing }: ProjectItemProps): React.JSX.Element {
+function ProjectItem({
+  project,
+  selected,
+  onSelect,
+  onRemove,
+  removing
+}: ProjectItemProps): React.JSX.Element {
   return (
-    <li className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
-      <FolderGit2 className="size-5 shrink-0 text-muted-foreground" />
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">{project.name}</p>
-        <p className="truncate text-xs text-muted-foreground" title={project.path}>
-          {project.path}
-        </p>
-      </div>
+    <li
+      className={cn(
+        'group flex items-center gap-1 rounded-lg pr-1 hover:bg-muted',
+        selected && 'bg-muted'
+      )}
+    >
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-current={selected ? 'true' : undefined}
+        className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <FolderGit2 className="size-4 shrink-0 text-muted-foreground" />
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-medium">{project.name}</span>
+          <span className="block truncate text-xs text-muted-foreground" title={project.path}>
+            {project.path}
+          </span>
+        </span>
+      </button>
       <Button
         variant="ghost"
-        size="icon-sm"
+        size="icon-xs"
         onClick={onRemove}
         disabled={removing}
         title="从 DevHub 移除（不会删除文件）"
         aria-label={`移除 ${project.name}`}
+        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
       >
         <X />
       </Button>

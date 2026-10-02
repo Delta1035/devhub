@@ -20,7 +20,7 @@ devhub/                        pnpm monorepo
 │       ├── preload/           暴露 window.devhub（DevhubApi）与 window.devhubShell（ShellApi）
 │       └── renderer/src/      React UI
 │           ├── api/           ★ UI 访问核心的唯一入口
-│           ├── features/<x>/  按功能组织：组件 + hooks
+│           ├── features/<x>/  按功能组织：组件 + hooks（projects、scripts、terminal）
 │           ├── components/ui/ shadcn 生成的组件（由 CLI 管理，不手改）
 │           └── lib/           工具函数
 └── packages/shared/           平台无关：API 契约、领域模型（zod schema）、错误类型
