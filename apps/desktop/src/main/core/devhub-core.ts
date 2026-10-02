@@ -15,6 +15,11 @@ import { systemDeps, writeFileEnsuringDir } from './fs/system-deps'
 import { checkLocalPort } from './net/local-port'
 import { createPortGuard } from './ports/port-guard'
 import { createPortOwnerFinder } from './ports/port-owner'
+import {
+  createGroupHistory,
+  emptyGroupHistoryFile,
+  groupHistoryFileSchema
+} from './groups/group-history'
 import { createGroupRunner } from './groups/group-runner'
 import { createGroupService, emptyGroupsFile, groupsFileSchema } from './groups/group-service'
 import { createEventBus } from './events/event-bus'
@@ -147,7 +152,14 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     runs,
     subscribe: (listener) => events.subscribe(listener),
     checkPort: checkLocalPort,
-    emit: (event) => events.emit(event)
+    emit: (event) => events.emit(event),
+    history: createGroupHistory(
+      createJsonStore({
+        filePath: join(env.dataDir, 'group-history.json'),
+        schema: groupHistoryFileSchema,
+        fallback: emptyGroupHistoryFile
+      })
+    )
   })
 
   return {
@@ -180,10 +192,11 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     deleteGroup: async (groupId) => {
       await groupRunner.stop(groupId).catch(() => undefined)
       await groupService.remove(groupId)
+      if (typeof groupId === 'string') await groupRunner.forget(groupId)
     },
     startGroup: (groupId) => groupRunner.start(groupId),
     stopGroup: (groupId) => groupRunner.stop(groupId),
-    listGroupStates: async () => groupRunner.states(),
+    listGroupStates: () => groupRunner.states(),
     listEditors: () => editors.list(),
     openInEditor: (projectId, editor) => editors.open(projectId, editor),
     subscribe: (listener) => events.subscribe(listener),

@@ -4,6 +4,15 @@ import { z } from 'zod'
  * Batch runs ("groups"): a named list of scripts, possibly from several projects, started
  * together in parallel or one after another.
  */
+function isValidRegex(source: string): boolean {
+  try {
+    new RegExp(source)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export const groupModeSchema = z.enum(['parallel', 'serial'])
 export type GroupMode = z.infer<typeof groupModeSchema>
 
@@ -14,7 +23,18 @@ export const continueConditionSchema = z.discriminatedUnion('type', [
   /** The script exits with code 0 (installs, builds, migrations). */
   z.object({ type: z.literal('exit'), timeoutSeconds }),
   /** The script prints this text (servers: "Started Application", "ready in"). */
-  z.object({ type: z.literal('output'), text: z.string().trim().min(1).max(200), timeoutSeconds }),
+  z
+    .object({
+      type: z.literal('output'),
+      text: z.string().trim().min(1).max(200),
+      /** Treat `text` as a regular expression, e.g. `Started .* in \d+`. */
+      regex: z.boolean().optional(),
+      timeoutSeconds
+    })
+    .refine((condition) => !condition.regex || isValidRegex(condition.text), {
+      message: '正则表达式无效',
+      path: ['text']
+    }),
   /** A TCP connection to this local port succeeds. */
   z.object({ type: z.literal('port'), port: z.number().int().min(1).max(65535), timeoutSeconds }),
   /** A fixed pause. */
@@ -59,6 +79,8 @@ export type GroupStepState = z.infer<typeof groupStepStateSchema>
 export const groupRunStateSchema = z.object({
   groupId: z.string(),
   status: z.enum(['running', 'done', 'failed', 'stopped']),
+  /** When the execution ended; absent while running. */
+  finishedAt: z.iso.datetime().optional(),
   steps: z.array(
     z.object({
       stepId: z.string(),

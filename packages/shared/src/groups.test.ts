@@ -47,3 +47,19 @@ describe('continueConditionSchema', () => {
     expect(continueConditionSchema.safeParse(condition).success).toBe(false)
   })
 })
+
+describe('output condition regex', () => {
+  it('accepts a valid regex and rejects an invalid one', () => {
+    const base = { type: 'output', timeoutSeconds: 60, regex: true }
+    const text = String.raw`Started .* in \d+`
+    expect(continueConditionSchema.safeParse({ ...base, text }).success).toBe(true)
+    expect(continueConditionSchema.safeParse({ ...base, text: 'ready (' }).success).toBe(false)
+  })
+
+  it('does not validate plain text as a regex', () => {
+    expect(
+      continueConditionSchema.safeParse({ type: 'output', text: 'ready (', timeoutSeconds: 60 })
+        .success
+    ).toBe(true)
+  })
+})

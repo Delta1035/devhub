@@ -113,10 +113,25 @@ export function GroupStepRow({
             <Input
               aria-label={`${label}等待的文字`}
               className="h-8 w-56"
-              placeholder="如 Started Application / ready in"
+              placeholder={
+                step.regex
+                  ? String.raw`如 Started \w+ in [\d.]+`
+                  : '如 Started Application / ready in'
+              }
               value={step.text}
               onChange={(event) => update({ text: event.target.value })}
             />
+          )}
+          {step.type === 'output' && (
+            <label className="flex items-center gap-1 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                aria-label={`${label}使用正则`}
+                checked={step.regex}
+                onChange={(event) => update({ regex: event.target.checked })}
+              />
+              正则
+            </label>
           )}
           {step.type === 'port' && (
             <Input

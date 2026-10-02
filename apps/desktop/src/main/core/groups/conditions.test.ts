@@ -71,6 +71,20 @@ describe('waitForCondition', () => {
     expect(listeners).toEqual([])
   })
 
+  it('matches a regular expression against colorless output', async () => {
+    const result = settle(
+      wait({ type: 'output', text: 'Started \\w+ in [\\d.]+ s', regex: true, timeoutSeconds: 10 })
+    )
+    emit({ type: 'run-output', runId: 'r1', offset: 0, data: 'Started (ignored)\n' })
+    emit({
+      type: 'run-output',
+      runId: 'r1',
+      offset: 0,
+      data: '\x1b[32mStarted Api\x1b[0m in 3.2 s'
+    })
+    await expect(result).resolves.toBe('ok')
+  })
+
   it('succeeds at once when the text was already printed', async () => {
     output = 'Started Application in 3.2s'
     await expect(

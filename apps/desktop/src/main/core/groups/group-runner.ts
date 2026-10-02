@@ -9,12 +9,16 @@ import {
 } from '@devhub/shared'
 import type { RunManager } from '../process/run-manager'
 import { describeCondition, waitForCondition, WaitCancelledError } from './conditions'
+import type { GroupHistory } from './group-history'
 import type { GroupService } from './group-service'
 
 export interface GroupRunner {
   start(groupId: unknown): Promise<GroupRunState>
   stop(groupId: unknown): Promise<void>
-  states(): GroupRunState[]
+  /** Latest state of each group, including results restored from earlier sessions. */
+  states(): Promise<GroupRunState[]>
+  /** Drops a deleted group's state. */
+  forget(groupId: string): Promise<void>
   /** Cancels running sequences (the runs themselves are stopped by the RunManager). */
   dispose(): void
 }
@@ -25,6 +29,9 @@ export interface GroupRunnerDeps {
   subscribe: (listener: (event: DevhubEvent) => void) => () => void
   checkPort: (port: number) => Promise<boolean>
   emit: (event: DevhubEvent) => void
+  /** Keeps the last result of each group across restarts. */
+  history?: GroupHistory
+  now?: () => Date
 }
 
 interface Execution {
@@ -42,6 +49,27 @@ const errorMessage = (error: unknown): string =>
 export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
   const { groups, runs, subscribe, checkPort, emit } = deps
   const executions = new Map<string, Execution>()
+  const now = deps.now ?? (() => new Date())
+
+  // Results of earlier sessions; an execution in this session replaces its group's entry.
+  const restored = new Map<string, GroupRunState>()
+  const ready = (deps.history?.load() ?? Promise.resolve([]))
+    .then((states) => states.forEach((state) => restored.set(state.groupId, state)))
+    .catch((error: unknown) => console.warn('[groups] could not load history', error))
+
+  const latestStates = (): GroupRunState[] => {
+    const states = new Map(restored)
+    for (const [groupId, execution] of executions) states.set(groupId, execution.state)
+    return [...states.values()].map((state) => structuredClone(state))
+  }
+
+  const persist = (): void => {
+    if (!deps.history) return
+    const finished = latestStates().filter((state) => state.status !== 'running')
+    deps.history.save(finished).catch((error: unknown) => {
+      console.warn('[groups] could not save history', error)
+    })
+  }
 
   const activeRunOf = (step: GroupStep): Run | undefined =>
     runs
@@ -78,7 +106,9 @@ export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
       }
     }
     execution.state.status = status
+    execution.state.finishedAt = now().toISOString()
     publish(execution)
+    persist()
   }
 
   /** Reuses an active run of the script, or starts it. */
@@ -192,7 +222,18 @@ export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
       if (execution?.state.status === 'running') finish(execution, 'stopped')
     },
 
-    states: () => [...executions.values()].map((execution) => structuredClone(execution.state)),
+    async states() {
+      await ready
+      return latestStates()
+    },
+
+    async forget(groupId) {
+      await ready
+      executions.get(groupId)?.controller.abort()
+      executions.delete(groupId)
+      restored.delete(groupId)
+      persist()
+    },
 
     dispose() {
       for (const execution of executions.values()) execution.controller.abort()

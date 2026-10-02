@@ -23,7 +23,7 @@ export function describeCondition(condition: ContinueCondition): string {
     case 'exit':
       return '等待进程成功退出'
     case 'output':
-      return `等待输出「${condition.text}」`
+      return condition.regex ? `等待输出匹配 /${condition.text}/` : `等待输出「${condition.text}」`
     case 'port':
       return `等待端口 ${condition.port} 可连接`
     case 'delay':
@@ -81,8 +81,14 @@ export function waitForCondition(
     }
 
     let outputTail = deps.getOutput(runId).slice(-outputTailLimit)
-    const outputMatches = (): boolean =>
-      condition.type === 'output' && stripAnsi(outputTail).includes(condition.text)
+    // Validated when the group was saved; compiled once per wait.
+    const pattern =
+      condition.type === 'output' && condition.regex ? new RegExp(condition.text) : null
+    const outputMatches = (): boolean => {
+      if (condition.type !== 'output') return false
+      const text = stripAnsi(outputTail)
+      return pattern ? pattern.test(text) : text.includes(condition.text)
+    }
 
     const unsubscribe = deps.subscribe((event) => {
       if (event.type === 'run-output' && event.runId === runId && condition.type === 'output') {

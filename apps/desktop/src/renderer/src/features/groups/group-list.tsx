@@ -145,7 +145,11 @@ function GroupItem({
               state?.status === 'failed' && 'text-destructive'
             )}
           >
-            {state ? statusLabels[state.status] : `${group.steps.length} 个脚本`}
+            {state
+              ? [statusLabels[state.status], state.finishedAt && formatFinished(state.finishedAt)]
+                  .filter(Boolean)
+                  .join(' · ')
+              : `${group.steps.length} 个脚本`}
           </p>
         </div>
         <Button
@@ -231,4 +235,13 @@ function StepIcon({ state }: { state: GroupStepState }): React.JSX.Element {
     default:
       return <CircleDashed className={cn(className, 'text-muted-foreground')} aria-label="未开始" />
   }
+}
+
+/** "10:32" today, "10月1日 10:32" otherwise. */
+function formatFinished(iso: string): string {
+  const date = new Date(iso)
+  const time = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  return date.toDateString() === new Date().toDateString()
+    ? time
+    : `${date.getMonth() + 1}月${date.getDate()}日 ${time}`
 }

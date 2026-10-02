@@ -106,3 +106,34 @@ test('a failing serial step stops the sequence and explains why', async ({
   const runs = await listRuns(page)
   expect(runs.map((run) => run.title)).toEqual(['build'])
 })
+
+test('waits for a regex in the output and remembers the result after a restart', async ({
+  launchDevhub,
+  createProject
+}) => {
+  const dir = await createProject('api', {
+    'package.json': packageJson({ serve: 'node server.js' }),
+    'server.js': slowServer('Started ApiApplication in 1.23 seconds', 300)
+  })
+  let { app, page } = await launchDevhub()
+  await addProjectViaApi(page, dir)
+
+  const groups = page.getByRole('region', { name: '批量任务' })
+  await groups.getByRole('button', { name: '新建' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('名称').fill('backend')
+  await dialog.getByRole('button', { name: /^串行/ }).click()
+  await fillStep(page, 1, 'api', 'serve')
+  await dialog.getByLabel('第 1 步使用正则').check()
+  await dialog.getByLabel('第 1 步等待的文字').fill(String.raw`Started \w+ in [\d.]+ seconds`)
+  await dialog.getByRole('button', { name: '保存' }).click()
+  await expect(dialog).toBeHidden()
+
+  const item = () => page.getByRole('listitem', { name: '批量任务 backend' })
+  await item().getByRole('button', { name: '执行 backend' }).click()
+  await expect(item()).toContainText(/已完成 · \d{2}:\d{2}/)
+
+  await app.close()
+  ;({ app, page } = await launchDevhub())
+  await expect(item()).toContainText(/已完成 · \d{2}:\d{2}/)
+})

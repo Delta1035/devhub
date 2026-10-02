@@ -74,10 +74,11 @@
   - 占用进程：Windows `Get-NetTCPConnection`，Linux `ss -ltnp`；E2E 用真实占用的端口覆盖
 - `.devhub.yaml` 自定义脚本（M2，ADR 0008，新依赖 `yaml`）：command（可按平台区分）、cwd（限制在项目内）、description、port；写错时以警告显示行号或字段路径；脚本列表底部有格式示例
   - 也可用来补上 monorepo 子包 / 多模块项目中识别不到的启动命令
+- 批量执行：「输出中出现文字」支持正则（保存时校验）；每个任务最近一次结果与完成时间保存在 `group-history.json`，重启后仍显示（ADR 0006 补充）
 
 ### 下一步（M1）
 
-1. 依次：批量执行正则与状态持久化 → 自定义 shell 路径与参数 → Linux 下 `mvnw` / `gradlew` 无执行权限 → CI 缓存 Electron → 自动更新（electron-updater）
+1. 依次：自定义 shell 路径与参数 → Linux 下 `mvnw` / `gradlew` 无执行权限 → CI 缓存 Electron → 自动更新（electron-updater）
 2. monorepo 子包 / 多模块项目的脚本识别（暂缓）
 3. 推送后确认 CI 在 Windows + Ubuntu 都通过（Linux 上的杀进程树集成测试、E2E 与打包都是首次运行）
 
@@ -93,7 +94,6 @@
 - Windows 上 Node.js 子进程在 ConPTY 下收不到新尺寸（`process.stdout.columns` 不更新，libuv 行为）；调整终端大小后 Node 工具的换行可能仍按旧宽度
 - Linux 上的真实进程集成测试、E2E 与打包尚未运行过（本机是 Windows），需推送后由 CI（ubuntu）验证
 - 在 VSCode 集成终端中启动 `pnpm dev` 需先清除 `ELECTRON_RUN_AS_NODE`（VSCode 会设置它，导致 Electron 以 Node 模式运行）：`env -u ELECTRON_RUN_AS_NODE pnpm dev`
-- 批量：「输出中出现文字」不支持正则；执行状态不持久化（重启后不显示上次结果）
 - 终端：Windows 上清屏后若终端尺寸变化，ConPTY 会重发旧屏幕内容
 - 终端：自定义 shell 路径与参数暂不支持（默认 shell 已可在设置中选择）；Linux 上 shell 的 SIGHUP / 会话扫描只在 CI 中验证
 - 编辑器：本机已安装 IDEA（D 盘自定义目录），经注册表检测成功；实际打开项目待人工点一次确认；检测不到时可在设置中手动指定；`reg query` 输出按系统代码页解码，安装路径含中文时可能识别不到

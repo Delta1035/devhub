@@ -16,6 +16,7 @@ export interface DraftStep {
   scriptId: string
   type: ConditionType
   text: string
+  regex: boolean
   port: string
   seconds: string
   timeout: string
@@ -48,6 +49,7 @@ export function emptyStep(projectId = ''): DraftStep {
     // Servers are the common case: wait until they print that they are ready.
     type: 'output',
     text: '',
+    regex: false,
     port: '',
     seconds: '5',
     timeout: String(defaultTimeoutSeconds)
@@ -66,6 +68,7 @@ export function draftFromGroup(group: Group): GroupDraft {
         scriptId: step.scriptId,
         type: condition.type,
         text: condition.type === 'output' ? condition.text : '',
+        regex: condition.type === 'output' && condition.regex === true,
         port: condition.type === 'port' ? String(condition.port) : '',
         seconds: condition.type === 'delay' ? String(condition.seconds) : '5',
         timeout:
@@ -83,7 +86,12 @@ function conditionOf(step: DraftStep, mode: GroupMode): ContinueCondition {
   const timeoutSeconds = Number(step.timeout)
   switch (step.type) {
     case 'output':
-      return { type: 'output', text: step.text, timeoutSeconds }
+      return {
+        type: 'output',
+        text: step.text,
+        ...(step.regex ? { regex: true } : {}),
+        timeoutSeconds
+      }
     case 'exit':
       return { type: 'exit', timeoutSeconds }
     case 'port':
@@ -115,5 +123,7 @@ export function toGroupInput(draft: GroupDraft): { input: GroupInput } | { error
 
   const index = parsed.error.issues[0]?.path[1]
   const where = typeof index === 'number' ? `第 ${index + 1} 步：` : ''
+  const regexIssue = parsed.error.issues.some((issue) => issue.message === '正则表达式无效')
+  if (regexIssue) return { error: `${where}正则表达式无效` }
   return { error: `${where}请检查继续条件（文字不能为空，端口 1–65535，秒数与超时为正整数）` }
 }

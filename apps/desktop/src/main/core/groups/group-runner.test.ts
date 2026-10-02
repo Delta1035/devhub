@@ -254,7 +254,7 @@ describe('createGroupRunner', () => {
     await expect(runner.start('g')).rejects.toMatchObject({ code: 'GROUP_ALREADY_RUNNING' })
     await runner.stop('g')
     await expect(runner.start('g')).resolves.toMatchObject({ status: 'running' })
-    expect(runner.states()).toHaveLength(1)
+    await expect(runner.states()).resolves.toHaveLength(1)
   })
 
   it('rejects unknown groups', async () => {
