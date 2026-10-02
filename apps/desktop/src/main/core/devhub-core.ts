@@ -11,6 +11,9 @@ import { launchDetached } from './editors/editor-launch'
 import { createEditorService } from './editors/editor-service'
 import { createEditorLocator } from './editors/editor-locator'
 import { systemDeps, writeFileEnsuringDir } from './fs/system-deps'
+import { checkLocalPort } from './groups/conditions'
+import { createGroupRunner } from './groups/group-runner'
+import { createGroupService, emptyGroupsFile, groupsFileSchema } from './groups/group-service'
 import { createEventBus } from './events/event-bus'
 import { createProcessKiller } from './process/process-killer'
 import { nodePtySpawner } from './process/pty'
@@ -75,6 +78,22 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     emit: (event) => events.emit(event)
   })
 
+  const groupService = createGroupService({
+    store: createJsonStore({
+      filePath: join(env.dataDir, 'groups.json'),
+      schema: groupsFileSchema,
+      fallback: emptyGroupsFile
+    }),
+    projects
+  })
+  const groupRunner = createGroupRunner({
+    groups: groupService,
+    runs,
+    subscribe: (listener) => events.subscribe(listener),
+    checkPort: checkLocalPort,
+    emit: (event) => events.emit(event)
+  })
+
   return {
     async getAppInfo() {
       return { version: env.version, platform: env.platform }
@@ -93,9 +112,22 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     writeRunInput: async (runId, data) => runs.writeInput(runId, data),
     resizeRun: async (runId, cols, rows) => runs.resize(runId, cols, rows),
     removeRun: async (runId) => runs.remove(runId),
+    listGroups: () => groupService.list(),
+    saveGroup: (input) => groupService.save(input),
+    deleteGroup: async (groupId) => {
+      await groupRunner.stop(groupId).catch(() => undefined)
+      await groupService.remove(groupId)
+    },
+    startGroup: (groupId) => groupRunner.start(groupId),
+    stopGroup: (groupId) => groupRunner.stop(groupId),
+    listGroupStates: async () => groupRunner.states(),
     listEditors: () => editors.list(),
     openInEditor: (projectId, editor) => editors.open(projectId, editor),
     subscribe: (listener) => events.subscribe(listener),
-    dispose: () => runs.dispose()
+    dispose: async () => {
+      // Cancel sequences first so no step starts while the runs are being stopped.
+      groupRunner.dispose()
+      await runs.dispose()
+    }
   }
 }

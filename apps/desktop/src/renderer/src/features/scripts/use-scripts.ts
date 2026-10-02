@@ -7,5 +7,10 @@ const scriptsKey = (projectId: string) => ['projects', projectId, 'scripts'] as 
 
 /** Rescans on mount and on window focus, so edits made outside DevHub show up on return. */
 export function useProjectScripts(projectId: string): UseQueryResult<ProjectScripts> {
-  return useQuery({ queryKey: scriptsKey(projectId), queryFn: () => api.listScripts(projectId) })
+  return useQuery({
+    queryKey: scriptsKey(projectId),
+    queryFn: () => api.listScripts(projectId),
+    // Pickers render before a project is chosen.
+    enabled: projectId !== ''
+  })
 }

@@ -1,4 +1,5 @@
 import type { Run } from './domain'
+import type { GroupRunState } from './groups'
 
 /**
  * Pushed from the core to every connected UI. Desktop: Electron IPC; remote: WebSocket.
@@ -9,6 +10,7 @@ export type DevhubEvent =
   | { type: 'run-updated'; run: Run }
   | { type: 'run-removed'; runId: string }
   | { type: 'run-output'; runId: string; offset: number; data: string }
+  | { type: 'group-updated'; state: GroupRunState }
 
 export interface DevhubEvents {
   /** Returns a function that cancels the subscription. */

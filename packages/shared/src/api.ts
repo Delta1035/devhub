@@ -8,6 +8,7 @@ import type {
   ShellInfo
 } from './domain'
 import type { RunOutputSnapshot } from './events'
+import type { Group, GroupInput, GroupRunState } from './groups'
 
 /**
  * The contract between any UI (desktop renderer, future mobile/PWA) and the DevHub core.
@@ -41,6 +42,16 @@ export interface DevhubApi {
   resizeRun(runId: string, cols: number, rows: number): Promise<void>
   /** Forgets an exited run (closes its terminal tab). */
   removeRun(runId: string): Promise<void>
+  listGroups(): Promise<Group[]>
+  /** Creates a group (input without id) or replaces an existing one. */
+  saveGroup(input: GroupInput): Promise<Group>
+  deleteGroup(groupId: string): Promise<void>
+  /** Starts every step (parallel) or the first one (serial); progress arrives as events. */
+  startGroup(groupId: string): Promise<GroupRunState>
+  /** Cancels a running sequence and stops every script of the group. */
+  stopGroup(groupId: string): Promise<void>
+  /** Latest execution state of each group that has run since DevHub started. */
+  listGroupStates(): Promise<GroupRunState[]>
   /** Editors DevHub knows about and whether each is installed. */
   listEditors(): Promise<EditorInfo[]>
   /** Opens the project directory in the editor, as a separate process DevHub does not manage. */
@@ -71,6 +82,12 @@ export const devhubApiMethods = [
   'writeRunInput',
   'resizeRun',
   'removeRun',
+  'listGroups',
+  'saveGroup',
+  'deleteGroup',
+  'startGroup',
+  'stopGroup',
+  'listGroupStates',
   'listEditors',
   'openInEditor'
 ] as const satisfies readonly DevhubApiMethod[]

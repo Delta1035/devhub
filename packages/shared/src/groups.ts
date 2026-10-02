@@ -1,0 +1,73 @@
+import { z } from 'zod'
+
+/**
+ * Batch runs ("groups"): a named list of scripts, possibly from several projects, started
+ * together in parallel or one after another.
+ */
+export const groupModeSchema = z.enum(['parallel', 'serial'])
+export type GroupMode = z.infer<typeof groupModeSchema>
+
+const timeoutSeconds = z.number().int().min(1).max(3600)
+
+/** When a serial group may move on from a step to the next one. */
+export const continueConditionSchema = z.discriminatedUnion('type', [
+  /** The script exits with code 0 (installs, builds, migrations). */
+  z.object({ type: z.literal('exit'), timeoutSeconds }),
+  /** The script prints this text (servers: "Started Application", "ready in"). */
+  z.object({ type: z.literal('output'), text: z.string().trim().min(1).max(200), timeoutSeconds }),
+  /** A TCP connection to this local port succeeds. */
+  z.object({ type: z.literal('port'), port: z.number().int().min(1).max(65535), timeoutSeconds }),
+  /** A fixed pause. */
+  z.object({ type: z.literal('delay'), seconds: z.number().int().min(0).max(3600) })
+])
+export type ContinueCondition = z.infer<typeof continueConditionSchema>
+
+export const defaultTimeoutSeconds = 120
+
+export const groupStepInputSchema = z.object({
+  projectId: z.string().min(1),
+  scriptId: z.string().min(1),
+  /** Only used in serial mode. */
+  continueWhen: continueConditionSchema
+})
+export type GroupStepInput = z.infer<typeof groupStepInputSchema>
+
+export const groupStepSchema = groupStepInputSchema.extend({ id: z.string().min(1) })
+export type GroupStep = z.infer<typeof groupStepSchema>
+
+/** What the UI sends to create (no id) or update (with id) a group. */
+export const groupInputSchema = z.object({
+  id: z.string().min(1).optional(),
+  name: z.string().trim().min(1).max(60),
+  mode: groupModeSchema,
+  steps: z.array(groupStepInputSchema).min(1).max(50)
+})
+export type GroupInput = z.infer<typeof groupInputSchema>
+
+export const groupSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  mode: groupModeSchema,
+  steps: z.array(groupStepSchema)
+})
+export type Group = z.infer<typeof groupSchema>
+
+export const groupStepStateSchema = z.enum(['pending', 'running', 'done', 'failed', 'cancelled'])
+export type GroupStepState = z.infer<typeof groupStepStateSchema>
+
+/** Live progress of a group's latest execution; kept in memory only. */
+export const groupRunStateSchema = z.object({
+  groupId: z.string(),
+  status: z.enum(['running', 'done', 'failed', 'stopped']),
+  steps: z.array(
+    z.object({
+      stepId: z.string(),
+      state: groupStepStateSchema,
+      /** The run started (or reused) for this step. */
+      runId: z.string().optional(),
+      /** Why a step is waiting or failed, e.g. `等待输出 "ready"`. */
+      message: z.string().optional()
+    })
+  )
+})
+export type GroupRunState = z.infer<typeof groupRunStateSchema>

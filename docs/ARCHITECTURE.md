@@ -22,6 +22,7 @@ devhub/                        pnpm monorepo
 │       │       ├── events/          事件总线：把 core 事件分发给各传输层（ADR 0004）
 │       │       ├── editors/         检测并启动外部编辑器（VS Code / IDEA）
 │       │       ├── shells/          检测可用的交互式 shell，Git Bash 启动文件（ADR 0005）
+│       │       ├── groups/          批量执行：任务存储、继续条件、执行器（ADR 0006）
 │       │       └── fs/              文件系统小工具；finder.ts：按候选位置查找已安装程序
 │       ├── preload/           暴露 window.devhub（DevhubApi）、window.devhubEvents（事件订阅）与 window.devhubShell（ShellApi）
 │       └── renderer/src/      React UI
@@ -68,6 +69,7 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 | Project        | 一个被管理的代码目录（已实现，存于 `projects.json`）                                      |
 | Script         | 可运行命令，来源：npm / maven / gradle / custom                                           |
 | ProjectScripts | 扫描结果：`status`（ok/missing）、脚本、探测器警告                                        |
+| Group          | 批量任务：跨项目的脚本列表，并行或串行（带继续条件）；存于 `groups.json`                  |
 | Profile        | 一组环境变量与参数覆盖，用于切换对接的后端                                                |
 | Run            | 终端标签里的一个进程：`script`（识别出的脚本）或 `shell`（交互式终端）；状态、PID、退出码 |
 | `.devhub.yaml` | 项目内可选配置：自定义脚本 + Profile                                                      |
@@ -100,7 +102,7 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 ## 事件推送（见 ADR 0004）
 
 - `DevhubEvents.subscribe` 独立于 `DevhubApi`：请求-响应走自动映射的 IPC，推送走 `devhubEventChannel`（主进程 `webContents.send` → preload → `@renderer/api` 的 `events`）。远程端将改用 WebSocket。
-- 事件：`run-updated`、`run-removed`、`run-output`（带流偏移量）。renderer 用事件直接更新 TanStack Query 缓存（`useRunEventsSync`，在 App 挂载一次）。
+- 事件：`run-updated`、`run-removed`、`run-output`（带流偏移量）、`group-updated`（批量任务进度）。renderer 用事件直接更新 TanStack Query 缓存（`useRunEventsSync`，在 App 挂载一次）。
 - 终端：先订阅再取 `getRunOutput` 快照，用 shared 的 `OutputCursor` 去重拼接；core 中输出按 16 ms 合并后推送。
 - renderer 的 `terminal-sessions.ts` 为每个运行保留一个 xterm 实例（切换标签只移动 DOM 节点，关闭标签时释放）；只有可见终端使用 WebGL。快捷键在 `terminal-keys.ts`，外观偏好（主题、字号、渲染方式）在 `terminal-prefs.ts`。
 
