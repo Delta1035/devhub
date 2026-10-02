@@ -8,13 +8,16 @@ files:
   - '!vitest.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
-  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json,tsconfig.e2e.json}'
+  - '!{e2e,test-results,playwright-report}/**'
+  - '!playwright.config.{js,ts,mjs,cjs}'
+  - '!{components.json,scripts/**}'
 asarUnpack:
   - resources/**
 win:
   executableName: devhub
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
+  artifactName: devhub-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
@@ -24,8 +27,12 @@ linux:
   target:
     - AppImage
     - deb
+  executableName: devhub
   maintainer: devhub
   category: Development
 appImage:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: devhub-${version}.${ext}
+deb:
+  packageName: devhub
+  artifactName: devhub_${version}_${arch}.${ext}
 npmRebuild: false
