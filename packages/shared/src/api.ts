@@ -2,6 +2,8 @@ import type {
   EditorId,
   EditorInfo,
   OrphanedRun,
+  PortConflict,
+  StartScriptOptions,
   Project,
   ProjectScripts,
   Run,
@@ -26,7 +28,9 @@ export interface DevhubApi {
   /** Scans the project directory for runnable scripts. Never cached: reflects the files on disk. */
   listScripts(projectId: string): Promise<ProjectScripts>
   /** Starts a detected script. The core resolves the command itself; the UI only sends ids. */
-  startScript(projectId: string, scriptId: string): Promise<Run>
+  startScript(projectId: string, scriptId: string, options?: StartScriptOptions): Promise<Run>
+  /** Ports the script needs that are already in use; empty when it can start. */
+  checkScriptPorts(projectId: string, scriptId: string): Promise<PortConflict[]>
   /** Shells installed on this machine; the first one is the default. */
   listShells(): Promise<ShellInfo[]>
   /** Opens an interactive shell in the project directory (the default shell when omitted). */
@@ -84,6 +88,7 @@ export const devhubApiMethods = [
   'removeProject',
   'listScripts',
   'startScript',
+  'checkScriptPorts',
   'listShells',
   'startShell',
   'stopRun',

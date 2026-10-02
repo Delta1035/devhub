@@ -12,7 +12,9 @@ import { createEditorService } from './editors/editor-service'
 import { createEditorLocator } from './editors/editor-locator'
 import { isFile } from './fs/is-file'
 import { systemDeps, writeFileEnsuringDir } from './fs/system-deps'
-import { checkLocalPort } from './groups/conditions'
+import { checkLocalPort } from './net/local-port'
+import { createPortGuard } from './ports/port-guard'
+import { createPortOwnerFinder } from './ports/port-owner'
 import { createGroupRunner } from './groups/group-runner'
 import { createGroupService, emptyGroupsFile, groupsFileSchema } from './groups/group-service'
 import { createEventBus } from './events/event-bus'
@@ -102,6 +104,11 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     isFile
   })
 
+  const portConflicts = createPortGuard({
+    isPortInUse: checkLocalPort,
+    findOwner: createPortOwnerFinder({ platform: env.platform })
+  })
+
   const killer = createProcessKiller({ platform: env.platform })
   // Remembers started processes so a session after a crash can offer to stop leftovers.
   const runRegistry = createRunRegistry({
@@ -117,6 +124,7 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
 
   const runs = createRunManager({
     scripts,
+    portConflicts,
     projects,
     shells,
     spawn: nodePtySpawner,
@@ -150,7 +158,9 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     addProject: (path) => projects.add(path),
     removeProject: (projectId) => projects.remove(projectId),
     listScripts: (projectId) => scripts.list(projectId),
-    startScript: (projectId, scriptId) => runs.start(projectId, scriptId),
+    startScript: (projectId, scriptId, options) => runs.start(projectId, scriptId, options),
+    checkScriptPorts: async (projectId, scriptId) =>
+      portConflicts((await scripts.find(projectId, scriptId)).script),
     listShells: async () => (await shells.list()).map(({ id, name }) => ({ id, name })),
     startShell: (projectId, shellId) => runs.startShell(projectId, shellId),
     stopRun: (runId) => runs.stop(runId),

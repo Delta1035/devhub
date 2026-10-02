@@ -16,6 +16,7 @@ export type DevhubErrorCode =
   | 'GROUP_NAME_TAKEN'
   | 'GROUP_ALREADY_RUNNING'
   | 'SETTINGS_INVALID'
+  | 'PORT_IN_USE'
   | 'EDITOR_LAUNCH_FAILED'
   | 'INTERNAL'
 

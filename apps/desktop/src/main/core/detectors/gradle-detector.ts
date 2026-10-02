@@ -1,5 +1,6 @@
 import { join } from 'path'
 import type { Script } from '@devhub/shared'
+import { readSpringPort } from '../ports/infer-ports'
 import { readOptionalFile, resolveWrapper } from './fs-utils'
 import type { ScriptDetector } from './types'
 
@@ -46,12 +47,14 @@ export function createGradleDetector({ platform }: GradleDetectorDeps): ScriptDe
       if (springBootPlugin.test(build)) tasks.push(['bootRun', '运行 Spring Boot 应用'])
       if (applicationPlugin.some((pattern) => pattern.test(build))) tasks.push(['run', '运行应用'])
 
+      const springPort = springBootPlugin.test(build) ? await readSpringPort(dir) : null
       return tasks.map(([task, description]): Script => ({
         id: `gradle:${task}`,
         name: task,
         source: 'gradle',
         command: `${executable} ${task}`,
-        description
+        description,
+        ...(task === 'bootRun' && springPort ? { ports: [springPort] } : {})
       }))
     }
   }

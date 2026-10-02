@@ -2,7 +2,7 @@ import { Loader2, Play, RotateCw, Square } from 'lucide-react'
 import type { Run } from '@devhub/shared'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
-import { useRestartRun, useStartScript, useStopRun } from './use-runs'
+import { PortConflictError, useRestartRun, useStartScript, useStopRun } from './use-runs'
 
 interface RunControlsProps {
   projectId: string
@@ -11,7 +11,7 @@ interface RunControlsProps {
   /** Latest run of this script, if any. */
   run: Run | undefined
   /** Receives start/stop failures so the list can show them in one place. */
-  onError: (error: Error) => void
+  onError: (error: Error, retry?: () => void) => void
   /** Called with the new run after a start or restart, e.g. to focus its terminal tab. */
   onStarted: (run: Run) => void
 }
@@ -39,7 +39,9 @@ export function RunControls({
             variant="outline"
             size="icon-sm"
             disabled={busy || run.status === 'stopping'}
-            onClick={() => restart.mutate(run.id, { onError, onSuccess: onStarted })}
+            onClick={() =>
+              restart.mutate(run.id, { onError: (error) => onError(error), onSuccess: onStarted })
+            }
             title="重启"
             aria-label={`重启 ${scriptName}`}
           >
@@ -49,7 +51,7 @@ export function RunControls({
             variant="outline"
             size="icon-sm"
             disabled={busy || run.status === 'stopping'}
-            onClick={() => stop.mutate(run.id, { onError })}
+            onClick={() => stop.mutate(run.id, { onError: (error) => onError(error) })}
             title="停止（结束整个进程树）"
             aria-label={`停止 ${scriptName}`}
           >
@@ -61,7 +63,22 @@ export function RunControls({
           variant="outline"
           size="icon-sm"
           disabled={busy}
-          onClick={() => start.mutate({ projectId, scriptId }, { onError, onSuccess: onStarted })}
+          onClick={() => {
+            const startAnyway = (): void =>
+              start.mutate(
+                { projectId, scriptId, ignorePortConflicts: true },
+                { onError: (error) => onError(error), onSuccess: onStarted }
+              )
+            start.mutate(
+              { projectId, scriptId },
+              {
+                // A taken port can be overridden: hand the list a way to start anyway.
+                onError: (error) =>
+                  onError(error, error instanceof PortConflictError ? startAnyway : undefined),
+                onSuccess: onStarted
+              }
+            )
+          }}
           title="运行"
           aria-label={`运行 ${scriptName}`}
         >

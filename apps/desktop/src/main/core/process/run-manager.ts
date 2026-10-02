@@ -3,10 +3,13 @@ import { resolve } from 'path'
 import { z } from 'zod'
 import {
   DevhubError,
+  describePortConflicts,
   shellIdSchema,
   type DevhubEvent,
   type Run,
+  type PortConflict,
   type RunOutputSnapshot,
+  type Script,
   type ShellId
 } from '@devhub/shared'
 import { isDirectory as isDirectoryOnDisk } from '../fs/is-directory'
@@ -19,7 +22,7 @@ import { answerBatchPrompt } from './batch-prompt'
 import { RunOutput } from './run-output'
 
 export interface RunManager {
-  start(projectId: unknown, scriptId: unknown): Promise<Run>
+  start(projectId: unknown, scriptId: unknown, options?: unknown): Promise<Run>
   /** Opens an interactive shell in the project directory; the default shell when omitted. */
   startShell(projectId: unknown, shellId?: unknown): Promise<Run>
   stop(runId: unknown): Promise<void>
@@ -37,6 +40,8 @@ export interface RunManager {
 
 export interface RunManagerDeps {
   scripts: Pick<ScriptService, 'find'>
+  /** Ports the script needs that are taken; checked before starting it. */
+  portConflicts?: (script: Script) => Promise<PortConflict[]>
   projects: Pick<ProjectService, 'get'>
   shells: ShellLocator
   isDirectory?: (path: string) => Promise<boolean>
@@ -81,6 +86,7 @@ interface Entry {
 }
 
 const idInput = z.string().min(1)
+const startOptions = z.object({ ignorePortConflicts: z.boolean().optional() })
 // Keystrokes and pastes; generous but bounded.
 const inputData = z.string().max(64 * 1024)
 const terminalSize = z.object({
@@ -90,6 +96,7 @@ const terminalSize = z.object({
 
 export function createRunManager({
   scripts,
+  portConflicts = async () => [],
   projects,
   shells,
   isDirectory = isDirectoryOnDisk,
@@ -173,20 +180,37 @@ export function createRunManager({
     return snapshot(entry)
   }
 
-  const start = async (projectId: unknown, scriptId: unknown): Promise<Run> => {
+  const start = async (
+    projectId: unknown,
+    scriptId: unknown,
+    rawOptions?: unknown
+  ): Promise<Run> => {
     const { project, script } = await scripts.find(projectId, scriptId)
+    const options = startOptions.safeParse(rawOptions ?? {})
+    if (!options.success) throw new DevhubError('INVALID_INPUT', '启动选项无效')
 
     // Keep only the latest run per script: an active one blocks, an exited one is replaced.
-    for (const [id, entry] of entries) {
-      const { run } = entry
-      if (run.kind !== 'script' || run.projectId !== project.id || run.scriptId !== script.id) {
-        continue
+    const previous = [...entries.values()].filter(
+      ({ run }) =>
+        run.kind === 'script' && run.projectId === project.id && run.scriptId === script.id
+    )
+    if (previous.some(({ run }) => run.status !== 'exited')) {
+      throw new DevhubError('SCRIPT_ALREADY_RUNNING', `${script.name} 已在运行`)
+    }
+
+    if (!options.data.ignorePortConflicts) {
+      const conflicts = await portConflicts(script)
+      if (conflicts.length > 0) {
+        throw new DevhubError(
+          'PORT_IN_USE',
+          `无法启动 ${script.name}：${describePortConflicts(conflicts)}`
+        )
       }
-      if (run.status !== 'exited') {
-        throw new DevhubError('SCRIPT_ALREADY_RUNNING', `${script.name} 已在运行`)
-      }
-      entries.delete(id)
-      emit({ type: 'run-removed', runId: id })
+    }
+
+    for (const { run } of previous) {
+      entries.delete(run.id)
+      emit({ type: 'run-removed', runId: run.id })
     }
 
     const runEnv = definedEnv(env)
@@ -288,7 +312,8 @@ export function createRunManager({
       await stopEntry(entry)
       const { run } = entry
       return run.kind === 'script'
-        ? start(run.projectId, run.scriptId)
+        ? // Its own port was just released; another taker in between surfaces in the output.
+          start(run.projectId, run.scriptId, { ignorePortConflicts: true })
         : startShell(run.projectId, run.shellId)
     },
 

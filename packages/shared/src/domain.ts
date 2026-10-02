@@ -12,9 +12,25 @@ export const scriptSchema = z.object({
   command: z.string().min(1),
   cwd: z.string().optional(),
   /** Human-readable detail, e.g. the raw npm script body. */
-  description: z.string().optional()
+  description: z.string().optional(),
+  /** Ports the script is expected to listen on (inferred), checked before it starts. */
+  ports: z.array(z.number().int().min(1).max(65535)).optional()
 })
 export type Script = z.infer<typeof scriptSchema>
+
+/** A port a script needs that something else already listens on. */
+export const portConflictSchema = z.object({
+  port: z.number().int(),
+  /** The listening process, when the OS tells us. */
+  pid: z.number().int().nullable(),
+  processName: z.string().nullable()
+})
+export type PortConflict = z.infer<typeof portConflictSchema>
+
+export interface StartScriptOptions {
+  /** Start even though a port the script needs is taken (the user chose "start anyway"). */
+  ignorePortConflicts?: boolean
+}
 
 /** A detector that failed (e.g. malformed package.json); other detectors still contribute. */
 export const scriptWarningSchema = z.object({

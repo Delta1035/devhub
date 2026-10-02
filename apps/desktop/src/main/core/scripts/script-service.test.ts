@@ -44,7 +44,14 @@ describe('createScriptService', () => {
     await expect(makeService(dir).list('p1')).resolves.toEqual({
       status: 'ok',
       scripts: [
-        { id: 'npm:dev', name: 'dev', source: 'npm', command: 'npm run dev', description: 'vite' }
+        {
+          id: 'npm:dev',
+          name: 'dev',
+          source: 'npm',
+          command: 'npm run dev',
+          description: 'vite',
+          ports: [5173]
+        }
       ],
       warnings: []
     })

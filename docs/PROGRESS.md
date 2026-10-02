@@ -70,11 +70,14 @@
 - 崩溃后遗留进程：记录运行的 pid + 启动时间，下次启动若仍存活则提示「全部结束 / 忽略」（ADR 0003 补充）；E2E 模拟崩溃覆盖
 - 设置页（ADR 0007）：顶栏齿轮进入；外观（主题）、终端（默认 shell、字号、回滚行数、GPU 渲染）、编辑器（手动指定 VS Code / IDEA 路径，可恢复自动检测）、进程（停止等待时间、关闭窗口时最小化到托盘 / 退出）；修改即时生效
   - 核心设置存 `settings.json`（API `getSettings` / `updateSettings`），显示偏好存本地；E2E 3 个（生效与重启后保留、编辑器路径、关闭即退出）
+- 启动前端口冲突检测（M2）：从脚本推断端口（`--port` / `-p` / `PORT=`、vite / next / nuxt / react-scripts / vue-cli / webpack / angular / astro 默认端口、Spring Boot 的 `server.port`，默认 8080），脚本行显示「端口 N」；启动前检测，被占用时提示占用进程与 PID，可「仍然启动」；批量执行遇到冲突该步失败并说明
+  - 占用进程：Windows `Get-NetTCPConnection`，Linux `ss -ltnp`；E2E 用真实占用的端口覆盖
 
 ### 下一步（M1）
 
-1. monorepo 子包 / 多模块项目的脚本识别（暂缓）；M2（暂缓）
-2. 推送后确认 CI 在 Windows + Ubuntu 都通过（Linux 上的杀进程树集成测试、E2E 与打包都是首次运行）
+1. 依次：`.devhub.yaml` 自定义脚本 → 批量执行正则与状态持久化 → 自定义 shell 路径与参数 → Linux 下 `mvnw` / `gradlew` 无执行权限 → CI 缓存 Electron → 自动更新（electron-updater）
+2. monorepo 子包 / 多模块项目的脚本识别（暂缓）
+3. 推送后确认 CI 在 Windows + Ubuntu 都通过（Linux 上的杀进程树集成测试、E2E 与打包都是首次运行）
 
 ### 已知问题 / 待定
 
@@ -91,7 +94,8 @@
 - 批量：「输出中出现文字」不支持正则；执行状态不持久化（重启后不显示上次结果）
 - 终端：Windows 上清屏后若终端尺寸变化，ConPTY 会重发旧屏幕内容
 - 终端：自定义 shell 路径与参数暂不支持（默认 shell 已可在设置中选择）；Linux 上 shell 的 SIGHUP / 会话扫描只在 CI 中验证
-- 编辑器：本机未安装 IDEA，用 IDEA 打开只经过单元测试，尚未在真实环境验证；检测不到时可在设置中手动指定；`reg query` 输出按系统代码页解码，安装路径含中文时可能识别不到
+- 编辑器：本机已安装 IDEA（D 盘自定义目录），经注册表检测成功；实际打开项目待人工点一次确认；检测不到时可在设置中手动指定；`reg query` 输出按系统代码页解码，安装路径含中文时可能识别不到
 - CI 待办：缓存 Electron 二进制（每次 install 下载 100MB+）
 - 发布待办（GitHub 仓库设置，非代码）：开启 Immutable releases；为 `v*` tag 加 ruleset 限制创建者
-- 发布：安装包未签名（Windows SmartScreen 提示）；无应用内自动更新（需引入 electron-updater，届时补 ADR）
+- 发布：安装包不做签名（已决定，Windows SmartScreen 会提示）；自动更新排在待办中
+- 端口推断是启发式的：脚本里没写端口、也不是已知工具时不检查；`run-manager.ts` 已接近 400 行，下次改动时拆分

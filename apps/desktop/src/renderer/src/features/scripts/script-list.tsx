@@ -25,7 +25,8 @@ interface ScriptListProps {
 export function ScriptList({ project, onRunStarted }: ScriptListProps): React.JSX.Element {
   const scripts = useProjectScripts(project.id)
   const runs = useRuns()
-  const [runError, setRunError] = useState<Error | null>(null)
+  // `retry` is set for a taken port: the user may start the script anyway.
+  const [runError, setRunError] = useState<{ error: Error; retry?: () => void } | null>(null)
 
   if (scripts.isPending) {
     return (
@@ -65,8 +66,24 @@ export function ScriptList({ project, onRunStarted }: ScriptListProps): React.JS
       {runError && (
         <Alert variant="destructive">
           <TriangleAlert />
-          <AlertTitle>操作失败</AlertTitle>
-          <AlertDescription>{runError.message}</AlertDescription>
+          <AlertTitle>{runError.retry ? '端口已被占用' : '操作失败'}</AlertTitle>
+          <AlertDescription>
+            <p>{runError.error.message}</p>
+            {runError.retry && (
+              <div className="mt-2 flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    runError.retry?.()
+                    setRunError(null)
+                  }}
+                >
+                  仍然启动
+                </Button>
+              </div>
+            )}
+          </AlertDescription>
           <AlertAction>
             <Button
               variant="ghost"
@@ -110,7 +127,7 @@ export function ScriptList({ project, onRunStarted }: ScriptListProps): React.JS
           source={source}
           scripts={group}
           runs={runs.data ?? []}
-          onRunError={setRunError}
+          onRunError={(error, retry) => setRunError({ error, retry })}
           onRunStarted={onRunStarted}
         />
       ))}
@@ -123,7 +140,7 @@ interface ScriptGroupProps {
   source: ScriptSource
   scripts: Script[]
   runs: Run[]
-  onRunError: (error: Error) => void
+  onRunError: (error: Error, retry?: () => void) => void
   onRunStarted: (run: Run) => void
 }
 
@@ -151,9 +168,21 @@ function ScriptGroup({
               {script.name}
             </span>
             <div className="min-w-0 flex-1">
-              <code className="block truncate font-mono text-xs" title={script.command}>
-                {script.command}
-              </code>
+              <span className="flex min-w-0 items-center gap-2">
+                <code className="truncate font-mono text-xs" title={script.command}>
+                  {script.command}
+                </code>
+                {script.ports?.map((port) => (
+                  <Badge
+                    key={port}
+                    variant="outline"
+                    className="h-4 shrink-0 px-1.5 text-[10px]"
+                    title="启动前会检查这个端口是否已被占用"
+                  >
+                    端口 {port}
+                  </Badge>
+                ))}
+              </span>
               {script.description && (
                 <p className="truncate text-xs text-muted-foreground" title={script.description}>
                   {script.description}

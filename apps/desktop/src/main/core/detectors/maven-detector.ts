@@ -1,5 +1,6 @@
 import { join } from 'path'
 import type { Script } from '@devhub/shared'
+import { readSpringPort } from '../ports/infer-ports'
 import { readOptionalFile, resolveWrapper } from './fs-utils'
 import type { ScriptDetector } from './types'
 
@@ -34,12 +35,14 @@ export function createMavenDetector({ platform }: MavenDetectorDeps): ScriptDete
       const goals = [...baseGoals]
       if (pom.includes(springBootPlugin)) goals.push(['spring-boot:run', '运行 Spring Boot 应用'])
 
+      const springPort = pom.includes(springBootPlugin) ? await readSpringPort(dir) : null
       return goals.map(([goal, description]): Script => ({
         id: `maven:${goal}`,
         name: goal,
         source: 'maven',
         command: `${executable} ${goal}`,
-        description
+        description,
+        ...(goal === 'spring-boot:run' && springPort ? { ports: [springPort] } : {})
       }))
     }
   }

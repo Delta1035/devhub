@@ -24,6 +24,8 @@ devhub/                        pnpm monorepo
 │       │       ├── shells/          检测可用的交互式 shell，Git Bash 启动文件（ADR 0005）
 │       │       ├── groups/          批量执行：任务存储、继续条件、执行器（ADR 0006）
 │       │       ├── settings/        核心设置（settings.json）（ADR 0007）
+│       │       ├── ports/           推断脚本端口、查找占用进程、启动前冲突检测
+│       │       ├── net/             本地端口连通性检测
 │       │       └── fs/              文件系统小工具；finder.ts：按候选位置查找已安装程序
 │       ├── preload/           暴露 window.devhub（DevhubApi）、window.devhubEvents（事件订阅）与 window.devhubShell（ShellApi）
 │       └── renderer/src/      React UI

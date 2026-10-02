@@ -1,6 +1,7 @@
 import { join } from 'path'
 import { z } from 'zod'
 import type { Script } from '@devhub/shared'
+import { inferNpmPorts } from '../ports/infer-ports'
 import { exists, readOptionalFile } from './fs-utils'
 import type { ScriptDetector } from './types'
 
@@ -43,12 +44,14 @@ export const npmDetector: ScriptDetector = {
     const scripts: Script[] = []
     for (const [name, body] of Object.entries(parsed.data.scripts ?? {})) {
       if (typeof body !== 'string' || name.length === 0) continue
+      const ports = inferNpmPorts(body)
       scripts.push({
         id: `npm:${name}`,
         name,
         source: 'npm',
         command: `${manager} run ${safeName.test(name) ? name : JSON.stringify(name)}`,
-        ...(body.trim() ? { description: body } : {})
+        ...(body.trim() ? { description: body } : {}),
+        ...(ports.length > 0 ? { ports } : {})
       })
     }
     return scripts

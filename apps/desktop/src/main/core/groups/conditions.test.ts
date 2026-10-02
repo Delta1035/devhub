@@ -1,7 +1,6 @@
-import { createServer, type Server } from 'net'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ContinueCondition, DevhubEvent, Run } from '@devhub/shared'
-import { checkLocalPort, waitForCondition, type ConditionDeps } from './conditions'
+import { waitForCondition, type ConditionDeps } from './conditions'
 
 type ScriptRun = Extract<Run, { kind: 'script' }>
 
@@ -130,28 +129,5 @@ describe('waitForCondition', () => {
     controller.abort()
     await expect(result).resolves.toBe('已取消')
     expect(listeners).toEqual([])
-  })
-})
-
-describe('checkLocalPort', () => {
-  let server: Server | undefined
-
-  afterEach(async () => {
-    await new Promise((resolve) => (server ? server.close(resolve) : resolve(undefined)))
-    server = undefined
-  })
-
-  it('detects a listening port and a closed one', async () => {
-    server = createServer()
-    const port = await new Promise<number>((resolve) =>
-      server!.listen(0, '127.0.0.1', () => {
-        const address = server!.address()
-        resolve(typeof address === 'object' && address ? address.port : 0)
-      })
-    )
-    await expect(checkLocalPort(port)).resolves.toBe(true)
-    server.close()
-    server = undefined
-    await expect(checkLocalPort(port)).resolves.toBe(false)
   })
 })

@@ -40,7 +40,8 @@ describe('npmDetector', () => {
         name: 'dev',
         source: 'npm',
         command: 'npm run dev',
-        description: 'vite --port 5173'
+        description: 'vite --port 5173',
+        ports: [5173]
       },
       {
         id: 'npm:build',
