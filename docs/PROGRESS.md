@@ -15,19 +15,21 @@
   - 单个探测器失败转为 `warnings`，不影响其他探测器；项目目录不存在时返回 `status: 'missing'`
 - M1-3 Maven 探测器：`pom.xml` → clean / compile / test / package / install；含 `spring-boot-maven-plugin` 时加 `spring-boot:run`
   - 优先使用当前平台的 wrapper（Windows `mvnw.cmd`，Linux `./mvnw`），否则 `mvn`；探测器经 `createDefaultDetectors(platform)` 注入平台
+- M1-4 Gradle 探测器：`build.gradle(.kts)` / `settings.gradle(.kts)` → clean / build / test；Spring Boot 插件加 `bootRun`，`application` 插件加 `run`
+  - wrapper 选择抽为 `resolveWrapper`（Maven、Gradle 共用）
 
 ### 下一步（M1）
 
-1. Gradle 探测器（build.gradle / build.gradle.kts；常用任务 + bootRun / run；优先 gradlew / gradlew.bat）
-2. UI：项目详情中列出识别到的脚本，显示 `missing` 状态与 warnings
-3. 进程管理：启动/停止/重启，杀进程树（Windows + Linux 测试），引入 node-pty
-4. 日志推送：在 DevhubApi 中设计订阅接口
-5. 接入 Playwright E2E（目前用 DevTools 协议手动验证过：添加、重复报错、重启后持久化、点击移除）
+1. UI：项目详情中列出识别到的脚本，显示 `missing` 状态与 warnings
+2. 进程管理：启动/停止/重启，杀进程树（Windows + Linux 测试），引入 node-pty
+3. 日志推送：在 DevhubApi 中设计订阅接口
+4. 接入 Playwright E2E（目前用 DevTools 协议手动验证过：添加、重复报错、重启后持久化、点击移除）
 
 ### 已知问题 / 待定
 
-- 项目目录被删除或移动后，`listScripts` 会返回 `missing`，但 UI 尚未展示（M1 下一步第 2 项）
+- 项目目录被删除或移动后，`listScripts` 会返回 `missing`，但 UI 尚未展示（M1 下一步第 1 项）
 - npm 探测只看项目根目录：monorepo 子包作为项目添加时，根目录的 lockfile 识别不到，会回退为 npm
 - 脚本命令目前是字符串（经 shell 执行）；进程管理时再决定是否改为 argv 形式
-- Maven 多模块项目：在根目录执行 `spring-boot:run` 会作用于所有模块；以后可扫描子模块并用 `-pl <module>`
-- Linux 上 `mvnw` 若无执行权限（如从 zip 解压），`./mvnw` 会失败；进程管理阶段再决定是否改为 `sh mvnw`
+- Maven 多模块 / Gradle 多项目：只读根目录构建文件，子模块中的 `spring-boot:run` / `bootRun` 识别不到，且在根目录执行会作用于所有模块；以后扫描子模块并用 `-pl <module>` / `:<project>:bootRun`
+- Linux 上 `mvnw` / `gradlew` 若无执行权限（如从 zip 解压），`./mvnw` 会失败；进程管理阶段再决定是否改为 `sh mvnw`
+- Android 项目的 `assembleDebug`、`installDebug` 等任务暂不识别

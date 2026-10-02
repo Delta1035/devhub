@@ -1,6 +1,6 @@
 import { join } from 'path'
 import type { Script } from '@devhub/shared'
-import { exists, readOptionalFile } from './fs-utils'
+import { readOptionalFile, resolveWrapper } from './fs-utils'
 import type { ScriptDetector } from './types'
 
 export interface MavenDetectorDeps {
@@ -26,7 +26,11 @@ export function createMavenDetector({ platform }: MavenDetectorDeps): ScriptDete
       const pom = await readOptionalFile(join(dir, 'pom.xml'))
       if (pom === null) return []
 
-      const executable = await resolveExecutable(dir, platform)
+      const executable = await resolveWrapper(dir, platform, {
+        win32: 'mvnw.cmd',
+        posix: 'mvnw',
+        fallback: 'mvn'
+      })
       const goals = [...baseGoals]
       if (pom.includes(springBootPlugin)) goals.push(['spring-boot:run', '运行 Spring Boot 应用'])
 
@@ -39,11 +43,4 @@ export function createMavenDetector({ platform }: MavenDetectorDeps): ScriptDete
       }))
     }
   }
-}
-
-/** Prefers the project's wrapper for the current platform; falls back to `mvn` on PATH. */
-async function resolveExecutable(dir: string, platform: NodeJS.Platform): Promise<string> {
-  const [wrapperFile, invocation] =
-    platform === 'win32' ? ['mvnw.cmd', 'mvnw.cmd'] : ['mvnw', './mvnw']
-  return (await exists(join(dir, wrapperFile))) ? invocation : 'mvn'
 }

@@ -50,9 +50,10 @@ describe('createScriptService', () => {
     })
   })
 
-  it('combines scripts from npm and maven in one project', async () => {
+  it('combines scripts from npm, maven and gradle in one project', async () => {
     await writeFile(join(dir, 'package.json'), JSON.stringify({ scripts: { dev: 'vite' } }))
     await writeFile(join(dir, 'pom.xml'), '<project />')
+    await writeFile(join(dir, 'build.gradle'), '')
     const { scripts } = await makeService(dir).list('p1')
     expect(scripts.map((script) => script.id)).toEqual([
       'npm:dev',
@@ -60,7 +61,10 @@ describe('createScriptService', () => {
       'maven:compile',
       'maven:test',
       'maven:package',
-      'maven:install'
+      'maven:install',
+      'gradle:clean',
+      'gradle:build',
+      'gradle:test'
     ])
   })
 
