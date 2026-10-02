@@ -24,7 +24,7 @@
 | 进程/终端     | node-pty（M1 引入）                                                   |
 | Android（M4） | 先 PWA，后 React Native + Expo                                        |
 
-版本约束：TypeScript 5.9（typescript-eslint 尚不支持 7.x）、ESLint 9、Vite 7（electron-vite 5 要求）。升级前先确认生态兼容。
+版本约束：TypeScript 6.0（2026-10-02 由 dependabot 从 5.9 升级；typescript-eslint 8.71 支持 `<6.1`，7.x 尚不支持，升级前先确认）、ESLint 9、Vite 7（electron-vite 5 要求）。升级前先确认生态兼容。
 
 ## 备选与理由
 
