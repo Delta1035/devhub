@@ -64,7 +64,11 @@ describe.runIf(process.platform === 'win32' || process.platform === 'linux')(
     })
 
     /** A manager wired to real PTYs, the real killer and the shells installed here. */
-    const createRealManager = (mode: 'polite' | 'stubborn', graceMs: number) => {
+    const createRealManager = (
+      mode: 'polite' | 'stubborn',
+      graceMs: number,
+      command = `"${process.execPath}" parent.js ${mode}`
+    ) => {
       const project: Project = {
         id: 'p1',
         name: 'fixture',
@@ -75,7 +79,7 @@ describe.runIf(process.platform === 'win32' || process.platform === 'linux')(
         id: 'custom:tree',
         name: 'tree',
         source: 'custom',
-        command: `"${process.execPath}" parent.js ${mode}`
+        command
       }
       const realKiller = createProcessKiller({ platform: process.platform })
       const forceKill = vi.fn(realKiller.forceKill)
@@ -129,6 +133,27 @@ describe.runIf(process.platform === 'win32' || process.platform === 'linux')(
       await expectAllDead(allPids)
       expect(manager.list()[0]?.status).toBe('exited')
     }, 30_000)
+
+    it.runIf(process.platform === 'win32')(
+      'stops an npm script without waiting out the batch-job prompt',
+      async () => {
+        await writeFile(
+          join(dir, 'package.json'),
+          JSON.stringify({ scripts: { tree: 'node parent.js polite' } })
+        )
+        // npm is a .cmd shim: after Ctrl+C cmd asks "Terminate batch job (Y/N)?".
+        const { manager, forceKill } = createRealManager('polite', 5000, 'npm run tree')
+        const run = await manager.start('p1', 'custom:tree')
+        const pids = await readPids()
+
+        const started = Date.now()
+        await manager.stop(run.id)
+        expect(Date.now() - started).toBeLessThan(4000)
+        expect(forceKill).not.toHaveBeenCalled()
+        await expectAllDead([run.pid, pids.parent, pids.child])
+      },
+      40_000
+    )
 
     it('closing a shell ends the commands started inside it', async () => {
       const { manager } = createRealManager('polite', 5000)

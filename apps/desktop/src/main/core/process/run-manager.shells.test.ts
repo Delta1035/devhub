@@ -123,3 +123,49 @@ describe('createRunManager shells', () => {
     expect(harness.killer.hangup).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('createRunManager on Windows: batch-job prompt', () => {
+  let harness: TestHarness
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    harness = createHarness()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('answers "Terminate batch job (Y/N)?" after Ctrl+C so npm scripts stop quickly', async () => {
+    const manager = harness.makeManager({ platform: 'win32' })
+    const run = await manager.start('p1', 'npm:dev')
+    const stopping = manager.stop(run.id)
+    harness.ptys[0]?.emitData('^C终止批处理操作吗(Y/N)? ')
+    await vi.advanceTimersByTimeAsync(100)
+    expect(harness.ptys[0]?.written).toEqual(['Y\r'])
+
+    harness.ptys[0]?.emitExit(0)
+    await stopping
+    expect(harness.killer.forceKill).not.toHaveBeenCalled()
+  })
+
+  it('never answers on Linux, and never for shells', async () => {
+    const manager = harness.makeManager()
+    const script = await manager.start('p1', 'npm:dev')
+    const stopping = manager.stop(script.id)
+    harness.ptys[0]?.emitData('Terminate batch job (Y/N)? ')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(harness.ptys[0]?.written).toEqual([])
+    harness.ptys[0]?.emitExit(0)
+    await stopping
+
+    const winManager = harness.makeManager({ platform: 'win32' })
+    const shell = await winManager.startShell('p1')
+    const closing = winManager.stop(shell.id)
+    harness.ptys[1]?.emitData('Terminate batch job (Y/N)? ')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(harness.ptys[1]?.written).toEqual([])
+    harness.ptys[1]?.emitExit(0)
+    await closing
+  })
+})

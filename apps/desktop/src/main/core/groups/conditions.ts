@@ -1,5 +1,6 @@
 import { connect } from 'net'
 import type { ContinueCondition, DevhubEvent, Run } from '@devhub/shared'
+import { stripAnsi } from '../text/ansi'
 
 export interface ConditionDeps {
   subscribe: (listener: (event: DevhubEvent) => void) => () => void
@@ -34,19 +35,6 @@ export function describeCondition(condition: ContinueCondition): string {
 const portPollMs = 500
 // Keep enough recent output to match text split across chunks without growing forever.
 const outputTailLimit = 64 * 1024
-
-// Built from a string so no control character appears in a regex literal.
-const esc = String.fromCharCode(27)
-const bel = String.fromCharCode(7)
-const ansiPattern = new RegExp(
-  `${esc}\\[[0-?]*[ -/]*[@-~]|${esc}\\][^${bel}${esc}]*(?:${bel}|${esc}\\\\)|${esc}[@-Z\\\\-_]`,
-  'g'
-)
-
-/** Removes ANSI escape sequences (colors, cursor moves, titles) so plain text can be matched. */
-export function stripAnsi(text: string): string {
-  return text.replace(ansiPattern, '')
-}
 
 /**
  * Resolves when the run satisfies the condition; rejects with a user-facing message when it

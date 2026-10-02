@@ -1,7 +1,7 @@
 import { createServer, type Server } from 'net'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ContinueCondition, DevhubEvent, Run } from '@devhub/shared'
-import { checkLocalPort, stripAnsi, waitForCondition, type ConditionDeps } from './conditions'
+import { checkLocalPort, waitForCondition, type ConditionDeps } from './conditions'
 
 type ScriptRun = Extract<Run, { kind: 'script' }>
 
@@ -130,14 +130,6 @@ describe('waitForCondition', () => {
     controller.abort()
     await expect(result).resolves.toBe('已取消')
     expect(listeners).toEqual([])
-  })
-})
-
-describe('stripAnsi', () => {
-  it('removes colors, cursor moves and window titles', () => {
-    expect(stripAnsi('\x1b[1;32mok\x1b[0m \x1b[2K\x1b[1Gline \x1b]0;title\x07done')).toBe(
-      'ok line done'
-    )
   })
 })
 

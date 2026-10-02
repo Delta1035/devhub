@@ -15,6 +15,7 @@ import type { ScriptService } from '../scripts/script-service'
 import type { ShellLocator } from '../shells/shell-locator'
 import type { ProcessKiller } from './process-killer'
 import { shellInvocation, type PtyProcess, type PtySpawner } from './pty'
+import { answerBatchPrompt } from './batch-prompt'
 import { RunOutput } from './run-output'
 
 export interface RunManager {
@@ -246,13 +247,26 @@ export function createRunManager({
       entry.run.status = 'stopping'
       entry.run.stopped = true
       announce(entry)
+      let stopAnswering = (): void => undefined
       // Ctrl+C does not end an interactive shell; hang it up like closing a terminal window.
       if (entry.run.kind === 'shell') await killer.hangup(entry.pty)
-      else killer.interrupt(entry.pty)
-      if (!(await settlesWithin(entry.exited, graceMs))) {
-        await killer.forceKill(entry.run.pid)
-        // Never leave a run stuck in "stopping" if the exit event is lost.
-        if (!(await settlesWithin(entry.exited, forceTimeoutMs))) entry.markExited(null)
+      else {
+        killer.interrupt(entry.pty)
+        if (platform === 'win32') {
+          stopAnswering = answerBatchPrompt(
+            () => entry.output.snapshot(),
+            (data) => entry.pty.write(data)
+          )
+        }
+      }
+      try {
+        if (!(await settlesWithin(entry.exited, graceMs))) {
+          await killer.forceKill(entry.run.pid)
+          // Never leave a run stuck in "stopping" if the exit event is lost.
+          if (!(await settlesWithin(entry.exited, forceTimeoutMs))) entry.markExited(null)
+        }
+      } finally {
+        stopAnswering()
       }
     }
     await entry.exited
