@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { FolderGit2, FolderPlus, X } from 'lucide-react'
-import type { Project } from '@devhub/shared'
+import type { Project, Run } from '@devhub/shared'
 import { shell } from '@renderer/api'
 import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
 import { EditorButtons } from '@renderer/features/editors/editor-buttons'
+import { useRuns } from '@renderer/features/runs/use-runs'
 import { cn } from '@renderer/lib/utils'
 import { useAddProject, useProjects, useRemoveProject } from './use-projects'
 
@@ -15,6 +16,8 @@ interface ProjectListProps {
 
 export function ProjectList({ selectedId, onSelect }: ProjectListProps): React.JSX.Element {
   const projects = useProjects()
+  // Pushed by run events, so the indicators follow starts and exits without polling.
+  const activeRuns = (useRuns().data ?? []).filter((run) => run.status !== 'exited')
   const addProject = useAddProject()
   const removeProject = useRemoveProject()
   const [editorError, setEditorError] = useState<Error | null>(null)
@@ -56,6 +59,7 @@ export function ProjectList({ selectedId, onSelect }: ProjectListProps): React.J
             key={project.id}
             project={project}
             selected={project.id === selectedId}
+            activeRuns={activeRuns.filter((run) => run.projectId === project.id)}
             onSelect={() => onSelect(project.id)}
             onRemove={() => removeProject.mutate(project.id)}
             onEditorError={setEditorError}
@@ -70,6 +74,8 @@ export function ProjectList({ selectedId, onSelect }: ProjectListProps): React.J
 interface ProjectItemProps {
   project: Project
   selected: boolean
+  /** Scripts and shells of this project that have not exited. */
+  activeRuns: Run[]
   onSelect: () => void
   onRemove: () => void
   onEditorError: (error: Error) => void
@@ -79,6 +85,7 @@ interface ProjectItemProps {
 function ProjectItem({
   project,
   selected,
+  activeRuns,
   onSelect,
   onRemove,
   onEditorError,
@@ -99,7 +106,10 @@ function ProjectItem({
       >
         <FolderGit2 className="size-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0">
-          <span className="block truncate text-sm font-medium">{project.name}</span>
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-medium">{project.name}</span>
+            <ActiveRunsIndicator runs={activeRuns} />
+          </span>
           <span className="block truncate text-xs text-muted-foreground" title={project.path}>
             {project.path}
           </span>
@@ -124,5 +134,30 @@ function ProjectItem({
         <X />
       </Button>
     </li>
+  )
+}
+
+/** Shows that a project still has live terminals (scripts or shells), and which ones. */
+function ActiveRunsIndicator({ runs }: { runs: Run[] }): React.JSX.Element | null {
+  if (runs.length === 0) return null
+  const stopping = runs.some((run) => run.status === 'stopping')
+  return (
+    <span
+      role="status"
+      aria-label={`${runs.length} 个活动终端`}
+      title={`运行中：${runs.map((run) => run.title).join('、')}`}
+      className={cn(
+        'flex shrink-0 items-center gap-1 text-[11px] font-medium tabular-nums',
+        stopping ? 'text-amber-600' : 'text-emerald-600'
+      )}
+    >
+      <span
+        className={cn(
+          'size-1.5 rounded-full',
+          stopping ? 'animate-pulse bg-amber-500' : 'bg-emerald-500'
+        )}
+      />
+      {runs.length}
+    </span>
   )
 }

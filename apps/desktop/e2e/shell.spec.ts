@@ -31,6 +31,9 @@ test('opens a terminal in the project, runs commands, and closing it stops them'
 
   await page.getByRole('button', { name: '新建终端' }).click()
   await expect(page.getByRole('button', { name: '终端 1', exact: true })).toBeVisible()
+  // The project list shows that this project now has a live terminal.
+  const indicator = page.locator('aside').getByRole('status', { name: '1 个活动终端' })
+  await expect(indicator).toBeVisible()
 
   // The default shell is bash on both CI platforms (Git Bash on Windows); arithmetic expansion
   // proves the command really ran in it, since the echoed input line shows the raw text.
@@ -52,4 +55,5 @@ test('opens a terminal in the project, runs commands, and closing it stops them'
   await page.getByRole('button', { name: '关闭 终端 1' }).click()
   await expect(page.getByRole('button', { name: '终端 1', exact: true })).toBeHidden()
   await expect.poll(() => isAlive(pid), { timeout: 15_000 }).toBe(false)
+  await expect(indicator).toBeHidden()
 })
