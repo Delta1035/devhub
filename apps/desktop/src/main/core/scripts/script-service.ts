@@ -1,7 +1,7 @@
-import { stat } from 'fs/promises'
 import { z } from 'zod'
 import { DevhubError, type Project, type ProjectScripts, type Script } from '@devhub/shared'
 import { detectScripts } from '../detectors/detect-scripts'
+import { isDirectory } from '../fs/is-directory'
 import type { ScriptDetector } from '../detectors/types'
 import type { ProjectService } from '../projects/project-service'
 
@@ -45,15 +45,5 @@ export function createScriptService({ projects, detectors }: ScriptServiceDeps):
       if (!script) throw new DevhubError('SCRIPT_NOT_FOUND', '脚本不存在，可能已从项目中删除')
       return { project, script }
     }
-  }
-}
-
-async function isDirectory(path: string): Promise<boolean> {
-  try {
-    return (await stat(path)).isDirectory()
-  } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code
-    if (code === 'ENOENT' || code === 'ENOTDIR') return false
-    throw error
   }
 }

@@ -19,7 +19,9 @@ devhub/                        pnpm monorepo
 │       │       ├── detectors/       脚本探测器：每种项目类型一个文件
 │       │       ├── scripts/         按项目扫描脚本（listScripts）
 │       │       ├── process/         进程管理：PTY、杀进程树、RunManager、输出缓冲（ADR 0003）
-│       │       └── events/          事件总线：把 core 事件分发给各传输层（ADR 0004）
+│       │       ├── events/          事件总线：把 core 事件分发给各传输层（ADR 0004）
+│       │       ├── editors/         检测并启动外部编辑器（VS Code / IDEA）
+│       │       └── fs/              通用文件系统小工具
 │       ├── preload/           暴露 window.devhub（DevhubApi）、window.devhubEvents（事件订阅）与 window.devhubShell（ShellApi）
 │       └── renderer/src/      React UI
 │           ├── api/           ★ UI 访问核心的唯一入口
@@ -86,6 +88,12 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 - `run-manager.ts`：每个脚本只保留最新一次运行；输出缓冲（最近 512 KB）；`dispose()` 停止全部运行。
 - `createDevhubCore` 返回 `DevhubCore`（`DevhubApi` + `dispose`）；主进程在 `before-quit` 中等待 `dispose()`（最多 10 秒）。
 - renderer 只传 id，命令由 core 重新扫描得到。
+
+## 用编辑器打开项目（`core/editors/`）
+
+- `editor-locator.ts`：按平台列出候选位置（PATH、注册表、Toolbox、默认安装目录），第一个存在的胜出；文件系统 / 注册表经参数注入，路径用 `path.win32` / `path.posix`，两个平台的查找逻辑在任何系统上都可测试。
+- `editor-launch.ts`：可执行文件直接启动（不经 shell）；Windows 的 `.cmd` 启动脚本经 `cmd /d /s /c` 并加引号。以 detached 独立进程启动，不进入 RunManager。去掉 `ELECTRON_RUN_AS_NODE`，否则 VS Code（同为 Electron）会以 Node 模式启动。
+- 放在 `DevhubApi`（`listEditors` / `openInEditor`）而不是 ShellApi：启动进程不需要 Electron，逻辑可测试；renderer 只传项目 id 与编辑器 id，路径由 core 查出。
 
 ## 事件推送（见 ADR 0004）
 

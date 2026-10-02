@@ -7,6 +7,9 @@ import {
   projectsFileSchema
 } from './projects/project-service'
 import { createDefaultDetectors } from './detectors/detect-scripts'
+import { launchDetached } from './editors/editor-launch'
+import { createEditorService } from './editors/editor-service'
+import { createSystemEditorLocator } from './editors/system-editor-locator'
 import { createEventBus } from './events/event-bus'
 import { createProcessKiller } from './process/process-killer'
 import { nodePtySpawner } from './process/pty'
@@ -47,6 +50,13 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
 
   const events = createEventBus((error) => console.error('[core] event listener failed', error))
 
+  const editors = createEditorService({
+    projects,
+    locator: createSystemEditorLocator(env.platform, process.env),
+    launch: launchDetached,
+    env: process.env
+  })
+
   const runs = createRunManager({
     scripts,
     spawn: nodePtySpawner,
@@ -71,6 +81,8 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     writeRunInput: async (runId, data) => runs.writeInput(runId, data),
     resizeRun: async (runId, cols, rows) => runs.resize(runId, cols, rows),
     removeRun: async (runId) => runs.remove(runId),
+    listEditors: () => editors.list(),
+    openInEditor: (projectId, editor) => editors.open(projectId, editor),
     subscribe: (listener) => events.subscribe(listener),
     dispose: () => runs.dispose()
   }

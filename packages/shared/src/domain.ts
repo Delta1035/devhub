@@ -78,6 +78,18 @@ export const projectConfigSchema = z.object({
 })
 export type ProjectConfig = z.infer<typeof projectConfigSchema>
 
+/** External editors/IDEs DevHub can open a project in. */
+export const editorIdSchema = z.enum(['vscode', 'idea'])
+export type EditorId = z.infer<typeof editorIdSchema>
+
+export const editorInfoSchema = z.object({
+  id: editorIdSchema,
+  name: z.string(),
+  /** False when no installation was found on this machine. */
+  available: z.boolean()
+})
+export type EditorInfo = z.infer<typeof editorInfoSchema>
+
 /** A local code directory managed by DevHub. */
 export const projectSchema = z.object({
   id: z.string().min(1),

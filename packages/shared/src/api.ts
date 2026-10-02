@@ -1,4 +1,4 @@
-import type { Project, ProjectScripts, Run } from './domain'
+import type { EditorId, EditorInfo, Project, ProjectScripts, Run } from './domain'
 import type { RunOutputSnapshot } from './events'
 
 /**
@@ -29,6 +29,10 @@ export interface DevhubApi {
   resizeRun(runId: string, cols: number, rows: number): Promise<void>
   /** Forgets an exited run (closes its terminal tab). */
   removeRun(runId: string): Promise<void>
+  /** Editors DevHub knows about and whether each is installed. */
+  listEditors(): Promise<EditorInfo[]>
+  /** Opens the project directory in the editor, as a separate process DevHub does not manage. */
+  openInEditor(projectId: string, editor: EditorId): Promise<void>
 }
 
 export interface AppInfo {
@@ -52,7 +56,9 @@ export const devhubApiMethods = [
   'getRunOutput',
   'writeRunInput',
   'resizeRun',
-  'removeRun'
+  'removeRun',
+  'listEditors',
+  'openInEditor'
 ] as const satisfies readonly DevhubApiMethod[]
 
 type MissingMethods = Exclude<DevhubApiMethod, (typeof devhubApiMethods)[number]>

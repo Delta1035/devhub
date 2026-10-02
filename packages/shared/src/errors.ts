@@ -10,6 +10,8 @@ export type DevhubErrorCode =
   | 'RUN_NOT_FOUND'
   | 'RUN_NOT_ACTIVE'
   | 'RUN_STILL_ACTIVE'
+  | 'EDITOR_NOT_FOUND'
+  | 'EDITOR_LAUNCH_FAILED'
   | 'INTERNAL'
 
 /** Expected, user-facing failure. `message` is shown in the UI as-is. */

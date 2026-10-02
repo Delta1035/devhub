@@ -49,6 +49,10 @@
   - 本机验证 Windows 安装包生成；Linux 安装包与 Release 创建待首次推 tag 时确认
 - M1-12 发布加固：`pnpm release <patch|minor|major>` 改版本、提交并打 tag（pnpm 自带 `version`，无新依赖）；Release 先跑 `pnpm check` + E2E，附 `SHA256SUMS.txt` 与构建溯源（`actions/attest`）；所有 action 升到 Node 24 版本并固定到 commit SHA；Dependabot 每周更新 actions 与 npm 依赖
   - 修复：v0.1.1 发布时 deb 打包失败（缺 `homepage`）；补 `homepage` / `author` / `desktopName`（+ `linux.syncDesktopName`）。CI 的 `package` job 改为打真实安装包（原先只打 `--dir`，发现不了安装包元数据问题）
+- 用编辑器打开项目：项目列表（悬停）与详情标题栏的 VS Code / IDEA 按钮；API `listEditors` / `openInEditor`
+  - 自动检测：PATH（`code.cmd` → 同目录 `Code.exe`）、JetBrains 注册表（自定义安装目录）、Toolbox、默认安装目录；Linux 含 snap / Toolbox
+  - 编辑器作为独立进程启动（不进入运行列表，退出 DevHub 不受影响）；未检测到的编辑器按钮禁用
+  - 手动验证：本机 VS Code（装在 D 盘，经 PATH 找到）成功打开带空格路径的项目；IDEA 未安装 → 按钮禁用、API 返回「未检测到 IntelliJ IDEA」
 
 ### 下一步（M1）
 
@@ -68,6 +72,7 @@
 - Windows 上 `npm` / `yarn` 是 `.cmd` 批处理：停止或退出 DevHub 时会等满 5 秒才强制结束（pnpm 实测 1 秒）；可考虑在 Ctrl+C 后自动应答批处理提示
 - Linux 上的真实进程集成测试、E2E 与打包尚未运行过（本机是 Windows），需推送后由 CI（ubuntu）验证
 - 在 VSCode 集成终端中启动 `pnpm dev` 需先清除 `ELECTRON_RUN_AS_NODE`（VSCode 会设置它，导致 Electron 以 Node 模式运行）：`env -u ELECTRON_RUN_AS_NODE pnpm dev`
+- 编辑器：本机未安装 IDEA，用 IDEA 打开只经过单元测试，尚未在真实环境验证；检测不到时暂不支持手动指定路径（以后放进设置）；`reg query` 输出按系统代码页解码，安装路径含中文时可能识别不到
 - CI 待办：缓存 Electron 二进制（每次 install 下载 100MB+）
 - 发布待办（GitHub 仓库设置，非代码）：开启 Immutable releases；为 `v*` tag 加 ruleset 限制创建者
 - 发布：安装包未签名（Windows SmartScreen 提示）；无应用内自动更新（需引入 electron-updater，届时补 ADR）

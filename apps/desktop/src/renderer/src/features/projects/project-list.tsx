@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { FolderGit2, FolderPlus, X } from 'lucide-react'
 import type { Project } from '@devhub/shared'
 import { shell } from '@renderer/api'
 import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
+import { EditorButtons } from '@renderer/features/editors/editor-buttons'
 import { cn } from '@renderer/lib/utils'
 import { useAddProject, useProjects, useRemoveProject } from './use-projects'
 
@@ -15,7 +17,8 @@ export function ProjectList({ selectedId, onSelect }: ProjectListProps): React.J
   const projects = useProjects()
   const addProject = useAddProject()
   const removeProject = useRemoveProject()
-  const error = projects.error ?? addProject.error ?? removeProject.error
+  const [editorError, setEditorError] = useState<Error | null>(null)
+  const error = projects.error ?? addProject.error ?? removeProject.error ?? editorError
 
   const handleAdd = async (): Promise<void> => {
     const path = await shell?.pickDirectory()
@@ -55,6 +58,7 @@ export function ProjectList({ selectedId, onSelect }: ProjectListProps): React.J
             selected={project.id === selectedId}
             onSelect={() => onSelect(project.id)}
             onRemove={() => removeProject.mutate(project.id)}
+            onEditorError={setEditorError}
             removing={removeProject.isPending && removeProject.variables === project.id}
           />
         ))}
@@ -68,6 +72,7 @@ interface ProjectItemProps {
   selected: boolean
   onSelect: () => void
   onRemove: () => void
+  onEditorError: (error: Error) => void
   removing: boolean
 }
 
@@ -76,6 +81,7 @@ function ProjectItem({
   selected,
   onSelect,
   onRemove,
+  onEditorError,
   removing
 }: ProjectItemProps): React.JSX.Element {
   return (
@@ -99,6 +105,13 @@ function ProjectItem({
           </span>
         </span>
       </button>
+      <EditorButtons
+        projectId={project.id}
+        projectName={project.name}
+        variant="icon"
+        onError={onEditorError}
+        className="opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"
+      />
       <Button
         variant="ghost"
         size="icon-xs"

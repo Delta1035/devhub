@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, TriangleAlert, X } from 'lucide-react'
 import type { Project } from '@devhub/shared'
+import { Alert, AlertAction, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
+import { EditorButtons } from '@renderer/features/editors/editor-buttons'
 import { ScriptList } from '@renderer/features/scripts/script-list'
 import { useProjectScripts } from '@renderer/features/scripts/use-scripts'
 import { TerminalPanel } from '@renderer/features/terminal/terminal-panel'
@@ -9,6 +11,7 @@ import { TerminalPanel } from '@renderer/features/terminal/terminal-panel'
 export function ProjectDetail({ project }: { project: Project }): React.JSX.Element {
   const scripts = useProjectScripts(project.id)
   const [activeRunId, setActiveRunId] = useState<string | null>(null)
+  const [editorError, setEditorError] = useState<Error | null>(null)
 
   return (
     <div className="flex h-full flex-col">
@@ -19,6 +22,12 @@ export function ProjectDetail({ project }: { project: Project }): React.JSX.Elem
             {project.path}
           </p>
         </div>
+        <EditorButtons
+          projectId={project.id}
+          projectName={project.name}
+          variant="labeled"
+          onError={setEditorError}
+        />
         <Button
           variant="outline"
           size="sm"
@@ -34,6 +43,23 @@ export function ProjectDetail({ project }: { project: Project }): React.JSX.Elem
         </Button>
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+        {editorError && (
+          <Alert variant="destructive" className="mb-4">
+            <TriangleAlert />
+            <AlertTitle>无法打开编辑器</AlertTitle>
+            <AlertDescription>{editorError.message}</AlertDescription>
+            <AlertAction>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => setEditorError(null)}
+                aria-label="关闭"
+              >
+                <X />
+              </Button>
+            </AlertAction>
+          </Alert>
+        )}
         <ScriptList project={project} onRunStarted={(run) => setActiveRunId(run.id)} />
       </div>
       <TerminalPanel
