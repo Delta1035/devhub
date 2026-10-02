@@ -14,7 +14,9 @@ devhub/                        pnpm monorepo
 │       │   └── core/          ★ 业务核心，不依赖 Electron
 │       │       ├── devhub-core.ts   组装各服务，实现 DevhubApi
 │       │       ├── storage/         通用 JSON 存储（见 ADR 0002）
-│       │       └── projects/        项目注册与持久化
+│       │       ├── projects/        项目注册与持久化
+│       │       ├── detectors/       脚本探测器：每种项目类型一个文件
+│       │       └── scripts/         按项目扫描脚本（listScripts）
 │       ├── preload/           暴露 window.devhub（DevhubApi）与 window.devhubShell（ShellApi）
 │       └── renderer/src/      React UI
 │           ├── api/           ★ UI 访问核心的唯一入口
@@ -59,13 +61,21 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 | -------------- | ---------------------------------------------------- |
 | Project        | 一个被管理的代码目录（已实现，存于 `projects.json`） |
 | Script         | 可运行命令，来源：npm / maven / gradle / custom      |
+| ProjectScripts | 扫描结果：`status`（ok/missing）、脚本、探测器警告   |
 | Profile        | 一组环境变量与参数覆盖，用于切换对接的后端           |
 | Run（M1）      | 一次运行：状态、PID、日志                            |
 | `.devhub.yaml` | 项目内可选配置：自定义脚本 + Profile                 |
 
+## 脚本探测
+
+- `ScriptDetector { source, detect(dir) }`（`core/detectors/types.ts`）：不适用返回 `[]`；构建文件损坏时抛出面向用户的 `Error`。
+- 新增项目类型 = 新增一个探测器文件，并加入 `detect-scripts.ts` 的 `defaultDetectors`。
+- `detectScripts` 并行执行所有探测器，失败的探测器转为 `warnings`，不影响其他结果。
+- 脚本 id 形如 `<source>:<name>`，重新扫描保持稳定，供进程管理关联运行状态。
+- 不缓存：每次 `listScripts` 都读磁盘。
+
 ## 规划中的模块（M1）
 
-- `core/detectors/`：每种项目类型一个探测器，实现统一接口；新增类型 = 新增一个文件。
 - `core/process/`：进程管理。Windows 用进程树终止（taskkill /T 或 Job Object），Linux 用进程组；PTY 采用 `node-pty`。
 - 事件推送（日志、状态变化）：契约中以订阅接口表达，IPC 用 `webContents.send`，远程用 WebSocket。
 

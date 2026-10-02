@@ -1,4 +1,4 @@
-import type { Project } from './domain'
+import type { Project, ProjectScripts } from './domain'
 
 /**
  * The contract between any UI (desktop renderer, future mobile/PWA) and the DevHub core.
@@ -11,6 +11,8 @@ export interface DevhubApi {
   /** Registers an existing local directory. `path` must be absolute. */
   addProject(path: string): Promise<Project>
   removeProject(projectId: string): Promise<void>
+  /** Scans the project directory for runnable scripts. Never cached: reflects the files on disk. */
+  listScripts(projectId: string): Promise<ProjectScripts>
 }
 
 export interface AppInfo {
@@ -25,7 +27,8 @@ export const devhubApiMethods = [
   'getAppInfo',
   'listProjects',
   'addProject',
-  'removeProject'
+  'removeProject',
+  'listScripts'
 ] as const satisfies readonly DevhubApiMethod[]
 
 type MissingMethods = Exclude<DevhubApiMethod, (typeof devhubApiMethods)[number]>

@@ -15,6 +15,8 @@ export const emptyProjectsFile = (): ProjectsFile => ({ version: 1, projects: []
 
 export interface ProjectService {
   list(): Promise<Project[]>
+  /** Throws PROJECT_NOT_FOUND for unknown or malformed ids. */
+  get(projectId: unknown): Promise<Project>
   add(path: unknown): Promise<Project>
   remove(projectId: unknown): Promise<void>
 }
@@ -60,6 +62,16 @@ export function createProjectService({
     async list() {
       const data = await load()
       return [...data.projects]
+    },
+
+    async get(rawId) {
+      const data = await load()
+      const parsed = idInput.safeParse(rawId)
+      const project = parsed.success
+        ? data.projects.find((candidate) => candidate.id === parsed.data)
+        : undefined
+      if (!project) throw new DevhubError('PROJECT_NOT_FOUND', '项目不存在或已被移除')
+      return project
     },
 
     add(rawPath) {

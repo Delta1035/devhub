@@ -6,6 +6,7 @@ import {
   emptyProjectsFile,
   projectsFileSchema
 } from './projects/project-service'
+import { createScriptService } from './scripts/script-service'
 
 export interface CoreEnvironment {
   version: string
@@ -29,12 +30,15 @@ export function createDevhubCore(env: CoreEnvironment): DevhubApi {
     platform: env.platform
   })
 
+  const scripts = createScriptService({ projects })
+
   return {
     async getAppInfo() {
       return { version: env.version, platform: env.platform }
     },
     listProjects: () => projects.list(),
     addProject: (path) => projects.add(path),
-    removeProject: (projectId) => projects.remove(projectId)
+    removeProject: (projectId) => projects.remove(projectId),
+    listScripts: (projectId) => scripts.list(projectId)
   }
 }

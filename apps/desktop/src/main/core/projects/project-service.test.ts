@@ -93,6 +93,14 @@ describe('createProjectService', () => {
     await expectCode(service.remove(project.id), 'PROJECT_NOT_FOUND')
   })
 
+  it('gets a project by id and rejects unknown or malformed ids', async () => {
+    const service = makeService()
+    const project = await service.add(repoA)
+    await expect(service.get(project.id)).resolves.toEqual(project)
+    await expectCode(service.get('nope'), 'PROJECT_NOT_FOUND')
+    await expectCode(service.get(42), 'PROJECT_NOT_FOUND')
+  })
+
   it('does not lose updates when adds run concurrently', async () => {
     const repos = await Promise.all(
       ['x', 'y', 'z'].map(async (name) => {

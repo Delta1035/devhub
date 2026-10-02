@@ -10,9 +10,26 @@ export const scriptSchema = z.object({
   name: z.string().min(1),
   source: scriptSourceSchema,
   command: z.string().min(1),
-  cwd: z.string().optional()
+  cwd: z.string().optional(),
+  /** Human-readable detail, e.g. the raw npm script body. */
+  description: z.string().optional()
 })
 export type Script = z.infer<typeof scriptSchema>
+
+/** A detector that failed (e.g. malformed package.json); other detectors still contribute. */
+export const scriptWarningSchema = z.object({
+  source: scriptSourceSchema,
+  message: z.string()
+})
+export type ScriptWarning = z.infer<typeof scriptWarningSchema>
+
+/** Result of scanning a project directory. `missing` means the directory no longer exists. */
+export const projectScriptsSchema = z.object({
+  status: z.enum(['ok', 'missing']),
+  scripts: z.array(scriptSchema),
+  warnings: z.array(scriptWarningSchema)
+})
+export type ProjectScripts = z.infer<typeof projectScriptsSchema>
 
 /** A named set of overrides used to point a project at a different backend. */
 export const profileSchema = z.object({
