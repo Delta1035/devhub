@@ -26,6 +26,13 @@ function showMainWindow(): void {
   mainWindow.focus()
 }
 
+// `pnpm dev` would otherwise share userData (and the single-instance lock) with an installed
+// DevHub, so the dev build quits immediately and Chromium fails to open its locked caches.
+// An explicit --user-data-dir (e.g. from E2E) still wins.
+if (is.dev && !app.commandLine.hasSwitch('user-data-dir')) {
+  app.setPath('userData', `${app.getPath('userData')}-dev`)
+}
+
 // Only one DevHub may own the managed processes at a time.
 if (!app.requestSingleInstanceLock()) {
   app.quit()
