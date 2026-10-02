@@ -9,7 +9,8 @@ export function createMainWindow(shouldHideOnClose: () => boolean): BrowserWindo
     height: 720,
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    // macOS takes the icon from the app bundle; elsewhere this also covers dev mode.
+    ...(process.platform === 'darwin' ? {} : { icon }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,

@@ -18,6 +18,8 @@ nsis:
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+mac:
+  category: public.app-category.developer-tools
 linux:
   target:
     - AppImage

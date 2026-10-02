@@ -1,5 +1,6 @@
 import { app, BrowserWindow, Tray } from 'electron'
-import { electronApp, optimizer } from '@electron-toolkit/utils'
+import { electronApp, is, optimizer } from '@electron-toolkit/utils'
+import icon from '../../resources/icon.png?asset'
 import { createDevhubCore } from './core/devhub-core'
 import { registerIpcHandlers } from './ipc'
 import { createMainWindow } from './window'
@@ -28,6 +29,8 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(() => {
     electronApp.setAppUserModelId('com.devhub.desktop')
+    // Packaged builds use build/icon.icns; in dev the Dock would otherwise show Electron's icon.
+    if (is.dev) app.dock?.setIcon(icon)
     app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
 
     registerIpcHandlers(

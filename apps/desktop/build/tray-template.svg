@@ -1,0 +1,8 @@
+<!-- macOS menu bar template: black + alpha only, the system recolours it for light/dark mode. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="56 56 400 400">
+  <g fill="none" stroke="#000000" stroke-width="38" stroke-linecap="round" stroke-linejoin="round">
+    <path id="brace" d="M168 120 Q120 120 120 168 V216 Q120 256 80 256 Q120 256 120 296 V344 Q120 392 168 392"/>
+    <use href="#brace" transform="translate(512 0) scale(-1 1)"/>
+  </g>
+  <path d="M284 138 L198 272 H252 L226 374 L314 232 H260 Z" fill="#000000" stroke="#000000" stroke-width="16" stroke-linejoin="round"/>
+</svg>
