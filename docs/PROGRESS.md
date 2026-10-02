@@ -76,10 +76,11 @@
   - 也可用来补上 monorepo 子包 / 多模块项目中识别不到的启动命令
 - 批量执行：「输出中出现文字」支持正则（保存时校验）；每个任务最近一次结果与完成时间保存在 `group-history.json`，重启后仍显示（ADR 0006 补充）
 - 自定义 shell：设置页添加程序路径与参数，出现在「+」菜单中、可设为默认（ADR 0007 补充）；E2E 用 Node REPL 作为自定义 shell 覆盖
+- Linux 上 `mvnw` / `gradlew` 没有执行权限时改用 `sh ./mvnw` 运行（有权限时仍是 `./mvnw`）；真实权限位测试只在 Linux CI 运行
 
 ### 下一步（M1）
 
-1. 依次：Linux 下 `mvnw` / `gradlew` 无执行权限 → CI 缓存 Electron → 自动更新（electron-updater）
+1. 依次：CI 缓存 Electron → 自动更新（electron-updater）
 2. monorepo 子包 / 多模块项目的脚本识别（暂缓）
 3. 推送后确认 CI 在 Windows + Ubuntu 都通过（Linux 上的杀进程树集成测试、E2E 与打包都是首次运行）
 
@@ -88,7 +89,6 @@
 - npm 探测只看项目根目录：monorepo 子包作为项目添加时，根目录的 lockfile 识别不到，会回退为 npm
 - 脚本命令目前是字符串（经 shell 执行）；进程管理时再决定是否改为 argv 形式
 - Maven 多模块 / Gradle 多项目：只读根目录构建文件，子模块中的 `spring-boot:run` / `bootRun` 识别不到，且在根目录执行会作用于所有模块；以后扫描子模块并用 `-pl <module>` / `:<project>:bootRun`
-- Linux 上 `mvnw` / `gradlew` 若无执行权限（如从 zip 解压），`./mvnw` 会失败；进程管理阶段再决定是否改为 `sh mvnw`
 - Android 项目的 `assembleDebug`、`installDebug` 等任务暂不识别
 - Linux 上自己 `setsid` 脱离进程组的守护进程杀不到；崩溃后的遗留进程只有当记录的根进程本身存活时才能发现（子进程脱离后根进程已退出的情况发现不了）
 - Windows 上 node-pty 在进程自然退出后会在 stderr 打印 `AttachConsole failed`（释放资源时的辅助进程），不影响功能

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'fs/promises'
+import { chmod, mkdir, mkdtemp, rm, writeFile } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -74,7 +74,11 @@ describe('createMavenDetector', () => {
     ['no wrapper', 'win32', [], 'mvn package']
   ])('picks the executable on %s', async (_label, platform, wrappers, command) => {
     await writePom(plainPom)
-    for (const wrapper of wrappers) await touch(wrapper)
+    // Wrappers are executable in a normal checkout; a non-executable one is covered in fs-utils.
+    for (const wrapper of wrappers) {
+      await touch(wrapper)
+      await chmod(join(dir, wrapper), 0o755)
+    }
     expect(await commands(platform)).toContain(command)
   })
 

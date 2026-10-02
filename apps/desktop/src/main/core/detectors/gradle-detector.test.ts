@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'fs/promises'
+import { chmod, mkdir, mkdtemp, rm, writeFile } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -98,7 +98,10 @@ describe('createGradleDetector', () => {
     ['linux with only gradlew.bat', 'linux', ['gradlew.bat'], 'gradle build']
   ])('picks the executable on %s', async (_label, platform, wrappers, command) => {
     await write('build.gradle')
-    for (const wrapper of wrappers) await write(wrapper)
+    for (const wrapper of wrappers) {
+      await write(wrapper)
+      await chmod(join(dir, wrapper), 0o755)
+    }
     const commands = (await detect(platform)).map((script) => script.command)
     expect(commands).toContain(command)
   })
