@@ -5,6 +5,7 @@ import { createDevhubCore, type DevhubCore } from './core/devhub-core'
 import { registerIpcHandlers } from './ipc'
 import { registerUpdater } from './updater'
 import { createMainWindow } from './window'
+import { registerWindowControls } from './window-controls'
 import { createTray } from './tray'
 
 let mainWindow: BrowserWindow | null = null
@@ -55,6 +56,7 @@ if (!app.requestSingleInstanceLock()) {
     })
     registerIpcHandlers(core)
     registerUpdater()
+    registerWindowControls()
     core.getSettings().then(
       (settings) => (closeAction = settings.closeAction),
       () => undefined

@@ -1,7 +1,4 @@
 import { useState } from 'react'
-import { Settings as SettingsIcon } from 'lucide-react'
-import { Button } from '@renderer/components/ui/button'
-import { useAppInfo } from '@renderer/features/app-info/use-app-info'
 import { ProjectDetail } from '@renderer/features/projects/project-detail'
 import { useGroupEventsSync } from '@renderer/features/groups/use-groups'
 import { useProjects } from '@renderer/features/projects/use-projects'
@@ -9,10 +6,9 @@ import { OrphansBanner } from '@renderer/features/runs/orphans-banner'
 import { useRunEventsSync } from '@renderer/features/runs/use-runs'
 import { SettingsPage } from '@renderer/features/settings/settings-page'
 import { Sidebar } from '@renderer/features/sidebar/sidebar'
-import { UpdateBadge } from '@renderer/features/updates/update-badge'
+import { TitleBar } from '@renderer/features/title-bar/title-bar'
 
 function App(): React.JSX.Element {
-  const { data: appInfo } = useAppInfo()
   useRunEventsSync()
   useGroupEventsSync()
   const { data: projects } = useProjects()
@@ -30,23 +26,10 @@ function App(): React.JSX.Element {
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
-      <header className="flex items-center gap-3 border-b px-6 py-2.5">
-        <h1 className="font-heading text-lg font-semibold">DevHub</h1>
-        {appInfo && <span className="text-xs text-muted-foreground">v{appInfo.version}</span>}
-        <div className="ml-auto">
-          <UpdateBadge />
-        </div>
-        <Button
-          variant={showSettings ? 'secondary' : 'ghost'}
-          size="icon-sm"
-          onClick={() => setShowSettings(!showSettings)}
-          aria-label="设置"
-          aria-pressed={showSettings}
-          title="设置"
-        >
-          <SettingsIcon />
-        </Button>
-      </header>
+      <TitleBar
+        showSettings={showSettings}
+        onToggleSettings={() => setShowSettings(!showSettings)}
+      />
       <div className="flex min-h-0 flex-1">
         <aside className="flex w-64 shrink-0 flex-col border-r p-3">
           <Sidebar

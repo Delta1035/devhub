@@ -61,7 +61,10 @@ export function registerIpcHandlers(core: DevhubApi & DevhubEvents): void {
   )
 }
 
-async function toIpcResult(name: string, run: () => Promise<unknown>): Promise<IpcResult<unknown>> {
+export async function toIpcResult(
+  name: string,
+  run: () => Promise<unknown>
+): Promise<IpcResult<unknown>> {
   try {
     return { ok: true, value: await run() }
   } catch (error) {

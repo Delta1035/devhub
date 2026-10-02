@@ -82,6 +82,8 @@
   - 已验证：本地打包产物含 `latest.yml` 与 `app-update.yml`，运行打包版能连上 GitHub 并正确提示 v0.1.2 缺少更新信息；完整更新流程需发布两个新版本后实测
 - 侧栏改为「项目 / 批量」两个标签页（radix Tabs，无新依赖），各自占满侧栏高度并独立滚动；选中的标签记在本地；批量任务执行中时「批量」标签显示脉冲圆点；E2E 覆盖切换、圆点出现与消失、重启后保留标签
 - `@electron-toolkit/eslint-config-ts` 升到 v4（内含 `@eslint/js` v10，ESLint 本体仍为 v9）：新推荐规则 `preserve-caught-error` 要求包装错误时带 `cause`，`no-useless-assignment` 修正了 E2E 重启后多余的 `app` 赋值
+- 自制标题栏（ADR 0010）：Windows / Linux 去掉系统边框，标题栏含 logo、版本、更新提示、设置与最小化 / 最大化（还原）/ 关闭按钮，可拖动窗口；macOS 保留红绿灯（`hiddenInset`）；ShellApi 新增窗口控制与 `onWindowState`
+  - E2E 1 个（最大化 / 还原 / 最小化，关闭后隐藏到托盘；Linux xvfb 无窗口管理器只测关闭）；深浅色与关闭悬停已截图确认
 
 ### 下一步（M1）
 
@@ -105,4 +107,5 @@
 - 编辑器：本机已安装 IDEA（D 盘自定义目录），经注册表检测成功；实际打开项目待人工点一次确认；检测不到时可在设置中手动指定；`reg query` 输出按系统代码页解码，安装路径含中文时可能识别不到
 - 发布待办（GitHub 仓库设置，非代码）：开启 Immutable releases；为 `v*` tag 加 ruleset 限制创建者
 - 发布：安装包不做签名（已决定，Windows SmartScreen 会提示）；v0.1.2 及更早版本没有 latest.yml，需手动升级一次
+- 自制标题栏：Linux 上边缘调整大小、双击标题栏最大化依赖窗口管理器，待在真实 Ubuntu 桌面确认；Win11 悬停最大化按钮的贴靠布局菜单不再出现
 - 端口推断是启发式的：脚本里没写端口、也不是已知工具时不检查；`run-manager.ts` 已接近 400 行，下次改动时拆分

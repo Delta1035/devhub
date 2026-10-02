@@ -9,7 +9,8 @@ devhub/                        pnpm monorepo
 │   └── src/
 │       ├── main/              主进程（Node）
 │       │   ├── index.ts       应用生命周期：单实例、托盘、窗口
-│       │   ├── window.ts      主窗口（关闭 = 隐藏到托盘）
+│       │   ├── window.ts      主窗口（无系统边框，关闭 = 隐藏到托盘）
+│       │   ├── window-controls.ts  自制标题栏的窗口按钮处理器与状态推送（ADR 0010）
 │       │   ├── tray.ts        托盘菜单
 │       │   ├── ipc.ts         把 DevhubApi 自动映射为 IPC 通道；ShellApi 处理器
 │       │   └── core/          ★ 业务核心，不依赖 Electron
@@ -61,7 +62,7 @@ React UI ──> @renderer/api ──> DevhubApi (packages/shared)
 
 ### ShellApi：仅桌面端可用的能力
 
-原生对话框、用系统浏览器打开链接、自动更新（`main/updater.ts`，ADR 0009）等只在本机有意义的能力放在 `ShellApi`（`window.devhubShell`），不进入 `DevhubApi`。
+原生对话框、用系统浏览器打开链接、自动更新（`main/updater.ts`，ADR 0009）、窗口控制（自制标题栏，`main/window-controls.ts`，ADR 0010）等只在本机有意义的能力放在 `ShellApi`（`window.devhubShell`），不进入 `DevhubApi`。
 UI 通过 `@renderer/api` 的 `shell` 访问；远程客户端中它为 `null`，UI 需据此隐藏相关入口。
 ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动映射）。
 

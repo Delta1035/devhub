@@ -129,6 +129,15 @@
   }
 }
 
+/* The title bar moves the window (ADR 0010); anything clickable inside it opts out. */
+.app-drag {
+  -webkit-app-region: drag;
+  user-select: none;
+}
+.app-no-drag {
+  -webkit-app-region: no-drag;
+}
+
 /* xterm paints its scroll viewport black by default, which shows around the padded grid.
    The terminal host already carries the theme background, so let it show through. */
 [data-terminal-run] .xterm .xterm-viewport {

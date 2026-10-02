@@ -9,7 +9,8 @@ import {
   type DevhubEvents,
   type IpcResult,
   type ShellApi,
-  type UpdateStatus
+  type UpdateStatus,
+  type WindowState
 } from '@devhub/shared'
 
 async function invoke(channel: string, ...args: unknown[]): Promise<unknown> {
@@ -47,6 +48,23 @@ const shell: ShellApi = {
   },
   openExternal: async (url) => {
     await invoke(shellChannel.openExternal, url)
+  },
+  getWindowState: () => invoke(shellChannel.getWindowState) as Promise<WindowState>,
+  onWindowState(listener) {
+    const handler = (_event: IpcRendererEvent, state: WindowState): void => listener(state)
+    ipcRenderer.on(shellChannel.windowState, handler)
+    return () => {
+      ipcRenderer.removeListener(shellChannel.windowState, handler)
+    }
+  },
+  minimizeWindow: async () => {
+    await invoke(shellChannel.minimizeWindow)
+  },
+  toggleMaximizeWindow: async () => {
+    await invoke(shellChannel.toggleMaximizeWindow)
+  },
+  closeWindow: async () => {
+    await invoke(shellChannel.closeWindow)
   }
 }
 

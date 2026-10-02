@@ -145,6 +145,21 @@ export interface ShellApi {
   installUpdate(): Promise<void>
   /** Called on every status change; returns a function that unsubscribes. */
   onUpdateStatus(listener: (status: UpdateStatus) => void): () => void
+  /** The window draws its own title bar (ADR 0010); these back its buttons. */
+  getWindowState(): Promise<WindowState>
+  /** Called when the window is maximized, restored or enters / leaves full screen. */
+  onWindowState(listener: (state: WindowState) => void): () => void
+  minimizeWindow(): Promise<void>
+  toggleMaximizeWindow(): Promise<void>
+  /** Same as the system close button: hides to the tray or quits, per settings. */
+  closeWindow(): Promise<void>
+}
+
+export interface WindowState {
+  /** Host OS (`win32` / `linux` / `darwin`): macOS keeps its own traffic-light buttons. */
+  platform: string
+  maximized: boolean
+  fullScreen: boolean
 }
 
 /**
@@ -170,5 +185,11 @@ export const shellChannel = {
   installUpdate: 'shell:installUpdate',
   /** Pushed from main to the renderer. */
   updateStatus: 'shell:updateStatus',
-  openExternal: 'shell:openExternal'
+  openExternal: 'shell:openExternal',
+  getWindowState: 'shell:getWindowState',
+  /** Pushed from main to the renderer. */
+  windowState: 'shell:windowState',
+  minimizeWindow: 'shell:minimizeWindow',
+  toggleMaximizeWindow: 'shell:toggleMaximizeWindow',
+  closeWindow: 'shell:closeWindow'
 } as const

@@ -3,15 +3,24 @@ import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { parseExternalUrl } from './core/shell/external-url'
+import { publishWindowState } from './window-controls'
 
 export function createMainWindow(shouldHideOnClose: () => boolean): BrowserWindow {
+  const isMac = process.platform === 'darwin'
   const window = new BrowserWindow({
     width: 1100,
     height: 720,
+    minWidth: 760,
+    minHeight: 480,
     show: false,
     autoHideMenuBar: true,
+    // The renderer draws the title bar (ADR 0010). macOS keeps its traffic lights, inset
+    // into that bar and vertically centred in its 40px height.
+    ...(isMac
+      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 14, y: 13 } }
+      : { frame: false }),
     // macOS takes the icon from the app bundle; elsewhere this also covers dev mode.
-    ...(process.platform === 'darwin' ? {} : { icon }),
+    ...(isMac ? {} : { icon }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
@@ -20,6 +29,7 @@ export function createMainWindow(shouldHideOnClose: () => boolean): BrowserWindo
   })
 
   window.on('ready-to-show', () => window.show())
+  publishWindowState(window)
 
   // Closing the window keeps managed processes running; the app lives on in the tray.
   window.on('close', (event) => {
