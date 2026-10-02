@@ -115,7 +115,9 @@ test('waits for a regex in the output and remembers the result after a restart',
     'package.json': packageJson({ serve: 'node server.js' }),
     'server.js': slowServer('Started ApiApplication in 1.23 seconds', 300)
   })
-  let { app, page } = await launchDevhub()
+  const first = await launchDevhub()
+  const { app } = first
+  let { page } = first
   await addProjectViaApi(page, dir)
 
   const groups = page.getByRole('region', { name: '批量任务' })
@@ -134,6 +136,6 @@ test('waits for a regex in the output and remembers the result after a restart',
   await expect(item()).toContainText(/已完成 · \d{2}:\d{2}/)
 
   await app.close()
-  ;({ app, page } = await launchDevhub())
+  page = (await launchDevhub()).page
   await expect(item()).toContainText(/已完成 · \d{2}:\d{2}/)
 })

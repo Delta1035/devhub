@@ -22,13 +22,15 @@ test('lists detected scripts with the package manager from the lockfile', async 
 
 test('flags a project whose directory was deleted', async ({ launchDevhub, createProject }) => {
   const dir = await createProject('gone', { 'package.json': packageJson({ dev: 'node -v' }) })
-  let { app, page } = await launchDevhub()
+  const first = await launchDevhub()
+  const { app } = first
+  let { page } = first
   await addProjectViaApi(page, dir)
   await expect(page.getByText('npm run dev')).toBeVisible()
   await app.close()
 
   await rm(dir, { recursive: true, force: true })
-  ;({ app, page } = await launchDevhub())
+  page = (await launchDevhub()).page
   await expect(page.getByText('项目目录不存在')).toBeVisible()
 })
 
