@@ -5,6 +5,7 @@ import { GroupList } from '@renderer/features/groups/group-list'
 import { useGroupEventsSync } from '@renderer/features/groups/use-groups'
 import { ProjectList } from '@renderer/features/projects/project-list'
 import { useProjects } from '@renderer/features/projects/use-projects'
+import { OrphansBanner } from '@renderer/features/runs/orphans-banner'
 import { useRunEventsSync } from '@renderer/features/runs/use-runs'
 
 function App(): React.JSX.Element {
@@ -29,14 +30,17 @@ function App(): React.JSX.Element {
           <ProjectList selectedId={selected?.id ?? null} onSelect={setSelectedId} />
           <GroupList selectedProjectId={selected?.id ?? null} onSelectProject={setSelectedId} />
         </aside>
-        <main className="min-w-0 flex-1">
-          {selected ? (
-            <ProjectDetail key={selected.id} project={selected} />
-          ) : (
-            <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              添加一个项目后，这里会列出它的脚本
-            </p>
-          )}
+        <main className="flex min-w-0 flex-1 flex-col">
+          <OrphansBanner />
+          <div className="min-h-0 flex-1">
+            {selected ? (
+              <ProjectDetail key={selected.id} project={selected} />
+            ) : (
+              <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                添加一个项目后，这里会列出它的脚本
+              </p>
+            )}
+          </div>
         </main>
       </div>
     </div>

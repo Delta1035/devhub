@@ -100,6 +100,19 @@ export const projectConfigSchema = z.object({
 })
 export type ProjectConfig = z.infer<typeof projectConfigSchema>
 
+/**
+ * A process DevHub started in an earlier session that is still alive, because DevHub crashed
+ * or was killed before it could stop it.
+ */
+export const orphanedRunSchema = z.object({
+  pid: z.number().int(),
+  projectId: z.string(),
+  title: z.string(),
+  command: z.string(),
+  startedAt: z.iso.datetime()
+})
+export type OrphanedRun = z.infer<typeof orphanedRunSchema>
+
 /** External editors/IDEs DevHub can open a project in. */
 export const editorIdSchema = z.enum(['vscode', 'idea'])
 export type EditorId = z.infer<typeof editorIdSchema>

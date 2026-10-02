@@ -1,6 +1,7 @@
 import type {
   EditorId,
   EditorInfo,
+  OrphanedRun,
   Project,
   ProjectScripts,
   Run,
@@ -32,6 +33,12 @@ export interface DevhubApi {
   /** Stops the whole process tree; resolves once the process has exited. */
   stopRun(runId: string): Promise<void>
   restartRun(runId: string): Promise<Run>
+  /** Processes left running by a previous session that ended abnormally. */
+  listOrphanedRuns(): Promise<OrphanedRun[]>
+  /** Stops every orphaned process tree and forgets them. */
+  killOrphanedRuns(): Promise<void>
+  /** Forgets the orphaned processes without stopping them. */
+  dismissOrphanedRuns(): Promise<void>
   /** Active runs plus the latest exited run of each script. */
   listRuns(): Promise<Run[]>
   /** Recent output; combine with `run-output` events through `OutputCursor`. */
@@ -78,6 +85,9 @@ export const devhubApiMethods = [
   'stopRun',
   'restartRun',
   'listRuns',
+  'listOrphanedRuns',
+  'killOrphanedRuns',
+  'dismissOrphanedRuns',
   'getRunOutput',
   'writeRunInput',
   'resizeRun',

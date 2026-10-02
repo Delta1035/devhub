@@ -90,6 +90,8 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 - `process-killer.ts`：两阶段停止。Windows：Ctrl+C → `taskkill /T /F`；Linux：进程组 SIGTERM → SIGKILL。
 - `run-manager.ts`：脚本每个只保留最新一次运行；交互式 shell 每个项目可多个（ADR 0005）；输出缓冲（最近 512 KB）；`dispose()` 停止全部运行。
 - 停止：脚本先 `interrupt`（Ctrl+C / SIGTERM），shell 用 `hangup`（SIGHUP / `taskkill /T`）；超时后 `forceKill`，Linux 上同时扫描整个会话。
+- `batch-prompt.ts`：Windows 停止脚本时自动回答 cmd 的「终止批处理操作吗(Y/N)?」。
+- `run-registry.ts` + `process-identity.ts`：把运行的 pid 与进程启动时间记入 `runs.json`，崩溃后下次启动发现仍存活的进程并提示用户处理。
 - `createDevhubCore` 返回 `DevhubCore`（`DevhubApi` + `dispose`）；主进程在 `before-quit` 中等待 `dispose()`（最多 10 秒）。
 - renderer 只传 id，命令由 core 重新扫描得到。
 

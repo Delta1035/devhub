@@ -65,6 +65,9 @@
   - 存储 `userData/groups.json`；进度经 `group-updated` 事件推送
   - 测试：存储 9 个、条件 12 个（含真实端口检测）、执行器 8 个单元测试；E2E 2 个（跨项目串行按顺序启动并全部停止、失败步骤中断序列）；侧栏与编辑对话框已截图确认
 - 项目列表显示活动终端：有未结束的脚本或终端时，项目名旁显示绿点和数量（停止中为琥珀色），悬停列出名称；E2E 覆盖出现与消失
+- 与远端合并：本地 6 个提交 rebase 到 dependabot 的 TypeScript 6.0.3 / @types/node 26 之上，check 与 E2E 全部通过；ADR 0001 更新 TS 版本约束
+- Windows 上停止 npm / yarn 脚本时自动回答「终止批处理操作吗(Y/N)?」：从 6 秒多降到约 1 秒（ADR 0003 补充）
+- 崩溃后遗留进程：记录运行的 pid + 启动时间，下次启动若仍存活则提示「全部结束 / 忽略」（ADR 0003 补充）；E2E 模拟崩溃覆盖
 
 ### 下一步（M1）
 
@@ -77,11 +80,9 @@
 - Maven 多模块 / Gradle 多项目：只读根目录构建文件，子模块中的 `spring-boot:run` / `bootRun` 识别不到，且在根目录执行会作用于所有模块；以后扫描子模块并用 `-pl <module>` / `:<project>:bootRun`
 - Linux 上 `mvnw` / `gradlew` 若无执行权限（如从 zip 解压），`./mvnw` 会失败；进程管理阶段再决定是否改为 `sh mvnw`
 - Android 项目的 `assembleDebug`、`installDebug` 等任务暂不识别
-- Linux 上自己 `setsid` 脱离进程组的守护进程杀不到；DevHub 崩溃（非正常退出）时已启动的进程会遗留，以后可记录 pid 并在启动时清理
+- Linux 上自己 `setsid` 脱离进程组的守护进程杀不到；崩溃后的遗留进程只有当记录的根进程本身存活时才能发现（子进程脱离后根进程已退出的情况发现不了）
 - Windows 上 node-pty 在进程自然退出后会在 stderr 打印 `AttachConsole failed`（释放资源时的辅助进程），不影响功能
-- Windows 上 Ctrl+C 中断 `.cmd` 批处理会触发「终止批处理操作吗」提示，需等 5 秒超时后强制结束
 - Windows 上 Node.js 子进程在 ConPTY 下收不到新尺寸（`process.stdout.columns` 不更新，libuv 行为）；调整终端大小后 Node 工具的换行可能仍按旧宽度
-- Windows 上 `npm` / `yarn` 是 `.cmd` 批处理：停止或退出 DevHub 时会等满 5 秒才强制结束（pnpm 实测 1 秒）；可考虑在 Ctrl+C 后自动应答批处理提示
 - Linux 上的真实进程集成测试、E2E 与打包尚未运行过（本机是 Windows），需推送后由 CI（ubuntu）验证
 - 在 VSCode 集成终端中启动 `pnpm dev` 需先清除 `ELECTRON_RUN_AS_NODE`（VSCode 会设置它，导致 Electron 以 Node 模式运行）：`env -u ELECTRON_RUN_AS_NODE pnpm dev`
 - 批量：「输出中出现文字」不支持正则；执行状态不持久化（重启后不显示上次结果）

@@ -15,9 +15,11 @@ import { checkLocalPort } from './groups/conditions'
 import { createGroupRunner } from './groups/group-runner'
 import { createGroupService, emptyGroupsFile, groupsFileSchema } from './groups/group-service'
 import { createEventBus } from './events/event-bus'
+import { createIdentityReader } from './process/process-identity'
 import { createProcessKiller } from './process/process-killer'
 import { nodePtySpawner } from './process/pty'
 import { createRunManager } from './process/run-manager'
+import { createRunRegistry, emptyRunsFile, runsFileSchema } from './process/run-registry'
 import { createScriptService } from './scripts/script-service'
 import { createShellLocator } from './shells/shell-locator'
 
@@ -68,12 +70,25 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     env: process.env
   })
 
+  const killer = createProcessKiller({ platform: env.platform })
+  // Remembers started processes so a session after a crash can offer to stop leftovers.
+  const runRegistry = createRunRegistry({
+    store: createJsonStore({
+      filePath: join(env.dataDir, 'runs.json'),
+      schema: runsFileSchema,
+      fallback: emptyRunsFile
+    }),
+    readIdentities: createIdentityReader({ platform: env.platform }),
+    killer
+  })
+  events.subscribe((event) => runRegistry.handle(event))
+
   const runs = createRunManager({
     scripts,
     projects,
     shells,
     spawn: nodePtySpawner,
-    killer: createProcessKiller({ platform: env.platform }),
+    killer,
     platform: env.platform,
     emit: (event) => events.emit(event)
   })
@@ -108,6 +123,9 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     stopRun: (runId) => runs.stop(runId),
     restartRun: (runId) => runs.restart(runId),
     listRuns: async () => runs.list(),
+    listOrphanedRuns: () => runRegistry.orphans(),
+    killOrphanedRuns: () => runRegistry.killOrphans(),
+    dismissOrphanedRuns: () => runRegistry.dismissOrphans(),
     getRunOutput: async (runId) => runs.output(runId),
     writeRunInput: async (runId, data) => runs.writeInput(runId, data),
     resizeRun: async (runId, cols, rows) => runs.resize(runId, cols, rows),

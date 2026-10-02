@@ -46,6 +46,18 @@ renderer 只传 `projectId` + `scriptId`，core 重新扫描并按 id 找到脚�
 该脚本会调用 @electron/rebuild 从源码重新编译 node-pty，在 Windows 上编译 winpty 失败（`GetCommitHash.bat` 找不到），导致 `pnpm install` 整体失败、新依赖被回滚。
 node-pty 是 N-API 模块，本来就不需要针对 Electron 重新编译，因此移除该脚本。以后若引入需要针对 Electron ABI 编译的原生模块，再重新评估。
 
+## 补充（2026-10-02）：Windows 批处理提示自动应答
+
+`npm` / `yarn` 在 Windows 上是 `.cmd`，Ctrl+C 后 cmd 会询问「终止批处理操作吗(Y/N)?」并等待，原先要等满 5 秒才强制结束。现在停止脚本时监视中断之后的新输出，出现以 `(Y/N)?` 结尾的提示（各语言版本都以它结尾，去掉 ANSI 控制码后匹配）就回答一次 `Y`（`process/batch-prompt.ts`）。只看中断之后的输出，程序自己之前打印的 `(Y/N)?` 不会被回答；只用于 Windows 的脚本，不用于交互式终端。实测 `npm run` 停止从 6 秒多降到 1 秒左右，集成测试覆盖（去掉应答后该测试失败）。
+
+## 补充（2026-10-02）：崩溃后遗留进程
+
+DevHub 正常退出时会停止所有运行；崩溃或被强制结束时来不及。现在：
+
+- 运行启动时把 pid 与**进程启动时间**（Windows：`Get-Process` 的 StartTime；Linux：`/proc/<pid>/stat` 第 22 字段 + boot id）记入 `userData/runs.json`，结束时删除（`process/run-registry.ts`、`process-identity.ts`）。只比较 pid 会误伤被系统复用了同一 pid 的无关进程，因此必须 pid 与启动时间都一致才算遗留。
+- 下次启动时，仍存活的旧记录在主区域顶部提示，由用户选择「全部结束」（`taskkill /T` / 杀进程组与会话，结束前再核对一次身份）或「忽略」。已不存在的记录直接丢弃。
+- 实测哪些进程会遗留：Windows 上 DevHub 主进程消失后 ConPTY 关闭，cmd、node 等控制台程序会随之结束；**Git Bash 不会**，因此交互式终端是 Windows 上的主要遗留来源。Linux 上忽略 SIGHUP 的程序会遗留（只有当记录的根进程本身存活时才能发现）。E2E 用「Git Bash / bash 终端里运行忽略 SIGHUP 的服务，再强制结束 DevHub」覆盖。
+
 ## 已知限制
 
 - 自己调用 `setsid` / 脱离进程组的守护进程在 Linux 上杀不到。
