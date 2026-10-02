@@ -21,6 +21,11 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
+    env:
+      # Electron and electron-builder (NSIS, AppImage tools) download 100 MB+ per run; both
+      # honour these variables, giving one cacheable location on every OS, outside the repo.
+      ELECTRON_CACHE: ${{ github.workspace }}/../.cache/electron
+      ELECTRON_BUILDER_CACHE: ${{ github.workspace }}/../.cache/electron-builder
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -30,6 +35,14 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+      - name: Cache Electron downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ github.workspace }}/../.cache/electron
+            ${{ github.workspace }}/../.cache/electron-builder
+          key: electron-${{ github.job }}-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: electron-${{ github.job }}-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - name: E2E (Windows)
@@ -59,6 +72,11 @@ jobs:
             target: linux
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
+    env:
+      # Electron and electron-builder (NSIS, AppImage tools) download 100 MB+ per run; both
+      # honour these variables, giving one cacheable location on every OS, outside the repo.
+      ELECTRON_CACHE: ${{ github.workspace }}/../.cache/electron
+      ELECTRON_BUILDER_CACHE: ${{ github.workspace }}/../.cache/electron-builder
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -68,6 +86,14 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+      - name: Cache Electron downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ github.workspace }}/../.cache/electron
+            ${{ github.workspace }}/../.cache/electron-builder
+          key: electron-${{ github.job }}-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: electron-${{ github.job }}-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @devhub/desktop build:${{ matrix.target }} --publish never
         env:
