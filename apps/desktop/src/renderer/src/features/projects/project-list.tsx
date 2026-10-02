@@ -31,7 +31,9 @@ export function ProjectList({ selectedId, onSelect }: ProjectListProps): React.J
   return (
     <section className="flex flex-col gap-3">
       <header className="flex items-center justify-between">
-        <h2 className="font-heading text-sm font-semibold">项目</h2>
+        <span className="text-xs text-muted-foreground">
+          {projects.data && `${projects.data.length} 个项目`}
+        </span>
         {shell && (
           <Button size="sm" onClick={handleAdd} disabled={addProject.isPending}>
             <FolderPlus data-icon="inline-start" />

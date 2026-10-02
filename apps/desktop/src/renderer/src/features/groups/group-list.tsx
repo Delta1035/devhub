@@ -41,7 +41,9 @@ export function GroupList({
   return (
     <section className="flex flex-col gap-3" aria-label="批量任务">
       <header className="flex items-center justify-between">
-        <h2 className="font-heading text-sm font-semibold">批量</h2>
+        <span className="text-xs text-muted-foreground">
+          {groups.data && `${groups.data.length} 个任务`}
+        </span>
         <Button size="sm" variant="outline" onClick={() => setEditing(null)}>
           <Plus data-icon="inline-start" />
           新建

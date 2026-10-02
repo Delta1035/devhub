@@ -80,6 +80,7 @@
 - CI 缓存 Electron 与 electron-builder 的下载（`ELECTRON_CACHE` / `ELECTRON_BUILDER_CACHE` 指向仓库外的统一目录，按任务与 OS 分别缓存）；发布流程有意不使用缓存，避免缓存投毒影响分发的安装包
 - 自动更新（ADR 0009，新依赖 electron-updater）：Windows 安装版与 Linux AppImage 从 GitHub Releases 检查更新，用户决定下载与重启安装；顶栏提示 + 设置页「关于与更新」；发布流程上传 `latest*.yml` 与 `.blockmap`
   - 已验证：本地打包产物含 `latest.yml` 与 `app-update.yml`，运行打包版能连上 GitHub 并正确提示 v0.1.2 缺少更新信息；完整更新流程需发布两个新版本后实测
+- 侧栏改为「项目 / 批量」两个标签页（radix Tabs，无新依赖），各自占满侧栏高度并独立滚动；选中的标签记在本地；批量任务执行中时「批量」标签显示脉冲圆点；E2E 覆盖切换、圆点出现与消失、重启后保留标签
 - `@electron-toolkit/eslint-config-ts` 升到 v4（内含 `@eslint/js` v10，ESLint 本体仍为 v9）：新推荐规则 `preserve-caught-error` 要求包装错误时带 `cause`，`no-useless-assignment` 修正了 E2E 重启后多余的 `app` 赋值
 
 ### 下一步（M1）

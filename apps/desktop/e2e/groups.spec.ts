@@ -10,6 +10,12 @@ setInterval(() => {}, 1000)
 const listRuns = (page: Page) =>
   page.evaluate(() => (window as unknown as DevhubWindow).devhub.listRuns())
 
+/** Switches the sidebar to the groups tab. */
+const openGroups = async (page: Page) => {
+  await page.getByRole('tab', { name: '批量' }).click()
+  return page.getByRole('region', { name: '批量任务' })
+}
+
 /** Fills one step of the open group editor. */
 const fillStep = async (
   page: Page,
@@ -40,7 +46,7 @@ test('a serial group across projects waits for each step, then stops everything'
   await addProjectViaApi(page, api)
   await addProjectViaApi(page, web)
 
-  const groups = page.getByRole('region', { name: '批量任务' })
+  const groups = await openGroups(page)
   await groups.getByRole('button', { name: '新建' }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('名称').fill('front1')
@@ -54,7 +60,11 @@ test('a serial group across projects waits for each step, then stops everything'
   const item = groups.getByRole('listitem', { name: '批量任务 front1' })
   await expect(item).toContainText('串行')
   await item.getByRole('button', { name: '执行 front1' }).click()
+  // The tab signals a running group even while the projects tab is shown.
+  const running = page.getByRole('tab', { name: /批量/ }).getByRole('status')
+  await expect(running).toBeVisible()
   await expect(item).toContainText('已完成', { timeout: 30_000 })
+  await expect(running).toBeHidden()
 
   const runs = await listRuns(page)
   expect(runs.filter((run) => run.status === 'running')).toHaveLength(2)
@@ -87,7 +97,7 @@ test('a failing serial step stops the sequence and explains why', async ({
   const { page } = await launchDevhub()
   await addProjectViaApi(page, dir)
 
-  const groups = page.getByRole('region', { name: '批量任务' })
+  const groups = await openGroups(page)
   await groups.getByRole('button', { name: '新建' }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('名称').fill('broken')
@@ -120,7 +130,7 @@ test('waits for a regex in the output and remembers the result after a restart',
   let { page } = first
   await addProjectViaApi(page, dir)
 
-  const groups = page.getByRole('region', { name: '批量任务' })
+  const groups = await openGroups(page)
   await groups.getByRole('button', { name: '新建' }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('名称').fill('backend')

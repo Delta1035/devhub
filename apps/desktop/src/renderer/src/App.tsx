@@ -3,13 +3,12 @@ import { Settings as SettingsIcon } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { useAppInfo } from '@renderer/features/app-info/use-app-info'
 import { ProjectDetail } from '@renderer/features/projects/project-detail'
-import { GroupList } from '@renderer/features/groups/group-list'
 import { useGroupEventsSync } from '@renderer/features/groups/use-groups'
-import { ProjectList } from '@renderer/features/projects/project-list'
 import { useProjects } from '@renderer/features/projects/use-projects'
 import { OrphansBanner } from '@renderer/features/runs/orphans-banner'
 import { useRunEventsSync } from '@renderer/features/runs/use-runs'
 import { SettingsPage } from '@renderer/features/settings/settings-page'
+import { Sidebar } from '@renderer/features/sidebar/sidebar'
 import { UpdateBadge } from '@renderer/features/updates/update-badge'
 
 function App(): React.JSX.Element {
@@ -49,12 +48,12 @@ function App(): React.JSX.Element {
         </Button>
       </header>
       <div className="flex min-h-0 flex-1">
-        <aside className="flex w-64 shrink-0 flex-col gap-6 overflow-y-auto border-r p-3">
-          <ProjectList
-            selectedId={showSettings ? null : (selected?.id ?? null)}
-            onSelect={selectProject}
+        <aside className="flex w-64 shrink-0 flex-col border-r p-3">
+          <Sidebar
+            selectedProjectId={showSettings ? null : (selected?.id ?? null)}
+            currentProjectId={selected?.id ?? null}
+            onSelectProject={selectProject}
           />
-          <GroupList selectedProjectId={selected?.id ?? null} onSelectProject={selectProject} />
         </aside>
         <main className="flex min-w-0 flex-1 flex-col">
           <OrphansBanner />
