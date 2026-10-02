@@ -21,7 +21,8 @@ devhub/                        pnpm monorepo
 │       │       ├── process/         进程管理：PTY、杀进程树、RunManager、输出缓冲（ADR 0003）
 │       │       ├── events/          事件总线：把 core 事件分发给各传输层（ADR 0004）
 │       │       ├── editors/         检测并启动外部编辑器（VS Code / IDEA）
-│       │       └── fs/              通用文件系统小工具
+│       │       ├── shells/          检测可用的交互式 shell，Git Bash 启动文件（ADR 0005）
+│       │       └── fs/              文件系统小工具；finder.ts：按候选位置查找已安装程序
 │       ├── preload/           暴露 window.devhub（DevhubApi）、window.devhubEvents（事件订阅）与 window.devhubShell（ShellApi）
 │       └── renderer/src/      React UI
 │           ├── api/           ★ UI 访问核心的唯一入口
@@ -62,14 +63,14 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 
 ## 领域模型（`packages/shared/src/domain.ts`）
 
-| 概念           | 说明                                                   |
-| -------------- | ------------------------------------------------------ |
-| Project        | 一个被管理的代码目录（已实现，存于 `projects.json`）   |
-| Script         | 可运行命令，来源：npm / maven / gradle / custom        |
-| ProjectScripts | 扫描结果：`status`（ok/missing）、脚本、探测器警告     |
-| Profile        | 一组环境变量与参数覆盖，用于切换对接的后端             |
-| Run            | 一次运行：状态（running/stopping/exited）、PID、退出码 |
-| `.devhub.yaml` | 项目内可选配置：自定义脚本 + Profile                   |
+| 概念           | 说明                                                                                      |
+| -------------- | ----------------------------------------------------------------------------------------- |
+| Project        | 一个被管理的代码目录（已实现，存于 `projects.json`）                                      |
+| Script         | 可运行命令，来源：npm / maven / gradle / custom                                           |
+| ProjectScripts | 扫描结果：`status`（ok/missing）、脚本、探测器警告                                        |
+| Profile        | 一组环境变量与参数覆盖，用于切换对接的后端                                                |
+| Run            | 终端标签里的一个进程：`script`（识别出的脚本）或 `shell`（交互式终端）；状态、PID、退出码 |
+| `.devhub.yaml` | 项目内可选配置：自定义脚本 + Profile                                                      |
 
 ## 脚本探测
 
@@ -85,7 +86,8 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 
 - `pty.ts`：`PtySpawner` 接口 + node-pty 实现；命令经平台 shell 执行。
 - `process-killer.ts`：两阶段停止。Windows：Ctrl+C → `taskkill /T /F`；Linux：进程组 SIGTERM → SIGKILL。
-- `run-manager.ts`：每个脚本只保留最新一次运行；输出缓冲（最近 512 KB）；`dispose()` 停止全部运行。
+- `run-manager.ts`：脚本每个只保留最新一次运行；交互式 shell 每个项目可多个（ADR 0005）；输出缓冲（最近 512 KB）；`dispose()` 停止全部运行。
+- 停止：脚本先 `interrupt`（Ctrl+C / SIGTERM），shell 用 `hangup`（SIGHUP / `taskkill /T`）；超时后 `forceKill`，Linux 上同时扫描整个会话。
 - `createDevhubCore` 返回 `DevhubCore`（`DevhubApi` + `dispose`）；主进程在 `before-quit` 中等待 `dispose()`（最多 10 秒）。
 - renderer 只传 id，命令由 core 重新扫描得到。
 

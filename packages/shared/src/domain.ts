@@ -31,18 +31,31 @@ export const projectScriptsSchema = z.object({
 })
 export type ProjectScripts = z.infer<typeof projectScriptsSchema>
 
-/**
- * One execution of a script. DevHub keeps the latest run per script; starting the script
- * again replaces an exited run.
- */
+/** Interactive shells a user can open in a project's terminal panel. */
+export const shellIdSchema = z.enum([
+  'git-bash',
+  'pwsh',
+  'powershell',
+  'cmd',
+  'bash',
+  'zsh',
+  'fish',
+  'sh'
+])
+export type ShellId = z.infer<typeof shellIdSchema>
+
+export const shellInfoSchema = z.object({ id: shellIdSchema, name: z.string() })
+export type ShellInfo = z.infer<typeof shellInfoSchema>
+
 export const runStatusSchema = z.enum(['running', 'stopping', 'exited'])
 export type RunStatus = z.infer<typeof runStatusSchema>
 
-export const runSchema = z.object({
+const runBaseSchema = z.object({
   id: z.string().min(1),
   projectId: z.string().min(1),
-  scriptId: z.string().min(1),
-  scriptName: z.string().min(1),
+  /** Tab label: the script name, or "终端 N" for a shell. */
+  title: z.string().min(1),
+  /** What runs: the script's command line, or the shell executable. */
   command: z.string().min(1),
   status: runStatusSchema,
   pid: z.number().int(),
@@ -53,6 +66,15 @@ export const runSchema = z.object({
   startedAt: z.iso.datetime(),
   endedAt: z.iso.datetime().optional()
 })
+
+/**
+ * One process in a terminal tab: a detected script (DevHub keeps the latest run per script;
+ * starting it again replaces an exited run) or an interactive shell (any number per project).
+ */
+export const runSchema = z.discriminatedUnion('kind', [
+  runBaseSchema.extend({ kind: z.literal('script'), scriptId: z.string().min(1) }),
+  runBaseSchema.extend({ kind: z.literal('shell'), shellId: shellIdSchema })
+])
 export type Run = z.infer<typeof runSchema>
 
 /** A named set of overrides used to point a project at a different backend. */

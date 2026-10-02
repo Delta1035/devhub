@@ -4,6 +4,8 @@ import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import type { Project, Script } from '@devhub/shared'
+import { systemDeps, writeFileEnsuringDir } from '../fs/system-deps'
+import { createShellLocator } from '../shells/shell-locator'
 import { createProcessKiller } from './process-killer'
 import { nodePtySpawner } from './pty'
 import { createRunManager, type RunManager } from './run-manager'
@@ -61,7 +63,8 @@ describe.runIf(process.platform === 'win32' || process.platform === 'linux')(
       await rm(dir, { recursive: true, force: true, maxRetries: 5 })
     })
 
-    const startTree = async (mode: 'polite' | 'stubborn', graceMs: number) => {
+    /** A manager wired to real PTYs, the real killer and the shells installed here. */
+    const createRealManager = (mode: 'polite' | 'stubborn', graceMs: number) => {
       const project: Project = {
         id: 'p1',
         name: 'fixture',
@@ -76,17 +79,32 @@ describe.runIf(process.platform === 'win32' || process.platform === 'linux')(
       }
       const realKiller = createProcessKiller({ platform: process.platform })
       const forceKill = vi.fn(realKiller.forceKill)
-      manager = createRunManager({
+      const created = createRunManager({
         scripts: { find: async () => ({ project, script }) },
+        projects: { get: async () => project },
+        shells: createShellLocator({
+          ...systemDeps(process.platform, process.env),
+          startupDir: join(dir, '.devhub-shell'),
+          writeFile: writeFileEnsuringDir
+        }),
         spawn: nodePtySpawner,
-        killer: { interrupt: realKiller.interrupt, forceKill },
+        killer: { ...realKiller, forceKill },
         platform: process.platform,
         graceMs
       })
-      const run = await manager.start('p1', 'custom:tree')
-      const pids = await waitFor(async () => {
+      manager = created
+      return { manager: created, forceKill }
+    }
+
+    const readPids = () =>
+      waitFor(async () => {
         return pidsSchema.parse(JSON.parse(await readFile(join(dir, 'pids.json'), 'utf8')))
-      }, 15_000)
+      }, 20_000)
+
+    const startTree = async (mode: 'polite' | 'stubborn', graceMs: number) => {
+      const { manager, forceKill } = createRealManager(mode, graceMs)
+      const run = await manager.start('p1', 'custom:tree')
+      const pids = await readPids()
       return { manager, run, forceKill, allPids: [run.pid, pids.parent, pids.child] }
     }
 
@@ -111,5 +129,21 @@ describe.runIf(process.platform === 'win32' || process.platform === 'linux')(
       await expectAllDead(allPids)
       expect(manager.list()[0]?.status).toBe('exited')
     }, 30_000)
+
+    it('closing a shell ends the commands started inside it', async () => {
+      const { manager } = createRealManager('polite', 5000)
+      const shell = await manager.startShell('p1')
+      expect(shell).toMatchObject({ kind: 'shell', title: '终端 1', status: 'running' })
+
+      // Type a command the way a user would; `node` from PATH works in every shell.
+      manager.writeInput(shell.id, 'node parent.js polite\r')
+      const pids = await readPids()
+      const tree = [shell.pid, pids.parent, pids.child]
+      expect(tree.every(isAlive)).toBe(true)
+
+      await manager.stop(shell.id)
+      await expectAllDead(tree)
+      expect(manager.list()[0]).toMatchObject({ status: 'exited', stopped: true })
+    }, 40_000)
   }
 )

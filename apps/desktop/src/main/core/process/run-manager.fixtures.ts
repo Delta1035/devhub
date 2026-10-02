@@ -1,5 +1,6 @@
 import { vi, type Mock } from 'vitest'
 import { DevhubError, type DevhubEvent, type Project, type Script } from '@devhub/shared'
+import type { ShellLocator, ShellSpec } from '../shells/shell-locator'
 import type { ProcessKiller } from './process-killer'
 import type { PtyProcess, PtySpawnOptions } from './pty'
 import { createRunManager, type RunManager, type RunManagerDeps } from './run-manager'
@@ -45,14 +46,22 @@ const scriptsById: Record<string, Script> = {
   'npm:api': { id: 'npm:api', name: 'api', source: 'npm', command: 'pnpm run api', cwd: 'server' }
 }
 
+/** Installed shells the fake machine reports, in preference order. */
+export const installedShells: ShellSpec[] = [
+  { id: 'bash', name: 'bash', file: '/bin/bash', args: ['-l'], env: {} },
+  { id: 'zsh', name: 'zsh', file: '/usr/bin/zsh', args: ['-l'], env: { ZDOTDIR: '/z' } }
+]
+
 export interface TestHarness {
   ptys: FakePty[]
   spawned: PtySpawnOptions[]
   events: DevhubEvent[]
   killer: {
     interrupt: Mock<ProcessKiller['interrupt']>
+    hangup: Mock<ProcessKiller['hangup']>
     forceKill: Mock<ProcessKiller['forceKill']>
   }
+  prepareShell: Mock<ShellLocator['prepare']>
   makeManager(overrides?: Partial<RunManagerDeps>): RunManager
 }
 
@@ -64,8 +73,10 @@ export function createHarness(): TestHarness {
     ptys: [],
     spawned: [],
     events: [],
+    prepareShell: vi.fn<ShellLocator['prepare']>(async () => undefined),
     killer: {
       interrupt: vi.fn<ProcessKiller['interrupt']>(),
+      hangup: vi.fn<ProcessKiller['hangup']>(async () => undefined),
       forceKill: vi.fn<ProcessKiller['forceKill']>(async () => undefined)
     },
     makeManager: (overrides = {}) =>
@@ -77,6 +88,14 @@ export function createHarness(): TestHarness {
             return { project, script }
           }
         },
+        projects: {
+          async get(projectId) {
+            if (projectId !== 'p1') throw new DevhubError('PROJECT_NOT_FOUND', 'nope')
+            return project
+          }
+        },
+        shells: { list: async () => installedShells, prepare: harness.prepareShell },
+        isDirectory: async () => true,
         spawn: (options) => {
           harness.spawned.push(options)
           const pty = new FakePty(nextPid++)

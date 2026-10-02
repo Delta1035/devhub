@@ -1,14 +1,26 @@
 import { randomUUID } from 'crypto'
 import { resolve } from 'path'
 import { z } from 'zod'
-import { DevhubError, type DevhubEvent, type Run, type RunOutputSnapshot } from '@devhub/shared'
+import {
+  DevhubError,
+  shellIdSchema,
+  type DevhubEvent,
+  type Run,
+  type RunOutputSnapshot,
+  type ShellId
+} from '@devhub/shared'
+import { isDirectory as isDirectoryOnDisk } from '../fs/is-directory'
+import type { ProjectService } from '../projects/project-service'
 import type { ScriptService } from '../scripts/script-service'
+import type { ShellLocator } from '../shells/shell-locator'
 import type { ProcessKiller } from './process-killer'
-import type { PtyProcess, PtySpawner } from './pty'
+import { shellInvocation, type PtyProcess, type PtySpawner } from './pty'
 import { RunOutput } from './run-output'
 
 export interface RunManager {
   start(projectId: unknown, scriptId: unknown): Promise<Run>
+  /** Opens an interactive shell in the project directory; the default shell when omitted. */
+  startShell(projectId: unknown, shellId?: unknown): Promise<Run>
   stop(runId: unknown): Promise<void>
   restart(runId: unknown): Promise<Run>
   list(): Run[]
@@ -24,6 +36,9 @@ export interface RunManager {
 
 export interface RunManagerDeps {
   scripts: Pick<ScriptService, 'find'>
+  projects: Pick<ProjectService, 'get'>
+  shells: ShellLocator
+  isDirectory?: (path: string) => Promise<boolean>
   spawn: PtySpawner
   killer: ProcessKiller
   platform: NodeJS.Platform
@@ -38,6 +53,21 @@ export interface RunManagerDeps {
   outputFlushMs?: number
   now?: () => Date
   newId?: () => string
+}
+
+/** What a run executes; becomes the kind-specific half of `Run`. */
+type RunIdentity = { kind: 'script'; scriptId: string } | { kind: 'shell'; shellId: ShellId }
+
+interface LaunchParams {
+  projectId: string
+  identity: RunIdentity
+  title: string
+  /** Shown to the user: the script's command line or the shell executable. */
+  command: string
+  file: string
+  args: string | string[]
+  cwd: string
+  env: Record<string, string>
 }
 
 interface Entry {
@@ -58,6 +88,9 @@ const terminalSize = z.object({
 
 export function createRunManager({
   scripts,
+  projects,
+  shells,
+  isDirectory = isDirectoryOnDisk,
   spawn,
   killer,
   platform,
@@ -88,30 +121,13 @@ export function createRunManager({
     return entry
   }
 
-  const start = async (projectId: unknown, scriptId: unknown): Promise<Run> => {
-    const { project, script } = await scripts.find(projectId, scriptId)
-
-    // Keep only the latest run per script: an active one blocks, an exited one is replaced.
-    for (const [id, entry] of entries) {
-      if (entry.run.projectId !== project.id || entry.run.scriptId !== script.id) continue
-      if (entry.run.status !== 'exited') {
-        throw new DevhubError('SCRIPT_ALREADY_RUNNING', `${script.name} 已在运行`)
-      }
-      entries.delete(id)
-      emit({ type: 'run-removed', runId: id })
-    }
-
+  const launch = (params: LaunchParams): Run => {
     let pty: PtyProcess
     try {
-      pty = spawn({
-        command: script.command,
-        cwd: script.cwd ? resolve(project.path, script.cwd) : project.path,
-        env: definedEnv(env),
-        platform
-      })
+      pty = spawn({ file: params.file, args: params.args, cwd: params.cwd, env: params.env })
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error)
-      throw new DevhubError('SPAWN_FAILED', `无法启动 ${script.name}：${detail}`)
+      throw new DevhubError('SPAWN_FAILED', `无法启动 ${params.title}：${detail}`)
     }
 
     let resolveExited = (): void => undefined
@@ -119,15 +135,15 @@ export function createRunManager({
     const entry: Entry = {
       run: {
         id: runId,
-        projectId: project.id,
-        scriptId: script.id,
-        scriptName: script.name,
-        command: script.command,
+        projectId: params.projectId,
+        title: params.title,
+        command: params.command,
         status: 'running',
         pid: pty.pid,
         exitCode: null,
         stopped: false,
-        startedAt: now().toISOString()
+        startedAt: now().toISOString(),
+        ...params.identity
       },
       pty,
       output: new RunOutput({
@@ -155,12 +171,84 @@ export function createRunManager({
     return snapshot(entry)
   }
 
+  const start = async (projectId: unknown, scriptId: unknown): Promise<Run> => {
+    const { project, script } = await scripts.find(projectId, scriptId)
+
+    // Keep only the latest run per script: an active one blocks, an exited one is replaced.
+    for (const [id, entry] of entries) {
+      const { run } = entry
+      if (run.kind !== 'script' || run.projectId !== project.id || run.scriptId !== script.id) {
+        continue
+      }
+      if (run.status !== 'exited') {
+        throw new DevhubError('SCRIPT_ALREADY_RUNNING', `${script.name} 已在运行`)
+      }
+      entries.delete(id)
+      emit({ type: 'run-removed', runId: id })
+    }
+
+    const runEnv = definedEnv(env)
+    return launch({
+      projectId: project.id,
+      identity: { kind: 'script', scriptId: script.id },
+      title: script.name,
+      command: script.command,
+      ...shellInvocation(script.command, platform, runEnv),
+      cwd: script.cwd ? resolve(project.path, script.cwd) : project.path,
+      env: runEnv
+    })
+  }
+
+  const startShell = async (projectId: unknown, rawShellId?: unknown): Promise<Run> => {
+    const project = await projects.get(projectId)
+    if (!(await isDirectory(project.path))) {
+      throw new DevhubError('PROJECT_PATH_NOT_FOUND', `目录不存在：${project.path}`)
+    }
+    const requested = rawShellId === undefined ? null : shellIdSchema.safeParse(rawShellId)
+    if (requested && !requested.success) throw new DevhubError('INVALID_INPUT', '不支持的终端类型')
+
+    const installed = await shells.list()
+    const shell = requested ? installed.find((s) => s.id === requested.data) : installed[0]
+    if (!shell) throw new DevhubError('SHELL_NOT_FOUND', '未检测到可用的终端程序')
+    try {
+      await shells.prepare(shell)
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error)
+      throw new DevhubError('SPAWN_FAILED', `无法准备 ${shell.name} 的启动文件：${detail}`)
+    }
+
+    return launch({
+      projectId: project.id,
+      identity: { kind: 'shell', shellId: shell.id },
+      title: `终端 ${nextShellNumber(project.id)}`,
+      command: shell.file,
+      file: shell.file,
+      args: shell.args,
+      cwd: project.path,
+      env: { ...definedEnv(env), ...shell.env }
+    })
+  }
+
+  /** Lowest number not used by this project's open shells: 终端 1, 终端 2, … */
+  const nextShellNumber = (projectId: string): number => {
+    const used = new Set(
+      [...entries.values()]
+        .filter(({ run }) => run.kind === 'shell' && run.projectId === projectId)
+        .map(({ run }) => Number(/(\d+)$/.exec(run.title)?.[1]))
+    )
+    let number = 1
+    while (used.has(number)) number++
+    return number
+  }
+
   const stopEntry = async (entry: Entry): Promise<void> => {
     if (entry.run.status === 'running') {
       entry.run.status = 'stopping'
       entry.run.stopped = true
       announce(entry)
-      killer.interrupt(entry.pty)
+      // Ctrl+C does not end an interactive shell; hang it up like closing a terminal window.
+      if (entry.run.kind === 'shell') await killer.hangup(entry.pty)
+      else killer.interrupt(entry.pty)
       if (!(await settlesWithin(entry.exited, graceMs))) {
         await killer.forceKill(entry.run.pid)
         // Never leave a run stuck in "stopping" if the exit event is lost.
@@ -173,6 +261,8 @@ export function createRunManager({
   return {
     start,
 
+    startShell,
+
     async stop(runId) {
       await stopEntry(getEntry(runId))
     },
@@ -180,7 +270,10 @@ export function createRunManager({
     async restart(runId) {
       const entry = getEntry(runId)
       await stopEntry(entry)
-      return start(entry.run.projectId, entry.run.scriptId)
+      const { run } = entry
+      return run.kind === 'script'
+        ? start(run.projectId, run.scriptId)
+        : startShell(run.projectId, run.shellId)
     },
 
     list: () => [...entries.values()].map(snapshot),

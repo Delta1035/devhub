@@ -1,5 +1,5 @@
-import { posix, win32 } from 'path'
 import type { EditorId } from '@devhub/shared'
+import { createFinder, type Candidate, type FinderDeps } from '../fs/finder'
 import { parseJetBrainsInstallDirs } from './windows-registry'
 
 /** How to start an editor: an executable directly, or a Windows `.cmd`/`.bat` through cmd. */
@@ -8,12 +8,7 @@ export interface EditorLauncher {
   path: string
 }
 
-export interface EditorLocatorDeps {
-  platform: NodeJS.Platform
-  env: NodeJS.ProcessEnv
-  exists: (path: string) => Promise<boolean>
-  /** Directory entries, or [] when the directory does not exist. */
-  listDir: (path: string) => Promise<string[]>
+export interface EditorLocatorDeps extends FinderDeps {
   /** Output of `reg query <key> /s`, or '' when the key does not exist. Windows only. */
   queryRegistry: (key: string) => Promise<string>
 }
@@ -22,66 +17,16 @@ export interface EditorLocator {
   locate(editor: EditorId): Promise<EditorLauncher | null>
 }
 
-/** A lazily evaluated candidate; the first one that resolves to a launcher wins. */
-type Candidate = () => Promise<EditorLauncher | null>
-
 export function createEditorLocator(deps: EditorLocatorDeps): EditorLocator {
-  const { platform, env, exists, listDir, queryRegistry } = deps
-  const isWindows = platform === 'win32'
-  // Platform-specific path rules, so Windows lookups are testable on Linux and vice versa.
-  const path = isWindows ? win32 : posix
-
-  const launcherFor = (file: string): EditorLauncher => ({
-    kind: isWindows && /\.(cmd|bat)$/i.test(file) ? 'batch' : 'executable',
-    path: file
-  })
-
-  const file =
-    (candidatePath: string | undefined): Candidate =>
-    async () =>
-      candidatePath && (await exists(candidatePath)) ? launcherFor(candidatePath) : null
-
-  /** Like `which`: searches PATH, trying PATHEXT extensions on Windows. */
-  const onPath =
-    (name: string): Candidate =>
-    async () => {
-      const dirs = (env.PATH ?? env.Path ?? '').split(path.delimiter).filter(Boolean)
-      const extensions = isWindows
-        ? path.extname(name)
-          ? ['']
-          : (env.PATHEXT ?? '.COM;.EXE;.BAT;.CMD').split(';').map((ext) => ext.toLowerCase())
-        : ['']
-      for (const dir of dirs) {
-        for (const ext of extensions) {
-          const candidatePath = path.join(dir, name + ext)
-          if (await exists(candidatePath)) return launcherFor(candidatePath)
-        }
-      }
-      return null
-    }
-
-  /** Newest `<parent>/<prefix>*` directory containing `relative`. */
-  const versionedDir =
-    (parent: string | undefined, prefix: string, relative: string): Candidate =>
-    async () => {
-      if (!parent) return null
-      const dirs = (await listDir(parent)).filter((entry) => entry.startsWith(prefix))
-      for (const dir of dirs.sort().reverse()) {
-        const found = await file(path.join(parent, dir, relative))()
-        if (found) return found
-      }
-      return null
-    }
+  const { env, exists, queryRegistry } = deps
+  const { path, isWindows, file, onPath, versionedDir, first } = createFinder(deps)
 
   const jetBrainsRegistry =
     (prefix: string): Candidate =>
     async () => {
       for (const root of ['HKCU', 'HKLM']) {
-        const dirs = parseJetBrainsInstallDirs(
-          await queryRegistry(`${root}\\SOFTWARE\\JetBrains`),
-          prefix
-        )
-        for (const dir of dirs) {
+        const output = await queryRegistry(`${root}\\SOFTWARE\\JetBrains`)
+        for (const dir of parseJetBrainsInstallDirs(output, prefix)) {
           const found = await file(path.join(dir, 'bin', 'idea64.exe'))()
           if (found) return found
         }
@@ -93,8 +38,8 @@ export function createEditorLocator(deps: EditorLocatorDeps): EditorLocator {
   const vscodeFromPath: Candidate = async () => {
     const cli = await onPath('code')()
     if (!cli || !isWindows) return cli
-    const exe = path.join(path.dirname(path.dirname(cli.path)), 'Code.exe')
-    return (await exists(exe)) ? launcherFor(exe) : cli
+    const exe = path.join(path.dirname(path.dirname(cli)), 'Code.exe')
+    return (await exists(exe)) ? exe : cli
   }
 
   const localAppData = env.LOCALAPPDATA
@@ -146,11 +91,12 @@ export function createEditorLocator(deps: EditorLocatorDeps): EditorLocator {
 
   return {
     async locate(editor) {
-      for (const candidate of candidates[editor]) {
-        const found = await candidate()
-        if (found) return found
+      const found = await first(candidates[editor])
+      if (!found) return null
+      return {
+        kind: isWindows && /\.(cmd|bat)$/i.test(found) ? 'batch' : 'executable',
+        path: found
       }
-      return null
     }
   }
 }

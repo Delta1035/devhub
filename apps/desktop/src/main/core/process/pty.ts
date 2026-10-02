@@ -10,11 +10,11 @@ export interface PtyProcess {
 }
 
 export interface PtySpawnOptions {
-  /** Shell command line, e.g. `pnpm run dev`. */
-  command: string
+  file: string
+  /** A string is passed to Windows verbatim as the command line (no re-quoting). */
+  args: string | string[]
   cwd: string
   env: Record<string, string>
-  platform: NodeJS.Platform
 }
 
 export type PtySpawner = (options: PtySpawnOptions) => PtyProcess
@@ -46,11 +46,11 @@ export function shellInvocation(
 
 const defaultSize = { cols: 120, rows: 30 }
 
-export const nodePtySpawner: PtySpawner = ({ command, cwd, env, platform }) => {
-  const { file, args } = shellInvocation(command, platform, env)
+export const nodePtySpawner: PtySpawner = ({ file, args, cwd, env }) => {
   const pty = spawnNodePty(file, args, { name: 'xterm-256color', cwd, env, ...defaultSize })
 
-  if (platform === 'win32') {
+  // node-pty itself only runs on the real platform, so checking it here (not injected) is fine.
+  if (process.platform === 'win32') {
     // On Windows node-pty keeps a conout worker thread alive after the process exits until
     // kill() is called; without this every finished run would leak a thread.
     pty.onExit(() => {

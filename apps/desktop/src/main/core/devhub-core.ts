@@ -9,12 +9,14 @@ import {
 import { createDefaultDetectors } from './detectors/detect-scripts'
 import { launchDetached } from './editors/editor-launch'
 import { createEditorService } from './editors/editor-service'
-import { createSystemEditorLocator } from './editors/system-editor-locator'
+import { createEditorLocator } from './editors/editor-locator'
+import { systemDeps, writeFileEnsuringDir } from './fs/system-deps'
 import { createEventBus } from './events/event-bus'
 import { createProcessKiller } from './process/process-killer'
 import { nodePtySpawner } from './process/pty'
 import { createRunManager } from './process/run-manager'
 import { createScriptService } from './scripts/script-service'
+import { createShellLocator } from './shells/shell-locator'
 
 export interface CoreEnvironment {
   version: string
@@ -50,15 +52,23 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
 
   const events = createEventBus((error) => console.error('[core] event listener failed', error))
 
+  const system = systemDeps(env.platform, process.env)
+  const shells = createShellLocator({
+    ...system,
+    startupDir: join(env.dataDir, 'shell'),
+    writeFile: writeFileEnsuringDir
+  })
   const editors = createEditorService({
     projects,
-    locator: createSystemEditorLocator(env.platform, process.env),
+    locator: createEditorLocator(system),
     launch: launchDetached,
     env: process.env
   })
 
   const runs = createRunManager({
     scripts,
+    projects,
+    shells,
     spawn: nodePtySpawner,
     killer: createProcessKiller({ platform: env.platform }),
     platform: env.platform,
@@ -74,6 +84,8 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     removeProject: (projectId) => projects.remove(projectId),
     listScripts: (projectId) => scripts.list(projectId),
     startScript: (projectId, scriptId) => runs.start(projectId, scriptId),
+    listShells: async () => (await shells.list()).map(({ id, name }) => ({ id, name })),
+    startShell: (projectId, shellId) => runs.startShell(projectId, shellId),
     stopRun: (runId) => runs.stop(runId),
     restartRun: (runId) => runs.restart(runId),
     listRuns: async () => runs.list(),

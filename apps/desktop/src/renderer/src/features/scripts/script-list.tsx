@@ -164,7 +164,10 @@ function ScriptGroup({
               projectId={projectId}
               scriptId={script.id}
               scriptName={script.name}
-              run={runs.find((run) => run.projectId === projectId && run.scriptId === script.id)}
+              run={runs.find(
+                (run) =>
+                  run.kind === 'script' && run.projectId === projectId && run.scriptId === script.id
+              )}
               onError={onRunError}
               onStarted={onRunStarted}
             />

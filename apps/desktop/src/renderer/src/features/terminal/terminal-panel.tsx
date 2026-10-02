@@ -1,10 +1,13 @@
+import { useState } from 'react'
 import { SquareTerminal, X } from 'lucide-react'
 import type { Run } from '@devhub/shared'
 import { Button } from '@renderer/components/ui/button'
-import { useRemoveRun, useRuns } from '@renderer/features/runs/use-runs'
+import { useRuns } from '@renderer/features/runs/use-runs'
 import { cn } from '@renderer/lib/utils'
+import { NewTerminalButton } from './new-terminal-button'
 import { RunTerminal } from './run-terminal'
 import { useResizableHeight } from './use-resizable-height'
+import { useCloseRun } from './use-shells'
 
 interface TerminalPanelProps {
   projectId: string
@@ -19,7 +22,8 @@ export function TerminalPanel({
   onActiveRunChange
 }: TerminalPanelProps): React.JSX.Element {
   const { height, startResize } = useResizableHeight('devhub.terminalHeight', 260, 120)
-  const removeRun = useRemoveRun()
+  const closeRun = useCloseRun()
+  const [error, setError] = useState<Error | null>(null)
   const runs = (useRuns().data ?? [])
     .filter((run) => run.projectId === projectId)
     .sort((a, b) => a.startedAt.localeCompare(b.startedAt))
@@ -34,18 +38,36 @@ export function TerminalPanel({
         onPointerDown={startResize}
         className="h-1 shrink-0 cursor-row-resize touch-none hover:bg-ring/40"
       />
-      <header className="flex shrink-0 items-center gap-1 overflow-x-auto border-b px-3 py-1">
+      <header className="flex shrink-0 items-center gap-1 border-b px-3 py-1">
         <SquareTerminal className="mr-1 size-4 shrink-0 text-muted-foreground" />
-        {runs.length === 0 && <span className="text-sm font-medium">终端</span>}
-        {runs.map((run) => (
-          <RunTab
-            key={run.id}
-            run={run}
-            selected={run.id === active?.id}
-            onSelect={() => onActiveRunChange(run.id)}
-            onClose={() => removeRun.mutate(run.id)}
-          />
-        ))}
+        <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
+          {runs.length === 0 && <span className="text-sm font-medium">终端</span>}
+          {runs.map((run) => (
+            <RunTab
+              key={run.id}
+              run={run}
+              selected={run.id === active?.id}
+              closing={closeRun.isPending && closeRun.variables?.id === run.id}
+              onSelect={() => onActiveRunChange(run.id)}
+              onClose={() => closeRun.mutate(run, { onError: setError })}
+            />
+          ))}
+        </div>
+        <NewTerminalButton
+          projectId={projectId}
+          onStarted={(run) => onActiveRunChange(run.id)}
+          onError={setError}
+        />
+        {error && (
+          <p className="ml-auto flex min-w-0 items-center gap-1 text-xs text-destructive">
+            <span className="truncate" title={error.message}>
+              {error.message}
+            </span>
+            <Button variant="ghost" size="icon-xs" onClick={() => setError(null)} aria-label="关闭">
+              <X />
+            </Button>
+          </p>
+        )}
       </header>
       <div className="min-h-0 flex-1 p-2">
         {active ? (
@@ -56,7 +78,7 @@ export function TerminalPanel({
           />
         ) : (
           <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            运行脚本后在这里查看输出
+            运行脚本，或点击「+」新建终端
           </p>
         )}
       </div>
@@ -67,13 +89,17 @@ export function TerminalPanel({
 interface RunTabProps {
   run: Run
   selected: boolean
+  closing: boolean
   onSelect: () => void
   onClose: () => void
 }
 
-function RunTab({ run, selected, onSelect, onClose }: RunTabProps): React.JSX.Element {
+function RunTab({ run, selected, closing, onSelect, onClose }: RunTabProps): React.JSX.Element {
   const exited = run.status === 'exited'
   const failed = exited && !run.stopped && run.exitCode !== 0
+  // A shell can be closed any time (that ends it); a script only once it has exited, so a
+  // running server is never stopped by a stray click on a tab.
+  const closable = exited || run.kind === 'shell'
 
   return (
     <div
@@ -99,15 +125,16 @@ function RunTab({ run, selected, onSelect, onClose }: RunTabProps): React.JSX.El
             exited && (failed ? 'bg-destructive' : 'bg-muted-foreground/40')
           )}
         />
-        {run.scriptName}
+        {run.title}
       </button>
-      {exited && (
+      {closable && (
         <Button
           variant="ghost"
           size="icon-xs"
           onClick={onClose}
-          title="关闭"
-          aria-label={`关闭 ${run.scriptName} 的终端`}
+          disabled={closing}
+          title={exited ? '关闭' : '关闭（结束该终端及其中运行的命令）'}
+          aria-label={`关闭 ${run.title}`}
         >
           <X />
         </Button>

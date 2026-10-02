@@ -1,4 +1,12 @@
-import type { EditorId, EditorInfo, Project, ProjectScripts, Run } from './domain'
+import type {
+  EditorId,
+  EditorInfo,
+  Project,
+  ProjectScripts,
+  Run,
+  ShellId,
+  ShellInfo
+} from './domain'
 import type { RunOutputSnapshot } from './events'
 
 /**
@@ -16,6 +24,10 @@ export interface DevhubApi {
   listScripts(projectId: string): Promise<ProjectScripts>
   /** Starts a detected script. The core resolves the command itself; the UI only sends ids. */
   startScript(projectId: string, scriptId: string): Promise<Run>
+  /** Shells installed on this machine; the first one is the default. */
+  listShells(): Promise<ShellInfo[]>
+  /** Opens an interactive shell in the project directory (the default shell when omitted). */
+  startShell(projectId: string, shellId?: ShellId): Promise<Run>
   /** Stops the whole process tree; resolves once the process has exited. */
   stopRun(runId: string): Promise<void>
   restartRun(runId: string): Promise<Run>
@@ -50,6 +62,8 @@ export const devhubApiMethods = [
   'removeProject',
   'listScripts',
   'startScript',
+  'listShells',
+  'startShell',
   'stopRun',
   'restartRun',
   'listRuns',

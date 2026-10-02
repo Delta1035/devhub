@@ -25,8 +25,9 @@ describe('createRunManager', () => {
     expect(run).toEqual({
       id: 'run-1',
       projectId: 'p1',
+      kind: 'script',
       scriptId: 'npm:dev',
-      scriptName: 'dev',
+      title: 'dev',
       command: 'pnpm run dev',
       status: 'running',
       pid: 100,
@@ -34,11 +35,12 @@ describe('createRunManager', () => {
       stopped: false,
       startedAt: '2026-10-02T12:00:00.000Z'
     })
+    // Scripts run through the platform shell (here: Linux, no SHELL set).
     expect(spawned[0]).toEqual({
-      command: 'pnpm run dev',
+      file: '/bin/sh',
+      args: ['-lc', 'pnpm run dev'],
       cwd: '/repo',
-      env: { PATH: '/bin' },
-      platform: 'linux'
+      env: { PATH: '/bin' }
     })
     expect(manager.list()).toEqual([run])
   })
