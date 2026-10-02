@@ -40,6 +40,17 @@ export default defineConfig(
       'react-refresh/only-export-components': 'off'
     }
   },
+  {
+    // Playwright E2E: no React here. Fixtures receive a `use` callback (not React's `use`),
+    // and fixtures without dependencies must be written `async ({}, use)` because Playwright
+    // reads the destructuring pattern to resolve dependencies.
+    files: ['apps/desktop/e2e/**/*.ts'],
+    rules: {
+      'react-hooks/rules-of-hooks': 'off',
+      'no-empty-pattern': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'off'
+    }
+  },
 
   // ---- Architecture boundaries (see docs/ARCHITECTURE.md) ----
   {

@@ -7,7 +7,7 @@ DevHub 是一个桌面客户端：自动发现本地项目中的脚本（npm / m
 ## 工作流程
 
 1. 非琐碎任务先给出方案，确认后再写代码。一次只做一个小任务。
-2. 完成标准：`pnpm check` 全部通过（格式、lint、类型、测试）。不通过不算完成。
+2. 完成标准：`pnpm check` 全部通过（格式、lint、类型、测试）。不通过不算完成。改动 UI、IPC/preload 或进程管理时，还要跑 `pnpm e2e`（构建后用 Playwright 驱动真实应用，约 30 秒；CI 每次都跑）。
 3. 新增或修改核心逻辑（`apps/desktop/src/main/core/`、`packages/shared/`）必须同时写测试。
 4. 任务结束时更新 `docs/PROGRESS.md`；改变了结构或约定则同步更新 `docs/ARCHITECTURE.md`。
 5. 做出重要技术决策（新依赖、新模式、推翻旧决策）时，在 `docs/decisions/` 新增 ADR。
@@ -31,6 +31,7 @@ DevHub 是一个桌面客户端：自动发现本地项目中的脚本（npm / m
 
 - `pnpm dev` — 启动桌面端（热更新）
 - `pnpm check` — 完整质量检查
+- `pnpm e2e` — 构建并运行 Playwright E2E（在 VSCode 终端中需先 `env -u ELECTRON_RUN_AS_NODE`）
 - `pnpm test` / `pnpm lint` / `pnpm typecheck`
 - `pnpm --filter @devhub/desktop build:win` / `build:linux` — 打包
 

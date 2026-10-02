@@ -5,6 +5,7 @@
 ```
 devhub/                        pnpm monorepo
 ├── apps/desktop/              Electron 桌面客户端
+│   ├── e2e/                   Playwright E2E：驱动构建产物，每个测试独立 userData（ADR 0001 补充）
 │   └── src/
 │       ├── main/              主进程（Node）
 │       │   ├── index.ts       应用生命周期：单实例、托盘、窗口
