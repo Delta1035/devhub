@@ -100,7 +100,11 @@
 ### 下一步（M1）
 
 1. 发布一个新版本（含 latest.yml），再发布下一个版本，实测自动更新全流程
-2. 脚本识别：monorepo 子包 lockfile、Maven 多模块、Gradle 多项目
+2. 脚本识别（方案已拟定，待开始；按 a → b → c 逐个做，各带单元测试）
+   - a. monorepo 子包：子包内找不到 `packageManager` / lockfile / `pnpm-workspace.yaml` 时逐级向上找，到含 `.git` 的目录为止（最多 5 层）；命令仍在子包目录执行
+   - b. Gradle 多项目：读 `settings.gradle(.kts)` 的 `include`，子项目有 Spring Boot 插件加 `:sub:bootRun`、有 application 插件加 `:sub:run`，在根目录执行；端口读子项目自己的 application 配置
+   - c. Maven 多模块：读 `<modules>`（递归最多 3 层），带 `spring-boot-maven-plugin` 的模块加启动脚本。**待决定**：A `mvnw -pl <模块> spring-boot:run`（需先 install 兄弟模块，说明中写明）或 B 另加「构建依赖模块」脚本 `mvnw -pl <模块> -am install -DskipTests`；`-am` 与 `spring-boot:run` 不能放在一条命令里
+   - 不在范围内：添加 monorepo 根目录时列出所有子包脚本（目前可把子包分别添加为项目）
 3. M4 远程暂缓，等以上完成后再评估
 4. 推送后确认 CI 在 Ubuntu（xvfb）也通过（真实 Linux 桌面已验证）
 
