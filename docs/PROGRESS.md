@@ -6,6 +6,11 @@
 
 ### 已完成
 
+- 批量任务运行视图（2026-10-03，ADR 0006 补充）：点击侧栏任务在右侧显示步骤进度、等待条件与超时、失败原因、独立进程/健康状态；按具体 runId 查看项目终端日志，历史运行不存在时显示日志不可用。显示本次启动或复用，明确停止范围包含复用运行；保存执行配置快照，编辑后展示和停止仍对应最近执行配置。修复停止期间延迟启动进程导致状态回退的问题。
+- Windows 安装目录（2026-10-03，ADR 0014）：改为 NSIS 安装向导，可选择目录并自动创建 `devhub` 子目录；尾目录已是 devhub 时不重复，已有安装/静默升级保留原位置。完整 `build:win` 通过，真实 NSIS 路径函数 9/9 用例通过（根目录、尾分隔符、空格、中文等）；尚未进行实际安装或旧版本自动升级验证。
+  - 目录页反馈修复：原实现直到开始安装才追加目录；改为自定义 nsDialogs 目录页，浏览选择立即更新输入框为最终路径，手动输入实时预览最终路径，继续安装使用同一规范化函数。真实 NSIS 控件验证 `D:\software\`、已有 devhub、盘符根目录、中文目录的预览与提交路径均通过；修正版 `devhub-0.1.7-setup-directoryfix.exe` 构建成功，重新运行 `pnpm check` 和 E2E 24/24 均通过。实际安装与旧版自动更新仍待验证。
+  - 集成验证：`pnpm check` 全部通过（desktop 459、shared 55、审计脚本 6 个测试；1 个 Linux 专属测试在 Windows 跳过）；`pnpm e2e` 24/24 通过，约 1.2 分钟，覆盖详情条件、失败取消、完成后停止、精确日志导航、复用与重启后日志失效。
+
 - M0 骨架：monorepo、类型化 API 契约 + 自动 IPC 映射、托盘/单实例、质量关卡
 - M1-1 项目管理：添加（原生文件夹选择）/ 移除项目，持久化到 `userData/projects.json`（ADR 0002）
   - 路径校验与规范化、重复检测（Windows 不区分大小写）、并发写安全、损坏文件自动备份
@@ -96,31 +101,39 @@
   - API `listRunHistory(projectId, scriptId)`；新增 shadcn `popover` 组件（来自已有的 radix-ui，无新依赖）
   - 测试：6 个单元测试（记录与排序、忽略运行中 / shell / 重复退出、按脚本截断、跨会话读取、无效 id、写入失败仍可用）；E2E 1 个（失败与停止的运行、打开时刷新、重启后保留）；Windows + Linux 均通过
 - 修复 E2E 中 `app.getVersion()` 返回 Electron 版本：E2E 原先启动 `out/main/index.js`，Electron 找不到 package.json；改为启动应用目录（经 `main` 进入同一入口）；标题栏用例断言显示的是应用版本
+- 健康检查后续（2026-10-03）：升级 `@types/node` 26.6.4、shadcn 4.21.1、Vitest 5.0.3；新增独立 CI 依赖审计报告（ADR 0012），不隐藏告警，网络 / 格式错误仍失败。
+  - Windows E2E 关闭超过 10 秒时保存 Electron 输出、退出状态与进程快照；失败关闭不再被吞掉，新增 5 个诊断与清理测试。启动时缓存子进程，避免重启后访问已销毁的 Playwright 对象；一个实例关闭失败仍尝试清理其余实例。原有偶发退出超时根因仍待实际失败证据。
+  - 自动更新修复：显式等待核心清理成功再请求安装，失败不安装、重复请求不重复安装；新增 3 个顺序与失败测试。v0.1.5 / v0.1.7 已有公开更新元数据；下载 v0.1.7 Windows 安装包（115,576,942 字节）与 sha512 校验一致，未执行安装器。
+  - 验证：`pnpm check` 全部通过（449 个测试通过，1 个 Linux 权限测试跳过）；完整 E2E 23/23 通过，约 1.1 分钟；冻结 lockfile 安装与 CI YAML 解析通过。审计脚本本机真实运行成功并展示 2 项 high，新增 6 个审计测试覆盖告警与网络 / 格式 / 执行失败。本机无可用 Windows Sandbox，真实安装升级与本次两平台远端 CI 尚待验证。
 
 ### 下一步（M1）
 
-1. 发布一个新版本（含 latest.yml），再发布下一个版本，实测自动更新全流程
-2. 脚本识别（方案已拟定，待开始；按 a → b → c 逐个做，各带单元测试）
-   - a. monorepo 子包：子包内找不到 `packageManager` / lockfile / `pnpm-workspace.yaml` 时逐级向上找，到含 `.git` 的目录为止（最多 5 层）；命令仍在子包目录执行
-   - b. Gradle 多项目：读 `settings.gradle(.kts)` 的 `include`，子项目有 Spring Boot 插件加 `:sub:bootRun`、有 application 插件加 `:sub:run`，在根目录执行；端口读子项目自己的 application 配置
-   - c. Maven 多模块：读 `<modules>`（递归最多 3 层），带 `spring-boot-maven-plugin` 的模块加启动脚本。**待决定**：A `mvnw -pl <模块> spring-boot:run`（需先 install 兄弟模块，说明中写明）或 B 另加「构建依赖模块」脚本 `mvnw -pl <模块> -am install -DskipTests`；`-am` 与 `spring-boot:run` 不能放在一条命令里
+1. 在 Windows Sandbox / VM 中实测 v0.1.5 → v0.1.7 完整安装升级；Linux 在 X11 下验证临时 AppImage 副本。已有两个带更新元数据的公开版本，无需为验证额外发布；Wayland 暂缓。
+2. 脚本识别 a / b / c 与批量任务运行视图已实现；Jira 暂缓，CLI 与 M4 后续评估。Windows 新安装目录及旧版本升级待实际安装确认。
+   - a. monorepo 子包已实现：优先子包配置，缺失时逐级向上找 `packageManager` / lockfile / `pnpm-workspace.yaml`，检查含 `.git` 文件或目录的这一层后停止（最多 5 层父目录）；命令仍在子包目录执行。新增继承、优先级、仓库边界、深度限制与损坏配置测试；Jira 集成暂缓。
+     - 验证（2026-10-03）：沙箱外 `pnpm check` 全部通过（463 个测试通过，1 个 Linux 权限测试跳过）；沙箱内两个真实进程清理测试超时，沙箱外重跑通过。本次仅修改探测器与文档，未修改 UI、IPC/preload 或进程管理，未运行 E2E。
+   - b. Gradle 多项目已实现（ADR 0013）：静态 `include` / `projectDir=file(...)`，支持嵌套与去重；子项目按插件生成完整路径启动命令，使用根 wrapper、子项目端口；多项目根启动限定 `:bootRun` / `:run`。忽略注释、字符串示例、`apply false`；动态配置转为探测警告，可用 `.devhub.yaml` 补充。
+   - c. Maven 多模块已实现（ADR 0013）：静态模块递归最多 3 层；应用模块分别提供 `-pl <模块> -am install -DskipTests` 与 `-pl <模块> spring-boot:run`；根 wrapper、子模块端口、稳定 id。聚合 POM 不启动，根应用含模块时用 `-N`；支持已扫描的直接本地父模块插件继承，不计算 effective POM 或外部父模块。两条开发线在独立 worktree 中并行完成并集成，路径、命令与符号链接边界均有测试。
+     - 集成验证（2026-10-03）：沙箱外 `pnpm check` 全部通过（513 个测试通过，1 个 Linux 权限测试跳过）；`pnpm e2e` 24/24 通过，约 1.2 分钟，新增用例验证 Gradle / Maven 子模块命令与端口在真实应用中展示。沙箱内 Electron 因 Windows ACL 限制无法启动，沙箱外重跑通过；未改系统 ACL。
    - 不在范围内：添加 monorepo 根目录时列出所有子包脚本（目前可把子包分别添加为项目）
 3. M4 远程暂缓，等以上完成后再评估
-4. 推送后确认 CI 在 Ubuntu（xvfb）也通过（真实 Linux 桌面已验证）
+4. 本轮变更保存为本地提交，尚未推送或发布；下一小任务是推送并确认该提交的 Windows / Ubuntu 检查、E2E 与打包。2026-10-03 已重新核实此前 main `22443ad75a5899af5278d4f1a6c54cb87301bedd` 的两平台检查、E2E 与打包均成功（[CI 37035281748](https://github.com/Delta1035/devhub/actions/runs/37035281748)），该结果不覆盖本轮变更。
 
 ### 已知问题 / 待定
 
-- npm 探测只看项目根目录：monorepo 子包作为项目添加时，根目录的 lockfile 识别不到，会回退为 npm
+- 仓库健康检查（2026-10-03，main `22443ad`）：本机 `pnpm check` 通过（435 个测试通过，1 个 Linux 权限测试在 Windows 跳过），E2E 23/23 通过；该提交的 Windows / Ubuntu CI 检查、E2E 与安装包构建均成功。调查前主工作区及另两个 worktree 均干净，无开放 PR。
+  - 依赖审计：开发工具链有 2 项 high（electron-builder 间接依赖 `http-cache-semantics@4.2.0`、shadcn 间接依赖 `braces@3.0.3`）；官方 GHSA 尚无修复，npm 审计给出的 4.2.1 / 3.0.4 范围并非已发布、上游确认的修复。下载路径未默认启用 got HTTP 缓存，应用仅引用 shadcn CSS，未发现当前运行路径具备告警的触发条件；持续展示全部告警，不添加豁免。`audit --prod` 无告警，但 renderer 放在 devDependencies，不能据此断言整个安装包无漏洞。
+  - Vite 8 / plugin-react 6 需与 electron-vite 一起升级，TypeScript 7 超出当前 typescript-eslint 支持范围，ESLint 10 需单独验证插件兼容。现存 peer 告警为 eslint-config-ts 4 内的 `@eslint/js@10` 要求 ESLint 10，当前沿用已通过检查的 ESLint 9；此次补丁升级未新增该告警。
 - 脚本命令目前是字符串（经 shell 执行）；进程管理时再决定是否改为 argv 形式
 - E2E 偶发：Windows 上 `groups.spec.ts` 的串行用例在整套连续运行时偶尔超时（结束时关闭应用超过 60 秒，约 1/20），单独重复运行未复现；原因未查明
 - 安装包多带了 node-pty 的其他平台预编译文件与源码 / 测试（Linux 包约 2 MB 未压缩，`.pdb` 已被 electron-builder 默认排除）；已评估收益小（安装包 100+ MB），且排除规则写错只会在打包版中暴露，暂缓到下次修改打包配置时处理
 - 运行历史：脚本运行到一半 DevHub 崩溃时，这次运行不会进入历史；移除项目后它的历史记录仍留在 `run-history.json` 中（数量有上限，未清理）
-- Maven 多模块 / Gradle 多项目：只读根目录构建文件，子模块中的 `spring-boot:run` / `bootRun` 识别不到，且在根目录执行会作用于所有模块；以后扫描子模块并用 `-pl <module>` / `:<project>:bootRun`
+- Maven / Gradle 多模块识别仅覆盖静态声明；Gradle 插件继承、版本目录别名和动态 include，Maven Profile / pluginManagement / 外部父 POM 未计算，可用 `.devhub.yaml` 显式补充；本机未实际构建 Java 应用。
 - Android 项目的 `assembleDebug`、`installDebug` 等任务暂不识别
 - Linux 上自己 `setsid` 脱离进程组的守护进程杀不到；崩溃后的遗留进程只有当记录的根进程本身存活时才能发现（子进程脱离后根进程已退出的情况发现不了）
 - Windows 上 node-pty 在进程自然退出后会在 stderr 打印 `AttachConsole failed`（释放资源时的辅助进程），不影响功能
 - Windows 上 Node.js 子进程在 ConPTY 下收不到新尺寸（`process.stdout.columns` 不更新，libuv 行为）；调整终端大小后 Node 工具的换行可能仍按旧宽度
-- Linux 只在 X11（Cinnamon）上验证过，Wayland 会话未测
+- Linux 只在 X11（Cinnamon）上验证过，Wayland 会话未测，按用户要求暂不验证
 - 在 VSCode 集成终端中启动 `pnpm dev` 需先清除 `ELECTRON_RUN_AS_NODE`（VSCode 会设置它，导致 Electron 以 Node 模式运行）：`env -u ELECTRON_RUN_AS_NODE pnpm dev`
 - 终端：Windows 上清屏后若终端尺寸变化，ConPTY 会重发旧屏幕内容
 - 编辑器：本机已安装 IDEA（D 盘自定义目录），经注册表检测成功；实际打开项目待人工点一次确认；检测不到时可在设置中手动指定；`reg query` 输出按系统代码页解码，安装路径含中文时可能识别不到

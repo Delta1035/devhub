@@ -90,12 +90,13 @@ export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
     execution: Execution,
     index: number,
     state: GroupStepState,
-    extra: { runId?: string; message?: string } = {}
+    extra: { runId?: string; reused?: boolean; message?: string } = {}
   ): void => {
     const step = execution.state.steps[index]
     if (!step) return
     step.state = state
     if (extra.runId !== undefined) step.runId = extra.runId
+    if (extra.reused !== undefined) step.reused = extra.reused
     step.message = extra.message
     publish(execution)
   }
@@ -120,22 +121,31 @@ export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
   }
 
   const runParallel = async (group: Group, execution: Execution): Promise<void> => {
+    const { signal } = execution.controller
     await Promise.all(
       group.steps.map(async (step, index) => {
         setStep(execution, index, 'running', { message: '启动中' })
         try {
           const { run, reused } = await startStep(step)
+          if (signal.aborted) {
+            if (!reused) await runs.stop(run.id).catch(() => undefined)
+            setStep(execution, index, 'cancelled', { runId: run.id, reused })
+            return
+          }
           setStep(execution, index, 'done', {
             runId: run.id,
+            reused,
             message: reused ? '已在运行' : '已启动'
           })
         } catch (error) {
-          setStep(execution, index, 'failed', { message: errorMessage(error) })
+          setStep(execution, index, signal.aborted ? 'cancelled' : 'failed', {
+            message: signal.aborted ? undefined : errorMessage(error)
+          })
         }
       })
     )
     const failed = execution.state.steps.some((step) => step.state === 'failed')
-    finish(execution, failed ? 'failed' : 'done')
+    finish(execution, signal.aborted ? 'stopped' : failed ? 'failed' : 'done')
   }
 
   const runSerial = async (group: Group, execution: Execution): Promise<void> => {
@@ -148,12 +158,14 @@ export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
       try {
         const started = await startStep(step)
         run = started.run
+        setStep(execution, index, 'running', { runId: run.id, reused: started.reused })
         // Stopped while this step was starting: stop() could not see the new run yet.
         if (signal.aborted) {
           if (!started.reused) await runs.stop(run.id).catch(() => undefined)
           return finish(execution, 'stopped')
         }
       } catch (error) {
+        if (signal.aborted) return finish(execution, 'stopped')
         setStep(execution, index, 'failed', { message: errorMessage(error) })
         return finish(execution, 'failed')
       }
@@ -195,6 +207,7 @@ export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
         controller: new AbortController(),
         state: {
           groupId: group.id,
+          group: structuredClone(group),
           status: 'running',
           steps: group.steps.map((step) => ({ stepId: step.id, state: 'pending' }))
         }
@@ -204,7 +217,7 @@ export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
 
       // Runs in the background; progress and failures are reported through the state.
       const sequence = group.mode === 'parallel' ? runParallel : runSerial
-      void sequence(group, execution).catch((error: unknown) => {
+      void sequence(execution.state.group ?? group, execution).catch((error: unknown) => {
         console.error('[groups] execution failed', error)
         finish(execution, 'failed')
       })
@@ -216,10 +229,12 @@ export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
       const execution = executions.get(group.id)
       execution?.controller.abort()
       await Promise.all(
-        group.steps.map(async (step) => {
-          const run = activeRunOf(step)
-          if (run) await runs.stop(run.id)
-        })
+        (execution?.state.group ?? restored.get(group.id)?.group ?? group).steps.map(
+          async (step) => {
+            const run = activeRunOf(step)
+            if (run) await runs.stop(run.id)
+          }
+        )
       )
       if (execution?.state.status === 'running') finish(execution, 'stopped')
     },

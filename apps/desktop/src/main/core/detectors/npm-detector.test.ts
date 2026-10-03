@@ -9,6 +9,7 @@ describe('npmDetector', () => {
 
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), 'devhub-npm-'))
+    await mkdir(join(dir, '.git'))
   })
 
   afterEach(async () => {

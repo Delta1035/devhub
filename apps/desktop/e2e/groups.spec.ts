@@ -59,12 +59,27 @@ test('a serial group across projects waits for each step, then stops everything'
 
   const item = groups.getByRole('listitem', { name: '批量任务 front1' })
   await expect(item).toContainText('串行')
+  await item.getByRole('button', { name: '查看 front1' }).click()
+  const detail = page.getByRole('region', { name: '任务运行 front1' })
+  await expect(detail).toContainText('输出出现文字「API ready」')
   await item.getByRole('button', { name: '执行 front1' }).click()
   // The tab signals a running group even while the projects tab is shown.
   const running = page.getByRole('tab', { name: /批量/ }).getByRole('status')
   await expect(running).toBeVisible()
   await expect(item).toContainText('已完成', { timeout: 30_000 })
   await expect(running).toBeHidden()
+  await expect(detail).toContainText('2/2 个步骤完成')
+  await expect(detail).toContainText('服务进程可能仍在运行')
+  await expect(detail.getByRole('button', { name: '停止全部' })).toBeEnabled()
+  await expect(detail.getByRole('listitem', { name: '运行步骤 1' })).toContainText('本次启动')
+  await detail
+    .getByRole('listitem', { name: '运行步骤 1' })
+    .getByRole('button', { name: '查看日志' })
+    .click()
+  await expect(page.getByRole('heading', { name: 'api', exact: true })).toBeVisible()
+  await expect(
+    page.locator('main').getByRole('button', { name: 'serve', exact: true })
+  ).toHaveAttribute('aria-current', 'true')
 
   const runs = await listRuns(page)
   expect(runs.filter((run) => run.status === 'running')).toHaveLength(2)
@@ -112,6 +127,10 @@ test('a failing serial step stops the sequence and explains why', async ({
   await item.getByRole('button', { name: '执行 broken' }).click()
   await expect(item).toContainText('失败')
   await expect(item).toContainText('进程退出码 1')
+  await item.getByRole('button', { name: '查看 broken' }).click()
+  const detail = page.getByRole('region', { name: '任务运行 broken' })
+  await expect(detail.getByRole('listitem', { name: '运行步骤 1' })).toContainText('进程退出码 1')
+  await expect(detail.getByRole('listitem', { name: '运行步骤 2' })).toContainText('已取消')
 
   const runs = await listRuns(page)
   expect(runs.map((run) => run.title)).toEqual(['build'])
@@ -144,8 +163,17 @@ test('waits for a regex in the output and remembers the result after a restart',
   const item = () => page.getByRole('listitem', { name: '批量任务 backend' })
   await item().getByRole('button', { name: '执行 backend' }).click()
   await expect(item()).toContainText(/已完成 · \d{2}:\d{2}/)
+  await item().getByRole('button', { name: '查看 backend' }).click()
+  const detail = () => page.getByRole('region', { name: '任务运行 backend' })
+  await expect(detail()).toContainText('本次启动')
+  await detail().getByRole('button', { name: '执行', exact: true }).click()
+  await expect(detail()).toContainText('复用已有运行')
+  await expect(detail()).toContainText('1/1 个步骤完成')
 
   await app.close()
   page = (await launchDevhub()).page
   await expect(item()).toContainText(/已完成 · \d{2}:\d{2}/)
+  await item().getByRole('button', { name: '查看 backend' }).click()
+  await expect(detail()).toContainText('日志不可用')
+  await expect(detail().getByRole('button', { name: '查看日志' })).toHaveCount(0)
 })

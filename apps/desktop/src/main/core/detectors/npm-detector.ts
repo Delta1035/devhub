@@ -1,4 +1,4 @@
-import { join } from 'path'
+import { dirname, join, resolve } from 'path'
 import { z } from 'zod'
 import type { Script } from '@devhub/shared'
 import { inferNpmPorts } from '../ports/infer-ports'
@@ -58,11 +58,43 @@ export const npmDetector: ScriptDetector = {
   }
 }
 
-/** `packageManager` (corepack) beats lockfiles; npm is the fallback. */
+/** Uses the nearest declaration/lockfile/workspace, including at most five ancestors. */
 export async function detectPackageManager(
   dir: string,
   packageManagerField: unknown
 ): Promise<PackageManager> {
+  let current = resolve(dir)
+  let field = packageManagerField
+  for (let depth = 0; depth <= 5; depth++) {
+    if (depth > 0) {
+      const raw = await readOptionalFile(join(current, 'package.json'))
+      if (raw !== null) {
+        let json: unknown
+        try {
+          json = JSON.parse(raw)
+        } catch {
+          throw new Error('上级目录的 package.json 不是有效的 JSON')
+        }
+        const parsed = packageJsonSchema.safeParse(json)
+        if (!parsed.success) throw new Error('上级目录的 package.json 格式不正确')
+        field = parsed.data.packageManager
+      }
+    }
+    const manager = await detectLocalPackageManager(current, field)
+    if (manager !== null) return manager
+    if (await exists(join(current, '.git'))) break
+    const parent = dirname(current)
+    if (parent === current) break
+    current = parent
+    field = undefined
+  }
+  return 'npm'
+}
+
+async function detectLocalPackageManager(
+  dir: string,
+  packageManagerField: unknown
+): Promise<PackageManager | null> {
   // Format is "<name>@<version>", e.g. "pnpm@9.1.0".
   if (typeof packageManagerField === 'string') {
     const declared = packageManagerSchema.safeParse(packageManagerField.split('@')[0])
@@ -71,5 +103,6 @@ export async function detectPackageManager(
   for (const [file, manager] of lockfiles) {
     if (await exists(join(dir, file))) return manager
   }
-  return 'npm'
+  if (await exists(join(dir, 'pnpm-workspace.yaml'))) return 'pnpm'
+  return null
 }

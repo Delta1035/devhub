@@ -50,6 +50,17 @@ describe('settleInterrupted', () => {
     const state: GroupRunState = { groupId: 'g', status: 'failed', steps: [] }
     expect(settleInterrupted(state, at)).toBe(state)
   })
+
+  it('preserves reuse information for interrupted steps', () => {
+    const state: GroupRunState = {
+      groupId: 'g',
+      status: 'running',
+      steps: [{ stepId: 's', state: 'running', runId: 'r', reused: true, message: '等待' }]
+    }
+    expect(settleInterrupted(state, at).steps).toEqual([
+      { stepId: 's', state: 'cancelled', runId: 'r', reused: true, message: undefined }
+    ])
+  })
 })
 
 describe('group runner with history', () => {
@@ -96,6 +107,7 @@ describe('group runner with history', () => {
     expect(store.saved().states).toEqual([
       {
         groupId: 'g',
+        group,
         status: 'failed',
         finishedAt: at.toISOString(),
         steps: [{ stepId: 's1', state: 'failed', message: '脚本不存在' }]

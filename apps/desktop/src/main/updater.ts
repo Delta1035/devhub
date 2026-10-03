@@ -11,7 +11,7 @@ const checkIntervalMs = 6 * 60 * 60 * 1000
  * Self-update from GitHub Releases (ADR 0009). Never downloads or installs on its own: the
  * user sees "new version" and chooses to download, then to restart.
  */
-export function registerUpdater(): void {
+export function registerUpdater(stopRuns: () => Promise<void>): void {
   const unsupported = updateSupport({
     isPackaged: app.isPackaged,
     platform: process.platform,
@@ -81,8 +81,21 @@ export function registerUpdater(): void {
       () => undefined
     )
   )
-  // quitAndInstall goes through app.quit, so before-quit still stops every run first.
-  handle(shellChannel.installUpdate, async () => autoUpdater.quitAndInstall())
+  // electron-updater starts the installer before app.quit emits before-quit.
+  // Finish stopping managed processes before allowing it to replace the app.
+  let installing = false
+  handle(shellChannel.installUpdate, async () => {
+    if (installing || status.state !== 'downloaded') return
+    installing = true
+    try {
+      await stopRuns()
+      autoUpdater.quitAndInstall()
+    } catch (error) {
+      installing = false
+      apply({ type: 'error', error })
+      throw error
+    }
+  })
 
   setTimeout(() => void check(), firstCheckDelayMs)
   setInterval(() => void check(), checkIntervalMs).unref()

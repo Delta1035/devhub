@@ -81,9 +81,11 @@ export type Group = z.infer<typeof groupSchema>
 export const groupStepStateSchema = z.enum(['pending', 'running', 'done', 'failed', 'cancelled'])
 export type GroupStepState = z.infer<typeof groupStepStateSchema>
 
-/** Live progress of a group's latest execution; kept in memory only. */
+/** Latest execution progress; completed results are persisted across sessions. */
 export const groupRunStateSchema = z.object({
   groupId: z.string(),
+  /** Configuration at execution time; absent in older saved results. */
+  group: groupSchema.optional(),
   status: z.enum(['running', 'done', 'failed', 'stopped']),
   /** When the execution ended; absent while running. */
   finishedAt: z.iso.datetime().optional(),
@@ -93,6 +95,8 @@ export const groupRunStateSchema = z.object({
       state: groupStepStateSchema,
       /** The run started (or reused) for this step. */
       runId: z.string().optional(),
+      /** Whether this step reused an existing active run; absent in older results. */
+      reused: z.boolean().optional(),
       /** Why a step is waiting or failed, e.g. `等待输出 "ready"`. */
       message: z.string().optional()
     })

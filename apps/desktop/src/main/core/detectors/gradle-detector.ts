@@ -1,8 +1,10 @@
-import { join } from 'path'
+import { realpath } from 'fs/promises'
+import { isAbsolute, join, relative } from 'path'
 import type { Script } from '@devhub/shared'
 import { readSpringPort } from '../ports/infer-ports'
 import { readOptionalFile, resolveWrapper } from './fs-utils'
 import type { ScriptDetector } from './types'
+import { gradleLaunchTasks, readGradleProjects } from './gradle-settings'
 
 export interface GradleDetectorDeps {
   platform: NodeJS.Platform
@@ -17,15 +19,6 @@ const baseTasks: [task: string, description: string][] = [
   ['test', '运行测试']
 ]
 
-// Plain text matching, Groovy and Kotlin DSL. The quoted plugin id excludes dependency
-// coordinates such as 'org.springframework.boot:spring-boot-starter-web'.
-const springBootPlugin = /['"]org\.springframework\.boot['"]/
-const applicationPlugin = [
-  /\bid\s*\(?\s*['"]application['"]/, // id 'application' / id("application")
-  /\bapply\s+plugin\s*:\s*['"]application['"]/,
-  /^\s*application\b/m // Kotlin `plugins { application }` or an `application { … }` block
-]
-
 export function createGradleDetector({ platform }: GradleDetectorDeps): ScriptDetector {
   return {
     source: 'gradle',
@@ -36,26 +29,63 @@ export function createGradleDetector({ platform }: GradleDetectorDeps): ScriptDe
       )
       const present = contents.filter((content) => content !== null)
       if (present.length === 0) return []
-      const build = present.join('\n')
+      const build = contents
+        .slice(0, 2)
+        .filter((content) => content !== null)
+        .join('\n')
+      const settings = contents
+        .slice(2)
+        .filter((content) => content !== null)
+        .join('\n')
 
+      const projects = readGradleProjects(settings)
       const executable = await resolveWrapper(dir, platform, {
         win32: 'gradlew.bat',
         posix: 'gradlew',
         fallback: 'gradle'
       })
       const tasks = [...baseTasks]
-      if (springBootPlugin.test(build)) tasks.push(['bootRun', '运行 Spring Boot 应用'])
-      if (applicationPlugin.some((pattern) => pattern.test(build))) tasks.push(['run', '运行应用'])
+      const launches = gradleLaunchTasks(build)
+      if (launches.includes('bootRun')) tasks.push(['bootRun', '运行 Spring Boot 应用'])
+      if (launches.includes('run')) tasks.push(['run', '运行应用'])
 
-      const springPort = springBootPlugin.test(build) ? await readSpringPort(dir) : null
-      return tasks.map(([task, description]): Script => ({
+      const springPort = launches.includes('bootRun') ? await readSpringPort(dir) : null
+      const scripts = tasks.map(([task, description]): Script => ({
         id: `gradle:${task}`,
         name: task,
         source: 'gradle',
-        command: `${executable} ${task}`,
+        command: `${executable} ${projects.length && launches.includes(task) ? ':' : ''}${task}`,
         description,
         ...(task === 'bootRun' && springPort ? { ports: [springPort] } : {})
       }))
+      for (const project of projects) {
+        const childDir = join(dir, ...project.segments)
+        try {
+          const childRelative = relative(await realpath(dir), await realpath(childDir))
+          if (childRelative.startsWith('..') || isAbsolute(childRelative)) {
+            throw new Error('Gradle 子项目目录不能通过链接指向项目外部')
+          }
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+        }
+        const childBuild = await Promise.all(
+          buildFiles.slice(0, 2).map((file) => readOptionalFile(join(childDir, file)))
+        )
+        for (const task of gradleLaunchTasks(
+          childBuild.filter((text) => text !== null).join('\n')
+        )) {
+          const name = `${project.taskPath}:${task}`
+          scripts.push({
+            id: `gradle:${name}`,
+            name,
+            source: 'gradle',
+            command: `${executable} ${name}`,
+            description: task === 'bootRun' ? '运行 Spring Boot 子项目' : '运行应用子项目',
+            ...(task === 'bootRun' ? { ports: [await readSpringPort(childDir)] } : {})
+          })
+        }
+      }
+      return scripts
     }
   }
 }

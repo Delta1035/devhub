@@ -19,6 +19,8 @@ import { GroupEditor } from './group-editor'
 import { useGroupStates, useGroups, useStartGroup, useStopGroup } from './use-groups'
 
 interface GroupListProps {
+  selectedGroupId: string | null
+  onSelectGroup: (groupId: string) => void
   /** Project new groups start from. */
   selectedProjectId: string | null
   /** Jumps to a step's project when its row is clicked. */
@@ -26,6 +28,8 @@ interface GroupListProps {
 }
 
 export function GroupList({
+  selectedGroupId,
+  onSelectGroup,
   selectedProjectId,
   onSelectProject
 }: GroupListProps): React.JSX.Element {
@@ -70,6 +74,8 @@ export function GroupList({
           <GroupItem
             key={group.id}
             group={group}
+            selected={group.id === selectedGroupId}
+            onSelect={() => onSelectGroup(group.id)}
             state={states.data?.find((state) => state.groupId === group.id)}
             projects={projects}
             busy={
@@ -96,6 +102,8 @@ export function GroupList({
 }
 
 interface GroupItemProps {
+  selected: boolean
+  onSelect: () => void
   group: Group
   state: GroupRunState | undefined
   projects: Project[]
@@ -114,6 +122,8 @@ const statusLabels: Record<GroupRunState['status'], string> = {
 }
 
 function GroupItem({
+  selected,
+  onSelect,
   group,
   state,
   projects,
@@ -129,12 +139,18 @@ function GroupItem({
 
   return (
     <li
-      className="group rounded-lg px-2 py-1.5 hover:bg-muted"
+      className={cn('group rounded-lg px-2 py-1.5 hover:bg-muted', selected && 'bg-muted')}
       aria-label={`批量任务 ${group.name}`}
     >
       <div className="flex items-center gap-2">
         <Layers className="size-4 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 flex-1">
+        <button
+          type="button"
+          className="min-w-0 flex-1 text-left"
+          onClick={onSelect}
+          aria-label={`查看 ${group.name}`}
+          aria-current={selected ? 'true' : undefined}
+        >
           <p className="flex items-center gap-1.5">
             <span className="truncate text-sm font-medium">{group.name}</span>
             <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
@@ -153,7 +169,7 @@ function GroupItem({
                   .join(' · ')
               : `${group.steps.length} 个脚本`}
           </p>
-        </div>
+        </button>
         <Button
           variant="ghost"
           size="icon-xs"

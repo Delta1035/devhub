@@ -129,6 +129,7 @@ describe('createGroupRunner', () => {
     await flush()
     expect(latest()).toMatchObject({ status: 'done' })
     expect(latest()?.steps.map((s) => s.message)).toEqual(['已启动', '已在运行'])
+    expect(latest()?.steps.map((s) => s.reused)).toEqual([false, true])
     expect(manager.start).toHaveBeenCalledTimes(2) // the setup start + npm:web only
   })
 
@@ -262,4 +263,67 @@ describe('createGroupRunner', () => {
     await expect(runner.start('nope')).rejects.toMatchObject({ code: 'GROUP_NOT_FOUND' })
     await expect(runner.stop('nope')).rejects.toMatchObject({ code: 'GROUP_NOT_FOUND' })
   })
+
+  it('keeps reused information after a serial condition completes', async () => {
+    await manager.start('p1', 'npm:web')
+    define({
+      id: 'g',
+      name: 'g',
+      mode: 'serial',
+      steps: [step('s1', 'npm:web', { type: 'delay', seconds: 0 })]
+    })
+    await runner.start('g')
+    await flush()
+    expect(latest()?.steps[0]).toMatchObject({ state: 'done', runId: 'run-1', reused: true })
+    expect(manager.start).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps execution configuration and stop scope when a group is edited', async () => {
+    const original: Group = {
+      id: 'g',
+      name: 'original',
+      mode: 'serial',
+      steps: [step('s1', 'npm:web', { type: 'delay', seconds: 60 })]
+    }
+    define(original)
+    await runner.start('g')
+    await flush()
+    await manager.start('p1', 'npm:other')
+    original.steps[0] = step('new', 'npm:other', { type: 'delay', seconds: 0 })
+    original.name = 'edited'
+    await runner.stop('g')
+    await flush()
+    expect(latest()?.group).toMatchObject({ name: 'original', steps: [{ scriptId: 'npm:web' }] })
+    expect(manager.stop).toHaveBeenCalledWith('run-1')
+    expect(manager.stop).not.toHaveBeenCalledWith('run-2')
+  })
+
+  it.each(['parallel', 'serial'] as const)(
+    'stops a delayed %s start without overwriting cancellation',
+    async (mode) => {
+      const start = manager.start.getMockImplementation()!
+      let release: (() => void) | undefined
+      manager.start.mockImplementation(async (projectId, scriptId) => {
+        await new Promise<void>((resolve) => {
+          release = resolve
+        })
+        return start(projectId, scriptId)
+      })
+      define({
+        id: 'g',
+        name: 'g',
+        mode,
+        steps: [step('s1', 'npm:web', { type: 'delay', seconds: 0 })]
+      })
+      await runner.start('g')
+      await runner.stop('g')
+      release?.()
+      await flush()
+      expect(latest()).toMatchObject({
+        status: 'stopped',
+        steps: [{ state: 'cancelled', runId: 'run-1', reused: false }]
+      })
+      expect(manager.runs[0]?.status).toBe('exited')
+    }
+  )
 })

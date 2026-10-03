@@ -1,5 +1,46 @@
 import { describe, expect, it } from 'vitest'
-import { continueConditionSchema, groupInputSchema } from './groups'
+import { continueConditionSchema, groupInputSchema, groupRunStateSchema } from './groups'
+
+describe('groupRunStateSchema', () => {
+  it('loads older results without execution snapshots or reuse information', () => {
+    const state = {
+      groupId: 'g',
+      status: 'done',
+      steps: [{ stepId: 's', state: 'done', runId: 'r' }]
+    }
+    expect(groupRunStateSchema.parse(state)).toEqual(state)
+  })
+
+  it('preserves and validates execution snapshots and reuse information', () => {
+    const state = {
+      groupId: 'g',
+      status: 'done',
+      group: {
+        id: 'g',
+        name: 'g',
+        mode: 'parallel',
+        steps: [
+          {
+            id: 's',
+            projectId: 'p',
+            scriptId: 'npm:dev',
+            continueWhen: { type: 'delay', seconds: 0 }
+          }
+        ]
+      },
+      steps: [{ stepId: 's', state: 'done', runId: 'r', reused: true }]
+    }
+    expect(groupRunStateSchema.parse(state)).toEqual(state)
+    expect(
+      groupRunStateSchema.safeParse({ ...state, group: { ...state.group, mode: 'invalid' } })
+        .success
+    ).toBe(false)
+    expect(
+      groupRunStateSchema.safeParse({ ...state, steps: [{ ...state.steps[0], reused: 'yes' }] })
+        .success
+    ).toBe(false)
+  })
+})
 
 describe('groupInputSchema', () => {
   const step = {

@@ -8,6 +8,7 @@ import {
   type Page
 } from '@playwright/test'
 import type { DevhubApi } from '@devhub/shared'
+import { closeRunningApps, trackAppDiagnostics } from './diagnostics'
 
 export { expect } from '@playwright/test'
 
@@ -39,6 +40,8 @@ export const test = base.extend<Fixtures>({
 
   launchDevhub: async ({ workDir }, use, testInfo) => {
     const launched: ElectronApplication[] = []
+    const children: ReturnType<ElectronApplication['process']>[] = []
+    const diagnostics: (() => Promise<void>)[] = []
     await use(async () => {
       const app = await electron.launch({
         args: [
@@ -52,6 +55,8 @@ export const test = base.extend<Fixtures>({
         env: electronEnv()
       })
       launched.push(app)
+      children.push(app.process())
+      diagnostics.push(trackAppDiagnostics(app, testInfo, launched.length - 1))
       await app.context().tracing.start({ screenshots: true, snapshots: true })
       const page = await app.firstWindow()
       await page.waitForLoadState('domcontentloaded')
@@ -62,13 +67,27 @@ export const test = base.extend<Fixtures>({
 
     for (const [index, app] of launched.entries()) {
       const failed = testInfo.status !== testInfo.expectedStatus
-      await app
-        .context()
-        .tracing.stop(failed ? { path: testInfo.outputPath(`trace-${index}.zip`) } : undefined)
-        .catch(() => undefined)
-      // Closing quits DevHub, which stops every run it started.
-      await app.close().catch(() => undefined)
+      if (failed) {
+        await diagnostics[index]?.().catch((error: unknown) => {
+          console.error('Unable to save Electron test diagnostics', error)
+        })
+      }
+      try {
+        await app
+          .context()
+          .tracing.stop(failed ? { path: testInfo.outputPath(`trace-${index}.zip`) } : undefined)
+      } catch {
+        // Restart and quit tests have already destroyed the application's context.
+      }
     }
+    // Closing quits DevHub, which stops every run it started. Attempt every instance,
+    // including when an earlier close rejects; report those failures after cleanup.
+    await closeRunningApps(
+      launched.flatMap((app, index) => {
+        const child = children[index]
+        return child ? [{ app, child }] : []
+      })
+    )
   },
 
   createProject: async ({ workDir }, use) => {

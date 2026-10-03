@@ -10,7 +10,7 @@
     "build": "pnpm --filter @devhub/desktop build",
     "lint": "eslint --cache .",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test",
+    "test": "node --test scripts/dependency-audit.test.mjs && pnpm -r test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "e2e": "pnpm --filter @devhub/desktop e2e",

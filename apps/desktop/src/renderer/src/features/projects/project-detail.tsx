@@ -9,9 +9,15 @@ import { useProjectScripts } from '@renderer/features/scripts/use-scripts'
 import { TerminalPanel } from '@renderer/features/terminal/terminal-panel'
 import { cn } from '@renderer/lib/utils'
 
-export function ProjectDetail({ project }: { project: Project }): React.JSX.Element {
+export function ProjectDetail({
+  project,
+  initialRunId = null
+}: {
+  project: Project
+  initialRunId?: string | null
+}): React.JSX.Element {
   const scripts = useProjectScripts(project.id)
-  const [activeRunId, setActiveRunId] = useState<string | null>(null)
+  const [activeRunId, setActiveRunId] = useState<string | null>(initialRunId)
   const [editorError, setEditorError] = useState<Error | null>(null)
   const [terminalMaximized, setTerminalMaximized] = useState(false)
 

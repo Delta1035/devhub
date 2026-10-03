@@ -68,6 +68,14 @@ React UI ──> @renderer/api ──> DevhubApi (packages/shared)
 UI 通过 `@renderer/api` 的 `shell` 访问；远程客户端中它为 `null`，UI 需据此隐藏相关入口。
 ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动映射）。
 
+更新安装入口通过注入的清理函数等待 `core.dispose()` 成功，再调用 `quitAndInstall()`；不能仅依赖 `before-quit`，因为 electron-updater 会先启动安装再请求退出。清理失败不安装。
+
+## 质量与诊断
+
+- `pnpm check` 包含格式、架构 lint、类型检查和测试；E2E 驱动真实 Electron 构建产物。
+- E2E 从启动起捕获 Electron stdout / stderr；失败或关闭超过 10 秒时保存退出状态与系统进程快照至 `test-results`，随 CI 失败产物上传。诊断不扩大测试超时，也不吞掉活应用的关闭错误。
+- CI 的独立依赖审计任务展示全部依赖告警并保存原始 JSON；目前为报告模式，网络或格式错误仍失败（ADR 0012）。
+
 ## 领域模型（`packages/shared/src/domain.ts`）
 
 | 概念           | 说明                                                                                      |
@@ -90,6 +98,8 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 - `detectScripts` 并行执行所有探测器，失败的探测器转为 `warnings`，不影响其他结果。
 - 脚本 id 形如 `<source>:<name>`，重新扫描保持稳定，供进程管理关联运行状态。
 - 不缓存：每次 `listScripts` 都读磁盘。
+- npm 包管理器按目录就近识别：每层优先 `packageManager`，其次 lockfile（pnpm / yarn / npm），最后 `pnpm-workspace.yaml`；当前目录缺失时最多查找 5 层父目录，检查含 `.git` 文件或目录的这一层后停止。仅继承包管理器，脚本仍来自当前子包并在子包目录执行；上级 package.json 损坏时返回探测警告。
+- Gradle / Maven 多模块探测见 ADR 0013：Gradle 静态 `include` 与 `projectDir = file("相对路径")` 由 `gradle-settings.ts` 解析，子项目启动命令用完整任务路径；多项目根应用用 `:bootRun` / `:run` 避免启动其他子项目。Maven 由 `maven-pom.ts` 读取静态 XML 模块、直接插件声明和已扫描的直接本地父模块插件继承（尊重 `inherited=false`），最多扫描 3 层；应用模块分别提供构建依赖和启动脚本，聚合 POM 不提供启动，根应用含模块时用 `-N`。命令都使用根 wrapper 并在根目录执行，端口来自应用模块；动态声明可用 `.devhub.yaml` 补充。
 
 ## 进程管理（`core/process/`，见 ADR 0003）
 
@@ -116,6 +126,12 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 - 设置分两处（ADR 0007）：影响 core 行为的存 `settings.json`；纯显示偏好（主题、终端字号等）存 renderer 的 localStorage（`lib/appearance.ts`、`terminal-prefs.ts`）。renderer 用事件直接更新 TanStack Query 缓存（`useRunEventsSync`，在 App 挂载一次）。
 - 终端：先订阅再取 `getRunOutput` 快照，用 shared 的 `OutputCursor` 去重拼接；core 中输出按 16 ms 合并后推送。
 - renderer 的 `terminal-sessions.ts` 为每个运行保留一个 xterm 实例（切换标签只移动 DOM 节点，关闭标签时释放）；只有可见终端使用 WebGL。快捷键在 `terminal-keys.ts`，外观偏好（主题、字号、渲染方式）在 `terminal-prefs.ts`。
+
+## 批量运行视图与安装目录
+
+- `features/groups/group-detail.tsx` 展示任务运行详情，App 管理项目与任务选择；日志入口携带具体 `runId` 切换到项目终端。
+- `GroupRunState` 可选保存执行配置快照与每步 `reused` 标志，随最近结果持久化。流程状态与实时 Run / RunHealth 独立，停止使用最近执行配置，兼容旧历史（ADR 0006 补充）。
+- Windows 使用 NSIS 安装向导，`build/installer.nsh` 的 nsDialogs 目录页在浏览选择时更新输入框、手动输入时预览最终路径，统一规范新选目录为 `devhub` 尾目录，并保留原安装位置及静默升级路径（ADR 0014）。
 
 ## 安全
 

@@ -41,7 +41,7 @@ export function settleInterrupted(state: GroupRunState, at: Date): GroupRunState
     finishedAt: state.finishedAt ?? at.toISOString(),
     steps: state.steps.map((step) =>
       step.state === 'pending' || step.state === 'running'
-        ? { stepId: step.stepId, state: 'cancelled', ...(step.runId ? { runId: step.runId } : {}) }
+        ? { ...step, state: 'cancelled', message: undefined }
         : step
     )
   }

@@ -55,7 +55,7 @@ if (!app.requestSingleInstanceLock()) {
       dataDir: app.getPath('userData')
     })
     registerIpcHandlers(core)
-    registerUpdater()
+    registerUpdater(() => core?.dispose() ?? Promise.resolve())
     registerWindowControls()
     core.getSettings().then(
       (settings) => (closeAction = settings.closeAction),

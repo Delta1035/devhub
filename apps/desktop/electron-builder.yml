@@ -17,6 +17,9 @@ asarUnpack:
 win:
   executableName: devhub
 nsis:
+  oneClick: false
+  # The custom directory page previews the normalized destination before installing.
+  include: build/installer.nsh
   artifactName: devhub-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}

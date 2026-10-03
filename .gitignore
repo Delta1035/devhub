@@ -4,6 +4,7 @@ out
 coverage
 test-results
 playwright-report
+dependency-audit.json
 .DS_Store
 .eslintcache
 *.log*
