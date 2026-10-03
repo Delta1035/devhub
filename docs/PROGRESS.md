@@ -131,6 +131,10 @@ MVP 范围为桌面端项目/脚本管理、进程与终端、批量任务、设
    - 不在范围内：添加 monorepo 根目录时列出所有子包脚本（目前可把子包分别添加为项目）
 3. 本次运行历史改动提交推送后确认 Windows / Ubuntu CI；上一轮提交 `8604a39` 的推送及 CI 已获用户确认，此结果不覆盖本次运行历史改动。
 4. 完成升级验证后发布新的桌面 MVP 版本；版本、tag 与 Release 尚未变更。
+5. 提交与发布基础设施（待做，用户 2026-10-03 决定暂缓；完成后同步到模板）：
+   - 提交信息校验：husky `commit-msg` 钩子检查 Conventional Commits，CI 对 PR 内提交复查（兜住 `--no-verify` 与网页提交）。
+   - 变更日志：`pnpm release` 时按上个 tag 以来的提交生成 `CHANGELOG.md` 段落并随版本提交；`release.yml` 用该段落作为 Release 正文，替换 `--generate-notes`（提交直接进 main，按 PR 生成的说明基本为空）；补齐 v0.1.1～v0.1.8。
+   - 实现候选：自写零依赖脚本（推荐，发布流程不变）/ commitlint + git-cliff（新依赖，需 ADR）/ release-please（改为合并发布 PR 的流程）。
 
 ### 已知问题 / 待定
 
