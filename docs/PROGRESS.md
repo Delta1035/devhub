@@ -8,6 +8,7 @@ MVP 范围为桌面端项目/脚本管理、进程与终端、批量任务、设
 
 ### 已完成
 
+- 仓库门面（2026-10-03）：README 改为英文主版本 + `README.zh-CN.md`，含徽章（CI、版本、下载量、平台、许可证、技术栈）、截图、Star History；截图 `docs/assets/main.png` / `batch.png` 用临时 Playwright 脚本以演示项目在真实应用中截取（脚本未保留，界面变化较大时需重截）。新增 MIT `LICENSE`（`apps/desktop/package.json` 补 `license`）、`CONTRIBUTING.md`（开发约定与发布流程从 README 移入）、Issue 表单（Bug / 功能建议）与 PR 模板。`pnpm check` 通过。
 - 桌面模板迁出（2026-10-03，ADR 0016 补充）：模板已移到同级目录 `D:\projects\vibe-coding\electron-desktop-template`（共 123 个源文件，不含依赖与产物），由用户创建独立仓库；DevHub 删除 `templates/` 及相应排除规则。新位置冻结 lockfile 安装后，`pnpm check`（31 + 45 + 2 个测试）、E2E 3/3、Windows 打包与产物校验均通过。新目录尚未 `git init`，也未提交。
 - 桌面模板初始化与交付（2026-10-03，ADR 0017）：模板（当时位于 `templates/desktop`）新增 `pnpm initialize`，默认预览，`--yes` 才写入；只结构化改写 `app.config.json` 与两个 package.json；可重复执行，写入失败会回滚，并拒绝非模板目录和未确认的 appId 变更。窗口标题、打包配置、NSIS 安装子目录、产物名、更新缓存与更新源都从配置派生；无仓库时显式关闭发布。新增标识检查（纳入 check，发布模式更严格）、产物校验、CI、release 与 dependabot。
   - 验证（Windows）：模板 `pnpm check` 通过（脚本 31、desktop 45、shared 2 个测试）。默认配置和两组产品配置均通过 check 与 E2E 3/3；Windows 安装包、免安装包、可执行文件、更新源与产物校验一致，打包版能启动且标题正确。验证后已恢复模板默认标识。Linux 打包/E2E、远端 CI、真实安装与更新尚未验证；未创建远端仓库。

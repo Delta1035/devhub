@@ -6,6 +6,7 @@
   "description": "DevHub desktop client: manage and run scripts across local projects",
   "homepage": "https://github.com/Delta1035/devhub",
   "author": "Delta1035",
+  "license": "MIT",
   "desktopName": "devhub.desktop",
   "main": "./out/main/index.js",
   "scripts": {

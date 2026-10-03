@@ -1,0 +1,65 @@
+name: Bug 报告 / Bug report
+description: DevHub 出现了错误或不符合预期的行为
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: 提交前请先搜索已有 Issue，并看一眼 [已知问题](https://github.com/Delta1035/devhub/blob/main/docs/PROGRESS.md)。
+  - type: input
+    id: version
+    attributes:
+      label: DevHub 版本
+      description: 标题栏左上角显示的版本号
+      placeholder: v0.1.8
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: 系统
+      options:
+        - Windows 11
+        - Windows 10
+        - Ubuntu / Linux（X11）
+        - Ubuntu / Linux（Wayland）
+        - 其他
+    validations:
+      required: true
+  - type: dropdown
+    id: package
+    attributes:
+      label: 安装方式
+      options:
+        - Windows 安装包（.exe）
+        - AppImage
+        - deb
+        - 源码运行（pnpm dev）
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 发生了什么
+      description: 实际看到的现象；有截图更好
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 添加项目 …
+        2. 运行脚本 …
+        3. 看到 …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望的行为
+  - type: textarea
+    id: context
+    attributes:
+      label: 相关配置或日志
+      description: 涉及脚本识别时，贴上相关的 package.json / pom.xml / build.gradle / .devhub.yaml 片段；终端输出也可以贴在这里
+      render: text
