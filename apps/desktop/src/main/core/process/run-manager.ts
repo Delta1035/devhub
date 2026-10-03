@@ -65,6 +65,8 @@ export interface RunManagerDeps {
   outputFlushMs?: number
   now?: () => Date
   newId?: () => string
+  /** Lets the host persist script-start metadata before acknowledging the start. */
+  afterScriptStart?: () => Promise<void>
 }
 
 const idInput = z.string().min(1)
@@ -92,7 +94,8 @@ export function createRunManager({
   outputLimit = 512 * 1024,
   outputFlushMs = 16,
   now = () => new Date(),
-  newId = randomUUID
+  newId = randomUUID,
+  afterScriptStart = async () => undefined
 }: RunManagerDeps): RunManager {
   const entries = new Map<string, RunEntry>()
 
@@ -150,7 +153,7 @@ export function createRunManager({
     }
 
     const runEnv = definedEnv(env)
-    return launch({
+    const run = launch({
       projectId: project.id,
       identity: { kind: 'script', scriptId: script.id },
       title: script.name,
@@ -159,6 +162,8 @@ export function createRunManager({
       cwd: script.cwd ? resolve(project.path, script.cwd) : project.path,
       env: runEnv
     })
+    await afterScriptStart()
+    return run
   }
 
   const startShell = async (projectId: unknown, rawShellId?: unknown): Promise<Run> => {

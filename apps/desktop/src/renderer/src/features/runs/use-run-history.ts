@@ -1,5 +1,12 @@
-import { useQuery, type QueryClient, type UseQueryResult } from '@tanstack/react-query'
-import type { Run, RunRecord } from '@devhub/shared'
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+  type UseQueryResult,
+  type UseMutationResult
+} from '@tanstack/react-query'
+import type { RunRecord } from '@devhub/shared'
 import { api } from '@renderer/api'
 
 const historyKey = (projectId: string, scriptId: string) =>
@@ -18,10 +25,24 @@ export function useRunHistory(
   })
 }
 
-/** A script run just exited, so its history gained an entry; called from `useRunEventsSync`. */
-export function refreshHistoryOnExit(queryClient: QueryClient, run: Run): void {
-  if (run.kind !== 'script' || run.status !== 'exited') return
-  void queryClient.invalidateQueries({ queryKey: historyKey(run.projectId, run.scriptId) })
+export function refreshHistory(
+  queryClient: QueryClient,
+  projectId: string,
+  scriptId: string
+): void {
+  void queryClient.invalidateQueries({ queryKey: historyKey(projectId, scriptId) })
+  void queryClient.invalidateQueries({ queryKey: ['history-output', projectId, scriptId] })
+}
+
+export function useClearRunHistory(
+  projectId: string,
+  scriptId: string
+): UseMutationResult<void, Error, void> {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.clearRunHistory(projectId, scriptId),
+    onSuccess: () => refreshHistory(queryClient, projectId, scriptId)
+  })
 }
 
 /** `2 分 13 秒`, `45 秒`, `1 小时 5 分` */

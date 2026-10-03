@@ -50,6 +50,32 @@ describe('createRunManager', () => {
     expect(spawned[0]?.cwd).toMatch(/repo[\\/]server$/)
   })
 
+  it('waits for host persistence before acknowledging script starts and restarts', async () => {
+    let release: (() => void) | undefined
+    const saved = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve
+        })
+    )
+    const manager = makeManager({ afterScriptStart: saved })
+    let acknowledged = false
+    const starting = manager.start('p1', 'npm:dev').then(() => {
+      acknowledged = true
+    })
+    await vi.waitFor(() => expect(saved).toHaveBeenCalledTimes(1))
+    expect(manager.list()).toHaveLength(1)
+    expect(acknowledged).toBe(false)
+    release?.()
+    await starting
+    expect(acknowledged).toBe(true)
+    ptys[0]?.emitExit(0)
+    const restarting = manager.restart('run-1')
+    await vi.waitFor(() => expect(saved).toHaveBeenCalledTimes(2))
+    release?.()
+    await restarting
+  })
+
   it('propagates script lookup errors', async () => {
     await expect(makeManager().start('p1', 'npm:nope')).rejects.toMatchObject({
       code: 'SCRIPT_NOT_FOUND'

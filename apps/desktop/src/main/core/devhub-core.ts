@@ -14,6 +14,7 @@ import { isFile } from './fs/is-file'
 import { systemDeps, writeFileEnsuringDir } from './fs/system-deps'
 import { createHealthMonitor } from './health/health-monitor'
 import { createRunHistory, emptyRunHistoryFile, runHistoryFileSchema } from './history/run-history'
+import { createHistoryLogStore } from './history/history-log-store'
 import { healthTargetOf } from './health/health-target'
 import { checkHttpOk, checkLocalHttp } from './net/http-check'
 import { checkLocalPort } from './net/local-port'
@@ -136,6 +137,18 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
   })
   events.subscribe((event) => runRegistry.handle(event))
 
+  const history = createRunHistory({
+    store: createJsonStore({
+      filePath: join(env.dataDir, 'run-history.json'),
+      schema: runHistoryFileSchema,
+      fallback: emptyRunHistoryFile
+    }),
+    logs: createHistoryLogStore(join(env.dataDir, 'history-logs')),
+    projectIds: async () => (await projects.list()).map((project) => project.id),
+    subscribe: (listener) => events.subscribe(listener),
+    emit: (event) => events.emit(event)
+  })
+
   const runs = createRunManager({
     scripts,
     portConflicts,
@@ -145,7 +158,8 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     killer,
     platform: env.platform,
     emit: (event) => events.emit(event),
-    graceMs: () => stopGraceMs
+    graceMs: () => stopGraceMs,
+    afterScriptStart: () => history.flush()
   })
 
   const groupService = createGroupService({
@@ -172,15 +186,6 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     )
   })
 
-  const history = createRunHistory({
-    store: createJsonStore({
-      filePath: join(env.dataDir, 'run-history.json'),
-      schema: runHistoryFileSchema,
-      fallback: emptyRunHistoryFile
-    }),
-    subscribe: (listener) => events.subscribe(listener)
-  })
-
   const health = createHealthMonitor({
     subscribe: (listener) => events.subscribe(listener),
     resolveTarget: async (run) =>
@@ -198,7 +203,10 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     },
     listProjects: () => projects.list(),
     addProject: (path) => projects.add(path),
-    removeProject: (projectId) => projects.remove(projectId),
+    removeProject: async (projectId) => {
+      await projects.remove(projectId)
+      await history.forgetProject(projectId)
+    },
     listScripts: (projectId) => scripts.list(projectId),
     startScript: (projectId, scriptId, options) => runs.start(projectId, scriptId, options),
     checkScriptPorts: async (projectId, scriptId) =>
@@ -212,6 +220,8 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     killOrphanedRuns: () => runRegistry.killOrphans(),
     dismissOrphanedRuns: () => runRegistry.dismissOrphans(),
     listRunHistory: (projectId, scriptId) => history.list(projectId, scriptId),
+    clearRunHistory: (projectId, scriptId) => history.clear(projectId, scriptId),
+    getRunHistoryOutput: (projectId, scriptId, runId) => history.output(projectId, scriptId, runId),
     listRunHealth: async () => health.list(),
     getRunOutput: async (runId) => runs.output(runId),
     writeRunInput: async (runId, data) => runs.writeInput(runId, data),

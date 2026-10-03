@@ -129,7 +129,7 @@ function ProjectItem({
         size="icon-xs"
         onClick={onRemove}
         disabled={removing}
-        title="从 DevHub 移除（不会删除文件）"
+        title="从 DevHub 移除，并清理运行历史与历史日志（不会删除项目文件）"
         aria-label={`移除 ${project.name}`}
         className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
       >

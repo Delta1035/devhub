@@ -27,7 +27,7 @@ devhub/                        pnpm monorepo
 │       │       ├── settings/        核心设置（settings.json）（ADR 0007）
 │       │       ├── ports/           推断脚本端口、查找占用进程、启动前冲突检测
 │       │       ├── health/          运行中脚本的就绪检查：启动中 / 就绪 / 无响应（ADR 0011）
-│       │       ├── history/         脚本运行历史：每个脚本最近 20 次的结束情况（run-history.json）
+│       │       ├── history/         运行历史、异常中断恢复与每次运行的持久化日志（ADR 0015）
 │       │       ├── net/             本地端口连通性检测、HTTP 检查
 │       │       └── fs/              文件系统小工具；finder.ts：按候选位置查找已安装程序
 │       ├── preload/           暴露 window.devhub（DevhubApi）、window.devhubEvents（事件订阅）与 window.devhubShell（ShellApi）
@@ -78,16 +78,16 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 
 ## 领域模型（`packages/shared/src/domain.ts`）
 
-| 概念           | 说明                                                                                      |
-| -------------- | ----------------------------------------------------------------------------------------- |
-| Project        | 一个被管理的代码目录（已实现，存于 `projects.json`）                                      |
-| Script         | 可运行命令，来源：npm / maven / gradle / custom                                           |
-| ProjectScripts | 扫描结果：`status`（ok/missing）、脚本、探测器警告                                        |
-| Group          | 批量任务：跨项目的脚本列表，并行或串行（带继续条件）；存于 `groups.json`                  |
-| Run            | 终端标签里的一个进程：`script`（识别出的脚本）或 `shell`（交互式终端）；状态、PID、退出码 |
-| `.devhub.yaml` | 项目内可选配置：自定义脚本（ADR 0008），由 `detectors/config-detector.ts` 读取            |
-| RunHealth      | 运行中脚本的就绪状态：starting / ready / unhealthy，与 Run 分开推送（ADR 0011）           |
-| RunRecord      | 一次已结束的脚本运行：起止时间、退出码、是否用户停止；存于 `run-history.json`             |
+| 概念           | 说明                                                                                                |
+| -------------- | --------------------------------------------------------------------------------------------------- |
+| Project        | 一个被管理的代码目录（已实现，存于 `projects.json`）                                                |
+| Script         | 可运行命令，来源：npm / maven / gradle / custom                                                     |
+| ProjectScripts | 扫描结果：`status`（ok/missing）、脚本、探测器警告                                                  |
+| Group          | 批量任务：跨项目的脚本列表，并行或串行（带继续条件）；存于 `groups.json`                            |
+| Run            | 终端标签里的一个进程：`script`（识别出的脚本）或 `shell`（交互式终端）；状态、PID、退出码           |
+| `.devhub.yaml` | 项目内可选配置：自定义脚本（ADR 0008），由 `detectors/config-detector.ts` 读取                      |
+| RunHealth      | 运行中脚本的就绪状态：starting / ready / unhealthy，与 Run 分开推送（ADR 0011）                     |
+| RunRecord      | 脚本执行记录：running / finished / interrupted、时间、退出码、是否用户停止；存于 `run-history.json` |
 
 ## 脚本探测
 
@@ -122,12 +122,15 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 ## 事件推送（见 ADR 0004）
 
 - `DevhubEvents.subscribe` 独立于 `DevhubApi`：请求-响应走自动映射的 IPC，推送走 `devhubEventChannel`（主进程 `webContents.send` → preload → `@renderer/api` 的 `events`）。远程端将改用 WebSocket。
-- 事件：`run-updated`、`run-removed`、`run-output`（带流偏移量）、`run-health`（就绪状态，ADR 0011）、`group-updated`（批量任务进度）、`settings-updated`。
+- 事件：`run-updated`、`run-removed`、`run-output`（带流偏移量）、`run-health`（就绪状态，ADR 0011）、`history-updated`（历史处理完成，ADR 0015）、`group-updated`（批量任务进度）、`settings-updated`。
 - 设置分两处（ADR 0007）：影响 core 行为的存 `settings.json`；纯显示偏好（主题、终端字号等）存 renderer 的 localStorage（`lib/appearance.ts`、`terminal-prefs.ts`）。renderer 用事件直接更新 TanStack Query 缓存（`useRunEventsSync`，在 App 挂载一次）。
 - 终端：先订阅再取 `getRunOutput` 快照，用 shared 的 `OutputCursor` 去重拼接；core 中输出按 16 ms 合并后推送。
 - renderer 的 `terminal-sessions.ts` 为每个运行保留一个 xterm 实例（切换标签只移动 DOM 节点，关闭标签时释放）；只有可见终端使用 WebGL。快捷键在 `terminal-keys.ts`，外观偏好（主题、字号、渲染方式）在 `terminal-prefs.ts`。
 
 ## 批量运行视图与安装目录
+
+- 历史由 `core/history/run-history.ts` 串行保存，脚本启动确认前写入运行记录；恢复中断时保留未知结束时间和退出码。`history-log-store.ts` 原子保存每个 runId 的日志，`history-output.ts` 保留最近 512 KB UTF-8 输出。每秒检查点、退出时刷新；记录淘汰或清理时同步移除日志（ADR 0015）。
+- renderer 的运行历史弹层提供清空与查看日志；日志对话框以纯文本显示，旧记录没有日志时显示不可用。移除项目清理其历史，并忽略仍在运行的旧进程之后发来的历史事件；不改变原有进程生命周期。
 
 - `features/groups/group-detail.tsx` 展示任务运行详情，App 管理项目与任务选择；日志入口携带具体 `runId` 切换到项目终端。
 - `GroupRunState` 可选保存执行配置快照与每步 `reused` 标志，随最近结果持久化。流程状态与实时 Run / RunHealth 独立，停止使用最近执行配置，兼容旧历史（ADR 0006 补充）。

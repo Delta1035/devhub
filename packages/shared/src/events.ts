@@ -12,6 +12,8 @@ export type DevhubEvent =
   | { type: 'run-updated'; run: Run }
   | { type: 'run-removed'; runId: string }
   | { type: 'run-output'; runId: string; offset: number; data: string }
+  /** Emitted after history changes have been processed, including clear operations. */
+  | { type: 'history-updated'; projectId: string; scriptId: string }
   | { type: 'group-updated'; state: GroupRunState }
   /** `health` is null once the run is no longer checked (stopping, exited, removed). */
   | { type: 'run-health'; runId: string; health: RunHealth | null }

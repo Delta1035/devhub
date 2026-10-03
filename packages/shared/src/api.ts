@@ -13,7 +13,7 @@ import type {
 import type { RunOutputSnapshot } from './events'
 import type { Group, GroupInput, GroupRunState } from './groups'
 import type { RunHealth } from './health'
-import type { RunRecord } from './history'
+import type { RunHistoryOutput, RunRecord } from './history'
 import type { Settings, SettingsPatch } from './settings'
 
 /**
@@ -50,6 +50,14 @@ export interface DevhubApi {
   listRuns(): Promise<Run[]>
   /** Finished runs of a script, newest first (at most `runHistoryLimit`). */
   listRunHistory(projectId: string, scriptId: string): Promise<RunRecord[]>
+  /** Removes ended history and its logs, without affecting a current execution. */
+  clearRunHistory(projectId: string, scriptId: string): Promise<void>
+  /** Persisted log of a specific history entry; null for old or unavailable logs. */
+  getRunHistoryOutput(
+    projectId: string,
+    scriptId: string,
+    runId: string
+  ): Promise<RunHistoryOutput | null>
   /** Readiness of every checked run; later changes arrive as `run-health` events. */
   listRunHealth(): Promise<RunHealth[]>
   /** Recent output; combine with `run-output` events through `OutputCursor`. */
@@ -104,6 +112,8 @@ export const devhubApiMethods = [
   'killOrphanedRuns',
   'dismissOrphanedRuns',
   'listRunHistory',
+  'clearRunHistory',
+  'getRunHistoryOutput',
   'listRunHealth',
   'getRunOutput',
   'writeRunInput',
