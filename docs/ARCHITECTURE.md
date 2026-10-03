@@ -2,6 +2,8 @@
 
 ## 总览
 
+桌面基础模板已迁出本仓库，位于同级目录 `../electron-desktop-template`（将作为独立仓库维护，ADR 0016 补充）；DevHub 不依赖模板。提取方案见 `docs/DESKTOP-TEMPLATE.md`，模板标识与初始化方式见 ADR 0017。
+
 ```
 devhub/                        pnpm monorepo
 ├── apps/desktop/              Electron 桌面客户端

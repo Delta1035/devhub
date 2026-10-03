@@ -8,7 +8,9 @@ import eslintPluginReactRefresh from 'eslint-plugin-react-refresh'
 const nodeBuiltins = ['fs', 'path', 'child_process', 'os', 'net', 'node:*']
 
 export default defineConfig(
-  { ignores: ['**/node_modules', '**/dist', '**/out', '**/coverage'] },
+  {
+    ignores: ['**/node_modules', '**/dist', '**/out', '**/coverage', '**/.pnpm-store']
+  },
   tseslint.configs.recommended,
   eslintPluginReact.configs.flat.recommended,
   eslintPluginReact.configs.flat['jsx-runtime'],
