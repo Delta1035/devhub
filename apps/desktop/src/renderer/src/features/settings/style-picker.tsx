@@ -6,14 +6,17 @@ import { usePreference } from './use-settings'
 const styleOptions: { value: UiStyle; label: string; swatch: [string, string, string] }[] = [
   { value: 'neutral', label: 'Neutral', swatch: ['#ffffff', '#f5f5f5', '#171717'] },
   { value: 'material', label: 'Material 3', swatch: ['#fef7ff', '#e8def8', '#6750a4'] },
-  { value: 'fluent', label: 'Fluent', swatch: ['#f3f3f3', '#fbfbfb', '#005fb8'] }
+  { value: 'fluent', label: 'Fluent', swatch: ['#f3f3f3', '#fbfbfb', '#005fb8'] },
+  { value: 'nord', label: 'Nord', swatch: ['#2e3440', '#3b4252', '#88c0d0'] },
+  { value: 'yaru', label: 'Yaru', swatch: ['#fafafa', '#300a24', '#e95420'] },
+  { value: 'terminal', label: 'Terminal', swatch: ['#0c0c0c', '#1a1f1a', '#39d353'] }
 ]
 
 /** Picks the design style; applies at once to the whole window, terminals included. */
 export function StylePicker(): React.JSX.Element {
   const current = usePreference(appearance, appearance.style)
   return (
-    <div role="radiogroup" aria-label="风格" className="flex gap-2">
+    <div role="radiogroup" aria-label="风格" className="flex flex-wrap justify-end gap-2">
       {styleOptions.map((option) => (
         <button
           key={option.value}

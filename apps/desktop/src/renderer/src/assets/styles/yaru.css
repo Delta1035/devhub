@@ -1,0 +1,63 @@
+/* Yaru: Ubuntu's desktop look — warm greys, Ubuntu orange accent, Ubuntu font. */
+
+:root[data-style='yaru'] {
+  --app-font-sans:
+    Ubuntu, 'Ubuntu Sans', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --radius: 0.5rem;
+
+  --background: #fafafa;
+  --foreground: #3d3d3d;
+  --card: #ffffff;
+  --card-foreground: #3d3d3d;
+  --popover: #ffffff;
+  --popover-foreground: #3d3d3d;
+  --primary: #e95420;
+  --primary-foreground: #ffffff;
+  --secondary: #ebebeb;
+  --secondary-foreground: #3d3d3d;
+  --muted: #f0f0f0;
+  --muted-foreground: #757575;
+  --accent: #ebebeb;
+  --accent-foreground: #3d3d3d;
+  --destructive: #c7162b;
+  --border: #dcdcdc;
+  --input: #cdcdcd;
+  --ring: #e95420;
+  --sidebar: #f0f0f0;
+  --sidebar-foreground: #3d3d3d;
+  --sidebar-primary: #e95420;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e0e0e0;
+  --sidebar-accent-foreground: #3d3d3d;
+  --sidebar-border: #dcdcdc;
+  --sidebar-ring: #e95420;
+}
+
+:root[data-style='yaru'].dark {
+  --background: #2c2c2c;
+  --foreground: #f7f7f7;
+  --card: #333333;
+  --card-foreground: #f7f7f7;
+  --popover: #383838;
+  --popover-foreground: #f7f7f7;
+  --primary: #e95420;
+  --primary-foreground: #ffffff;
+  --secondary: #3a3a3a;
+  --secondary-foreground: #f7f7f7;
+  --muted: #3a3a3a;
+  --muted-foreground: #b0b0b0;
+  --accent: #424242;
+  --accent-foreground: #f7f7f7;
+  --destructive: #f0606e;
+  --border: #444444;
+  --input: #555555;
+  --ring: #e95420;
+  --sidebar: #262626;
+  --sidebar-foreground: #f7f7f7;
+  --sidebar-primary: #e95420;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #3a3a3a;
+  --sidebar-accent-foreground: #f7f7f7;
+  --sidebar-border: #333333;
+  --sidebar-ring: #e95420;
+}

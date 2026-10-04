@@ -22,6 +22,19 @@ const themes: Record<UiStyle, { light: ITheme; dark: ITheme }> = {
   fluent: {
     light: colors('#fbfbfb', '#1a1a1a', '#cce4f7'),
     dark: colors('#1c1c1c', '#cccccc', '#264f78')
+  },
+  nord: {
+    light: colors('#e5e9f0', '#2e3440', '#d8dee9'),
+    dark: colors('#2e3440', '#d8dee9', '#434c5e')
+  },
+  yaru: {
+    light: colors('#ffffff', '#3d3d3d', '#f6c9b5'),
+    // Ubuntu's classic aubergine terminal.
+    dark: colors('#300a24', '#ffffff', '#5e2750')
+  },
+  terminal: {
+    light: colors('#fbfaf5', '#1c1c1c', '#cde8d2'),
+    dark: colors('#0a0c0a', '#c8dcc8', '#1f3a1f')
   }
 }
 

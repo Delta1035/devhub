@@ -5,7 +5,7 @@ export type ThemePreference = 'system' | 'light' | 'dark'
  * Design style: a set of CSS token overrides (colors, radius, font) selected by
  * `data-style` on <html>. Components only use semantic tokens, so they need no changes.
  */
-export const uiStyles = ['neutral', 'material', 'fluent'] as const
+export const uiStyles = ['neutral', 'material', 'fluent', 'nord', 'yaru', 'terminal'] as const
 export type UiStyle = (typeof uiStyles)[number]
 
 const themeKey = 'devhub.theme'

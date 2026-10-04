@@ -5,6 +5,9 @@
 /* Design styles (data-style on <html>) override the tokens below; see lib/appearance.ts. */
 @import './styles/material.css';
 @import './styles/fluent.css';
+@import './styles/nord.css';
+@import './styles/yaru.css';
+@import './styles/terminal.css';
 
 @custom-variant dark (&:is(.dark *));
 
