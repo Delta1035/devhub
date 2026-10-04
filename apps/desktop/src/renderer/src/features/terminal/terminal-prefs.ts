@@ -1,19 +1,28 @@
 import type { ITheme } from '@xterm/xterm'
-import { appearance } from '@renderer/lib/appearance'
+import { appearance, type UiStyle } from '@renderer/lib/appearance'
 
-const lightTheme: ITheme = {
-  background: '#fafafa',
-  foreground: '#27272a',
-  cursor: '#27272a',
-  cursorAccent: '#fafafa',
-  selectionBackground: '#bfdbfe'
-}
-const darkTheme: ITheme = {
-  background: '#18181b',
-  foreground: '#e4e4e7',
-  cursor: '#e4e4e7',
-  cursorAccent: '#18181b',
-  selectionBackground: '#3f3f46'
+const colors = (background: string, foreground: string, selection: string): ITheme => ({
+  background,
+  foreground,
+  cursor: foreground,
+  cursorAccent: background,
+  selectionBackground: selection
+})
+
+/** Terminal colors per design style, matching each style's surfaces. */
+const themes: Record<UiStyle, { light: ITheme; dark: ITheme }> = {
+  neutral: {
+    light: colors('#fafafa', '#27272a', '#bfdbfe'),
+    dark: colors('#18181b', '#e4e4e7', '#3f3f46')
+  },
+  material: {
+    light: colors('#f7f2fa', '#1d1b20', '#eaddff'),
+    dark: colors('#1d1b20', '#e6e0e9', '#4f378b')
+  },
+  fluent: {
+    light: colors('#fbfbfb', '#1a1a1a', '#cce4f7'),
+    dark: colors('#1c1c1c', '#cccccc', '#264f78')
+  }
 }
 
 export const terminalFontFamily =
@@ -41,7 +50,7 @@ const readNumber = (key: string, range: { min: number; max: number }, fallback: 
 
 /** Terminal look shared by every terminal; changes apply to all open terminals at once. */
 export const terminalPrefs = {
-  theme: (): ITheme => (appearance.isDark() ? darkTheme : lightTheme),
+  theme: (): ITheme => themes[appearance.style()][appearance.isDark() ? 'dark' : 'light'],
 
   fontSize: (): number => readNumber(fontSizeKey, fontSizeRange, defaultFontSize),
 

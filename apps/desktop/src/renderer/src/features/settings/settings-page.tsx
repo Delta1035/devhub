@@ -13,6 +13,7 @@ import {
 } from '@renderer/features/terminal/terminal-prefs'
 import { appearance, type ThemePreference } from '@renderer/lib/appearance'
 import { CustomShellsEditor } from './custom-shells-editor'
+import { StylePicker } from './style-picker'
 import { UpdatesSection } from './updates-section'
 import { NumberSetting, Segmented, SettingRow, SettingsSection } from './settings-controls'
 import { usePreference, useSettings, useUpdateSettings } from './use-settings'
@@ -81,6 +82,9 @@ function AppearanceSection(): React.JSX.Element {
             { value: 'dark', label: '深色' }
           ]}
         />
+      </SettingRow>
+      <SettingRow label="风格" description="配色、圆角和字体；终端配色一起切换">
+        <StylePicker />
       </SettingRow>
     </SettingsSection>
   )

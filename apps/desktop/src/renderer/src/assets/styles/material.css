@@ -1,0 +1,69 @@
+/* Material 3: the baseline scheme (seed #6750A4) mapped onto the semantic tokens.
+   background = surface, card = surface-container-low, popover = surface-container,
+   muted = surface-container-high, secondary/accent = secondary-container, border = outline-variant. */
+
+:root[data-style='material'] {
+  --app-font-sans: Roboto, 'Segoe UI Variable Text', 'Segoe UI', Ubuntu, system-ui, sans-serif;
+  --radius: 0.75rem;
+
+  --background: #fef7ff;
+  --foreground: #1d1b20;
+  --card: #f7f2fa;
+  --card-foreground: #1d1b20;
+  --popover: #f3edf7;
+  --popover-foreground: #1d1b20;
+  --primary: #6750a4;
+  --primary-foreground: #ffffff;
+  --secondary: #e8def8;
+  --secondary-foreground: #1d192b;
+  --muted: #ece6f0;
+  --muted-foreground: #49454f;
+  --accent: #e8def8;
+  --accent-foreground: #1d192b;
+  --destructive: #b3261e;
+  --border: #cac4d0;
+  --input: #79747e;
+  --ring: #6750a4;
+  --sidebar: #f3edf7;
+  --sidebar-foreground: #1d1b20;
+  --sidebar-primary: #6750a4;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e8def8;
+  --sidebar-accent-foreground: #1d192b;
+  --sidebar-border: #cac4d0;
+  --sidebar-ring: #6750a4;
+}
+
+:root[data-style='material'].dark {
+  --background: #141218;
+  --foreground: #e6e0e9;
+  --card: #1d1b20;
+  --card-foreground: #e6e0e9;
+  --popover: #211f26;
+  --popover-foreground: #e6e0e9;
+  --primary: #d0bcff;
+  --primary-foreground: #381e72;
+  --secondary: #4a4458;
+  --secondary-foreground: #e8def8;
+  --muted: #2b2930;
+  --muted-foreground: #cac4d0;
+  --accent: #4a4458;
+  --accent-foreground: #e8def8;
+  --destructive: #f2b8b5;
+  --border: #49454f;
+  --input: #938f99;
+  --ring: #d0bcff;
+  --sidebar: #1d1b20;
+  --sidebar-foreground: #e6e0e9;
+  --sidebar-primary: #d0bcff;
+  --sidebar-primary-foreground: #381e72;
+  --sidebar-accent: #4a4458;
+  --sidebar-accent-foreground: #e8def8;
+  --sidebar-border: #49454f;
+  --sidebar-ring: #d0bcff;
+}
+
+/* M3 buttons (and icon buttons) are fully rounded. */
+:root[data-style='material'] [data-slot='button'] {
+  border-radius: 9999px;
+}

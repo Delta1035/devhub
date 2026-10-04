@@ -17,6 +17,14 @@ test('settings apply at once and survive a restart', async ({ launchDevhub, crea
   await page.getByRole('radio', { name: '深色' }).click()
   await expect(page.locator('html')).toHaveClass(/dark/)
 
+  // Style: swaps the tokens, so the page background changes with it.
+  const background = () =>
+    page.locator('body').evaluate((body) => getComputedStyle(body).backgroundColor)
+  const neutralBackground = await background()
+  await page.getByRole('radio', { name: 'Material 3' }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-style', 'material')
+  await expect.poll(background).not.toBe(neutralBackground)
+
   // Default shell: pick the last detected one (PowerShell / cmd on Windows, sh… on Linux).
   const shellSelect = page.getByLabel('默认 shell')
   const options = await shellSelect
@@ -52,6 +60,7 @@ test('settings apply at once and survive a restart', async ({ launchDevhub, crea
   await app.close()
   page = (await launchDevhub()).page
   await expect(page.locator('html')).toHaveClass(/dark/)
+  await expect(page.locator('html')).toHaveAttribute('data-style', 'material')
   await openSettings(page)
   await expect(page.getByLabel('默认 shell')).toHaveValue(chosen)
   await expect(page.getByLabel('停止等待时间')).toHaveValue('9')
