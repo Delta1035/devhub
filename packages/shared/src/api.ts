@@ -15,6 +15,7 @@ import type { Group, GroupInput, GroupRunState } from './groups'
 import type { RunHealth } from './health'
 import type { RunHistoryOutput, RunRecord } from './history'
 import type { Settings, SettingsPatch } from './settings'
+import type { WorkspacePatch, WorkspaceView } from './workspaces'
 
 /**
  * The contract between any UI (desktop renderer, future mobile/PWA) and the DevHub core.
@@ -26,7 +27,17 @@ export interface DevhubApi {
   listProjects(): Promise<Project[]>
   /** Registers an existing local directory. `path` must be absolute. */
   addProject(path: string): Promise<Project>
+  /** A project discovered in a workspace is also excluded there, so rescans do not re-add it. */
   removeProject(projectId: string): Promise<void>
+  listWorkspaces(): Promise<WorkspaceView[]>
+  /** Registers a directory and adds the projects found in it (direct children by default). */
+  addWorkspace(path: string, depth?: number): Promise<WorkspaceView>
+  /** Changes the scan depth or the excluded paths, then rescans. */
+  updateWorkspace(workspaceId: string, patch: WorkspacePatch): Promise<WorkspaceView>
+  /** Removes the workspace together with the projects discovered in it. */
+  removeWorkspace(workspaceId: string): Promise<void>
+  /** Rescans every workspace; changes also arrive as a `projects-updated` event. */
+  rescanWorkspaces(): Promise<WorkspaceView[]>
   /** Scans the project directory for runnable scripts. Never cached: reflects the files on disk. */
   listScripts(projectId: string): Promise<ProjectScripts>
   /** Starts a detected script. The core resolves the command itself; the UI only sends ids. */
@@ -100,6 +111,11 @@ export const devhubApiMethods = [
   'listProjects',
   'addProject',
   'removeProject',
+  'listWorkspaces',
+  'addWorkspace',
+  'updateWorkspace',
+  'removeWorkspace',
+  'rescanWorkspaces',
   'listScripts',
   'startScript',
   'checkScriptPorts',

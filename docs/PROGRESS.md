@@ -8,6 +8,9 @@ MVP 范围为桌面端项目/脚本管理、进程与终端、批量任务、设
 
 ### 已完成
 
+- 工作区 1/4 扫描器（2026-10-04，进行中）：用户选定「工作区」方案（持续关联目录、自动发现项目，默认扫描 1 层，可设 1～5 层；JS monorepo 子包暂不展开）。shared 新增 `workspaces.ts`（`Workspace` schema、层数范围）；core 新增 `workspaces/workspace-scanner.ts`：以探测器读取的构建文件判定项目，项目内不再下探、根目录不算项目，跳过隐藏 / 依赖 / 构建产物目录，不跟随符号链接与 junction，最多读取 5000 个目录；根目录不可用返回 `unavailable`，子目录读取失败或触及上限时 `complete: false`（同步时不得据此移除项目）。11 个新测试，`pnpm check` 通过。
+- 工作区 2/4 存储与同步（2026-10-04，进行中）：`Project` 增加可选 `workspaceId`；`workspaces.json` 存工作区（层数、已排除路径）；API `listWorkspaces` / `addWorkspace` / `updateWorkspace` / `removeWorkspace` / `rescanWorkspaces`，事件 `projects-updated`。`workspace-sync.ts` 纯函数规划同步：新项目自动添加；目录已删除保留为缺失；扫描不完整或项目运行中不移除；目录存在但不再符合条件则移除（清理历史）；已排除路径始终移除。`removeProject` 移除工作区内的任何项目（含手动添加的）时记入该工作区 `excluded`；工作区之间不得互相包含；移除工作区连带移除其项目。应用启动时后台重扫一次，并发重扫合并。Windows `pnpm check`（desktop 515、shared 61）与 E2E 27/27 通过。后续：3 侧栏分组 UI（聚焦时调用重扫、监听 `projects-updated`）+ E2E，4 ADR 0018 与架构文档。
+
 - 仓库门面（2026-10-03）：README 改为英文主版本 + `README.zh-CN.md`，含徽章（CI、版本、下载量、平台、许可证、技术栈）、截图、Star History；截图 `docs/assets/main.png` / `batch.png` 用临时 Playwright 脚本以演示项目在真实应用中截取（脚本未保留，界面变化较大时需重截）。新增 MIT `LICENSE`（`apps/desktop/package.json` 补 `license`）、`CONTRIBUTING.md`（开发约定与发布流程从 README 移入）、Issue 表单（Bug / 功能建议）与 PR 模板。`pnpm check` 通过。
 - 桌面模板迁出（2026-10-03，ADR 0016 补充）：模板已移到同级目录 `D:\projects\vibe-coding\electron-desktop-template`（共 123 个源文件，不含依赖与产物），由用户创建独立仓库；DevHub 删除 `templates/` 及相应排除规则。新位置冻结 lockfile 安装后，`pnpm check`（31 + 45 + 2 个测试）、E2E 3/3、Windows 打包与产物校验均通过。新目录尚未 `git init`，也未提交。
 - 桌面模板初始化与交付（2026-10-03，ADR 0017）：模板（当时位于 `templates/desktop`）新增 `pnpm initialize`，默认预览，`--yes` 才写入；只结构化改写 `app.config.json` 与两个 package.json；可重复执行，写入失败会回滚，并拒绝非模板目录和未确认的 appId 变更。窗口标题、打包配置、NSIS 安装子目录、产物名、更新缓存与更新源都从配置派生；无仓库时显式关闭发布。新增标识检查（纳入 check，发布模式更严格）、产物校验、CI、release 与 dependabot。

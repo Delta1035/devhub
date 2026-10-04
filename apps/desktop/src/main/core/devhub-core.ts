@@ -10,6 +10,7 @@ import { createDefaultDetectors } from './detectors/detect-scripts'
 import { launchDetached } from './editors/editor-launch'
 import { createEditorService } from './editors/editor-service'
 import { createEditorLocator } from './editors/editor-locator'
+import { isDirectory } from './fs/is-directory'
 import { isFile } from './fs/is-file'
 import { systemDeps, writeFileEnsuringDir } from './fs/system-deps'
 import { createHealthMonitor } from './health/health-monitor'
@@ -42,6 +43,12 @@ import {
 import { withCustomShells } from './shells/custom-shells'
 import { withPreferredShell } from './shells/prefer-shell'
 import { createShellLocator } from './shells/shell-locator'
+import { scanWorkspace } from './workspaces/workspace-scanner'
+import {
+  createWorkspaceService,
+  emptyWorkspacesFile,
+  workspacesFileSchema
+} from './workspaces/workspace-service'
 
 export interface CoreEnvironment {
   version: string
@@ -186,6 +193,26 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     )
   })
 
+  const workspaces = createWorkspaceService({
+    store: createJsonStore({
+      filePath: join(env.dataDir, 'workspaces.json'),
+      schema: workspacesFileSchema,
+      fallback: emptyWorkspacesFile
+    }),
+    projects,
+    platform: env.platform,
+    scan: (root, depth) => scanWorkspace(root, { depth }),
+    isActive: (projectId) =>
+      runs.list().some((run) => run.projectId === projectId && run.status !== 'exited'),
+    isDirectory,
+    forgetProject: (projectId) => history.forgetProject(projectId),
+    emit: (event) => events.emit(event)
+  })
+  // Picks up projects created or deleted while DevHub was not running.
+  workspaces
+    .rescanAll()
+    .catch((error: unknown) => console.error('[core] workspace rescan failed', error))
+
   const health = createHealthMonitor({
     subscribe: (listener) => events.subscribe(listener),
     resolveTarget: async (run) =>
@@ -203,10 +230,12 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     },
     listProjects: () => projects.list(),
     addProject: (path) => projects.add(path),
-    removeProject: async (projectId) => {
-      await projects.remove(projectId)
-      await history.forgetProject(projectId)
-    },
+    removeProject: (projectId) => workspaces.removeProject(projectId),
+    listWorkspaces: () => workspaces.list(),
+    addWorkspace: (path, depth) => workspaces.add(path, depth),
+    updateWorkspace: (workspaceId, patch) => workspaces.update(workspaceId, patch),
+    removeWorkspace: (workspaceId) => workspaces.remove(workspaceId),
+    rescanWorkspaces: () => workspaces.rescanAll(),
     listScripts: (projectId) => scripts.list(projectId),
     startScript: (projectId, scriptId, options) => runs.start(projectId, scriptId, options),
     checkScriptPorts: async (projectId, scriptId) =>
@@ -249,6 +278,7 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
       await runs.dispose()
       // The runs just stopped are recorded as they exit; let those writes finish.
       await history.flush()
+      await workspaces.flush()
     }
   }
 }

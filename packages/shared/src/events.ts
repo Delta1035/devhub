@@ -18,6 +18,8 @@ export type DevhubEvent =
   /** `health` is null once the run is no longer checked (stopping, exited, removed). */
   | { type: 'run-health'; runId: string; health: RunHealth | null }
   | { type: 'settings-updated'; settings: Settings }
+  /** Projects or workspaces changed in the core (a rescan, a workspace edit); refetch both. */
+  | { type: 'projects-updated' }
 
 export interface DevhubEvents {
   /** Returns a function that cancels the subscription. */

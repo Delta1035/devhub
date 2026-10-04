@@ -1,8 +1,9 @@
 import { randomUUID } from 'crypto'
-import { stat } from 'fs/promises'
 import { basename, isAbsolute, resolve } from 'path'
 import { z } from 'zod'
 import { DevhubError, projectSchema, type Project } from '@devhub/shared'
+import { assertDirectory } from '../fs/assert-directory'
+import { samePath } from '../fs/path-compare'
 import type { JsonStore } from '../storage/json-store'
 
 export const projectsFileSchema = z.object({
@@ -19,6 +20,13 @@ export interface ProjectService {
   get(projectId: unknown): Promise<Project>
   add(path: unknown): Promise<Project>
   remove(projectId: unknown): Promise<void>
+  /**
+   * Adds discovered directories in one write. Trusted input (normalized absolute paths from a
+   * scan); paths that are already projects are skipped, not reported.
+   */
+  addDiscovered(paths: string[], workspaceId: string): Promise<Project[]>
+  /** Removes several projects in one write; unknown ids are ignored. Returns the removed ones. */
+  removeMany(projectIds: string[]): Promise<Project[]>
 }
 
 export interface ProjectServiceDeps {
@@ -54,9 +62,8 @@ export function createProjectService({
     return next
   }
 
-  // Windows paths are case-insensitive: C:\Repo and c:\repo are the same project.
-  const samePath = (a: string, b: string): boolean =>
-    platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b
+  const findByPath = (data: ProjectsFile, path: string): Project | undefined =>
+    data.projects.find((project) => samePath(project.path, path, platform))
 
   return {
     async list() {
@@ -82,7 +89,7 @@ export function createProjectService({
         }
         const path = resolve(parsed.data)
 
-        const existing = data.projects.find((project) => samePath(project.path, path))
+        const existing = findByPath(data, path)
         if (existing) {
           throw new DevhubError('PROJECT_ALREADY_ADDED', `项目已存在：${existing.name}`)
         }
@@ -108,21 +115,34 @@ export function createProjectService({
         if (index === -1) throw new DevhubError('PROJECT_NOT_FOUND', '项目不存在或已被移除')
         data.projects.splice(index, 1)
       })
-    }
-  }
-}
+    },
 
-async function assertDirectory(path: string): Promise<void> {
-  try {
-    const stats = await stat(path)
-    if (!stats.isDirectory()) {
-      throw new DevhubError('PROJECT_PATH_NOT_DIRECTORY', `不是一个目录：${path}`)
+    addDiscovered(paths, workspaceId) {
+      return mutate(async (data) => {
+        const added: Project[] = []
+        for (const path of paths) {
+          if (findByPath(data, path)) continue
+          const project: Project = {
+            id: newId(),
+            name: basename(path) || path,
+            path,
+            addedAt: now().toISOString(),
+            workspaceId
+          }
+          data.projects.push(project)
+          added.push(project)
+        }
+        return added
+      })
+    },
+
+    removeMany(projectIds) {
+      return mutate(async (data) => {
+        const ids = new Set(projectIds)
+        const removed = data.projects.filter((project) => ids.has(project.id))
+        data.projects = data.projects.filter((project) => !ids.has(project.id))
+        return removed
+      })
     }
-  } catch (error) {
-    if (error instanceof DevhubError) throw error
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      throw new DevhubError('PROJECT_PATH_NOT_FOUND', `目录不存在：${path}`)
-    }
-    throw error
   }
 }

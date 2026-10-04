@@ -170,6 +170,8 @@ export const projectSchema = z.object({
   name: z.string().min(1),
   /** Absolute, normalized directory path. */
   path: z.string().min(1),
-  addedAt: z.iso.datetime()
+  addedAt: z.iso.datetime(),
+  /** Set when the project was discovered in a workspace; absent for projects added by hand. */
+  workspaceId: z.string().min(1).optional()
 })
 export type Project = z.infer<typeof projectSchema>

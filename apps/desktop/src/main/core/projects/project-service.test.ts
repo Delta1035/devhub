@@ -101,6 +101,35 @@ describe('createProjectService', () => {
     await expectCode(service.get(42), 'PROJECT_NOT_FOUND')
   })
 
+  it('adds discovered directories with their workspace and skips existing paths', async () => {
+    const service = makeService('win32')
+    const manual = await service.add(repoA)
+    const repoB = join(dir, 'repo-b')
+
+    const added = await service.addDiscovered([repoA.toUpperCase(), repoB], 'ws-1')
+
+    expect(added).toEqual([
+      {
+        id: expect.any(String),
+        name: 'repo-b',
+        path: repoB,
+        addedAt: expect.any(String),
+        workspaceId: 'ws-1'
+      }
+    ])
+    await expect(makeService().list()).resolves.toEqual([manual, ...added])
+  })
+
+  it('removes several projects in one call and ignores unknown ids', async () => {
+    const service = makeService()
+    const [a, b, c] = await service.addDiscovered(
+      ['a', 'b', 'c'].map((name) => join(dir, name)),
+      'ws-1'
+    )
+    await expect(service.removeMany([a!.id, c!.id, 'nope'])).resolves.toEqual([a, c])
+    await expect(makeService().list()).resolves.toEqual([b])
+  })
+
   it('does not lose updates when adds run concurrently', async () => {
     const repos = await Promise.all(
       ['x', 'y', 'z'].map(async (name) => {
