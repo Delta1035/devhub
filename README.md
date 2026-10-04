@@ -20,7 +20,7 @@ One place to run the scripts of all your local projects: detects npm / Maven / G
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![pnpm](https://img.shields.io/badge/pnpm-11-F69220?logo=pnpm&logoColor=white)
 
-[Website](https://delta1035.github.io/devhub/) · [Download](https://github.com/Delta1035/devhub/releases/latest) · [Features](#features) · [Usage](#usage) · [Development](#development) · [Contributing](CONTRIBUTING.md)
+[Website](https://delta1035.github.io/devhub/en/) · [Download](https://github.com/Delta1035/devhub/releases/latest) · [Features](#features) · [Usage](#usage) · [Development](#development) · [Contributing](CONTRIBUTING.md)
 
 </div>
 

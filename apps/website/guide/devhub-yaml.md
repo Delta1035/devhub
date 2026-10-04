@@ -1,13 +1,13 @@
-# Custom scripts (`.devhub.yaml`)
+# 自定义脚本（`.devhub.yaml`）
 
-When DevHub cannot detect a command — `docker compose`, a command with arguments, one module of a larger build, a Python mock server — describe it in a `.devhub.yaml` (or `.devhub.yml`) file in the project root. Commit it, and everyone on the team gets the same scripts.
+DevHub 识别不到的命令——`docker compose`、带参数的启动命令、大型构建中的某个模块、Python mock 服务等——可以写在项目根目录的 `.devhub.yaml`（或 `.devhub.yml`）中。把它提交进仓库，团队成员就能看到同样的脚本。
 
 ```yaml
 scripts:
   api:
     command: mvnw.cmd spring-boot:run -pl server
     cwd: server
-    description: Backend
+    description: 后端
     port: 8081
     health: /actuator/health
   db:
@@ -15,22 +15,22 @@ scripts:
     port: 5432
 ```
 
-Custom scripts are listed first. Changes apply on refresh or when the window regains focus.
+自定义脚本排在列表最前。保存后刷新或切回窗口即生效。
 
-## Fields
+## 字段
 
-| Field         | Required | Meaning                                                                                            |
-| ------------- | -------- | -------------------------------------------------------------------------------------------------- |
-| `command`     | yes      | The command to run, or one per platform (see below).                                               |
-| `cwd`         | no       | Working directory, relative to the project. It cannot point outside the project.                   |
-| `description` | no       | Shown next to the script name.                                                                     |
-| `port`        | no       | Port the script listens on. Used to warn about port conflicts and for health checks.               |
-| `ports`       | no       | Several ports, e.g. `[8081, 8082]`. Use either `port` or `ports`.                                  |
-| `health`      | no       | An HTTP path, starting with `/`, that must answer 2xx for the script to count as ready. See below. |
+| 字段          | 必填 | 说明                                                      |
+| ------------- | ---- | --------------------------------------------------------- |
+| `command`     | 是   | 要执行的命令，也可以按平台分别填写（见下文）。            |
+| `cwd`         | 否   | 工作目录，相对项目目录，不能跳出项目。                    |
+| `description` | 否   | 显示在脚本名旁边。                                        |
+| `port`        | 否   | 脚本监听的端口，用于启动前端口冲突提示和健康检查。        |
+| `ports`       | 否   | 多个端口，例如 `[8081, 8082]`。`port` 与 `ports` 二选一。 |
+| `health`      | 否   | 以 `/` 开头的 HTTP 路径，返回 2xx 才算就绪，见下文。      |
 
-Script names are up to 60 characters. Unknown keys are reported as errors rather than ignored, so a typo such as `comand` does not silently do nothing.
+脚本名最长 60 个字符。未知的键会报错而不是被忽略，拼错成 `comand` 不会悄悄失效。
 
-## Per-platform commands
+## 按平台写命令
 
 ```yaml
 scripts:
@@ -40,26 +40,26 @@ scripts:
       linux: ./mvnw spring-boot:run
 ```
 
-A script with a command for only one platform is hidden on the other.
+只写了一个平台命令的脚本，在另一个平台上不显示。
 
-## Ports
+## 端口
 
-When neither `port` nor `ports` is given, DevHub infers ports from the command (for example `--port 3000` or well-known tools). Write `port` when the inference is wrong or finds nothing; without a port, the script shows **running** but no health.
+没有写 `port` 或 `ports` 时，DevHub 从命令中推断端口（如 `--port 3000`，或常见工具的默认端口）。推断不对或推断不出时写上 `port`；没有端口的脚本只显示「运行中」，没有健康状态。
 
-## Health checks
+## 健康检查
 
-By default a script is ready when all its ports accept connections. Opening a port does not always mean the application is ready, so for HTTP services you can name a health path:
+默认情况下，脚本的端口全部能连接即为就绪。但端口打开不代表应用已经可用，HTTP 服务可以指定健康检查路径：
 
 ```yaml
 health: /actuator/health
 ```
 
-DevHub then requests `http://localhost:<first port><path>` and counts the script as ready on a 2xx response. Redirects are not followed, so a redirect to a login page does not count. A `health` path needs a port, either written or inferred.
+DevHub 会请求 `http://localhost:<第一个端口><路径>`，返回 2xx 即为就绪。不跟随重定向，跳转到登录页不算健康。写了 `health` 时必须能确定端口（手写或推断）。
 
-## Errors
+## 错误提示
 
-Mistakes are shown in the script list: YAML syntax errors with their line number, invalid content with the field path (for example `scripts.api.command`). Scripts detected from `package.json`, Maven or Gradle are not affected.
+写错时在脚本列表中提示：YAML 语法错误给出行号，内容错误给出字段路径（如 `scripts.api.command`）。从 `package.json`、Maven、Gradle 识别的脚本不受影响。
 
-## Security
+## 安全
 
-Commands from `.devhub.yaml` are treated like `package.json` scripts: they run only when you click run.
+`.devhub.yaml` 中的命令与 `package.json` 的 scripts 同等对待：只有点击运行才会执行。

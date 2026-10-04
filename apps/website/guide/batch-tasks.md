@@ -1,36 +1,36 @@
-# Batch tasks
+# 批量任务
 
-A batch task starts several scripts together — typically a backend, a frontend and a mock server, possibly from different projects. Create one under **批量** (Batch) in the sidebar.
+批量任务把多个脚本一起启动——常见的是后端、前端和 mock 服务，可以来自不同项目。在侧栏「批量」中新建。
 
-![A batch task: start the backend, wait until it reports it has started, then start the frontend](../../../docs/assets/batch.png)
+![批量任务：先启动后端，等它输出启动完成后再启动前端](../../../docs/assets/batch.png)
 
-## Parallel or sequential
+## 并行或串行
 
-- **Parallel** starts every step at once.
-- **Sequential** starts one step, waits until its condition is met, then starts the next.
+- **并行**：同时启动所有步骤。
+- **串行**：启动一步，等它的继续条件满足后再启动下一步。
 
-## Wait conditions
+## 继续条件
 
-Each step of a sequential task waits for one of these before the next step starts:
+串行任务的每一步可以选择一种继续条件：
 
-| Condition       | Continues when                                                                   | Typical use       |
-| --------------- | -------------------------------------------------------------------------------- | ----------------- |
-| Successful exit | The process exits with code 0                                                    | Install, build    |
-| Text in output  | The output contains the text (or matches a regular expression), ignoring colours | Server ready logs |
-| Open port       | A TCP connection to the port succeeds on localhost                               | Listening servers |
-| HTTP success    | A GET to the URL answers 2xx                                                     | Health endpoints  |
-| Wait N seconds  | The time has passed                                                              | Fallback          |
+| 条件           | 满足时机                                           | 适用场景       |
+| -------------- | -------------------------------------------------- | -------------- |
+| 进程成功退出   | 进程以退出码 0 结束                                | 安装、构建     |
+| 输出中出现文字 | 输出包含指定文字（可勾选正则），忽略颜色等控制字符 | 服务就绪日志   |
+| 端口可连接     | 本机能建立到该端口的 TCP 连接                      | 监听端口的服务 |
+| HTTP 返回成功  | 对该地址的 GET 请求返回 2xx                        | 健康检查接口   |
+| 等待 N 秒      | 时间到                                             | 兜底           |
 
-All conditions except the fixed wait have a timeout (120 seconds by default). A process that exits before its condition is met fails the step, except for “successful exit”.
+除「等待 N 秒」外都有超时（默认 120 秒）。进程在条件满足前退出也算失败（「进程成功退出」除外）。
 
-## When something fails
+## 失败时
 
-When a step fails, the remaining steps are not started and the reason is shown; steps already running keep running. Click the task in the sidebar to see each step's progress, its condition and the reason for a failure, and to open the log of each step.
+某一步失败后，后续步骤不再启动并显示原因，已启动的保持运行。点击侧栏中的任务，可以查看每一步的进度、继续条件和失败原因，并打开每一步的日志。
 
-A script that is already running is reused rather than started twice, and its condition is still checked.
+已经在运行的脚本会直接复用，不会重复启动，仍会对它判断继续条件。
 
-**Stop all** cancels the remaining steps and stops every script of the task, each with its whole process tree.
+「停止全部」会取消尚未启动的步骤，并停止任务中的每个脚本（各自结束整棵进程树）。
 
-## History
+## 历史
 
-The result of each task's latest run, with the reason for a failure, is kept across restarts.
+每个任务最近一次执行的结果和失败原因会保留，重启 DevHub 后仍可查看。

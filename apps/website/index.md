@@ -3,41 +3,41 @@ layout: home
 
 hero:
   name: DevHub
-  text: All your local scripts, one window
-  tagline: Detects npm / Maven / Gradle / custom scripts, then starts, stops and tails them — individually or in batches. For Windows and Linux.
+  text: 本地项目的脚本，一个窗口全管
+  tagline: 自动识别 npm / Maven / Gradle / 自定义脚本，单个或批量启动、停止、看日志。支持 Windows 与 Linux。
   image:
     src: /logo.png
     alt: DevHub
   actions:
     - theme: brand
-      text: Download
+      text: 下载
       link: https://github.com/Delta1035/devhub/releases/latest
     - theme: alt
-      text: Get started
+      text: 快速上手
       link: /guide/getting-started
     - theme: alt
       text: GitHub
       link: https://github.com/Delta1035/devhub
 
 features:
-  - title: Script detection
-    details: Reads package.json scripts (pnpm / yarn / npm), Maven and Gradle builds including multi-module ones, and prefers mvnw / gradlew. Anything else goes in .devhub.yaml.
-  - title: Runs and logs
-    details: Start, stop and restart; stopping kills the whole process tree. Each run gets an interactive terminal tab with search and clickable links.
-  - title: Ports and health
-    details: Infers ports from commands, warns when a port is taken and names the process holding it, and shows starting / ready / unresponsive.
-  - title: Batch tasks
-    details: Combine scripts across projects and start them in parallel or in sequence, waiting for a log line, an open port or an HTTP 2xx before the next step.
-  - title: Workspaces
-    details: Point DevHub at your code folder and it finds the projects inside, keeping the list in sync as repositories come and go.
-  - title: Run history
-    details: The last 20 runs of each script, with their logs, survive a DevHub restart.
+  - title: 自动识别脚本
+    details: 读取 package.json 的 scripts（pnpm / yarn / npm）、Maven 与 Gradle 构建（含多模块），优先使用 mvnw / gradlew；识别不到的写进 .devhub.yaml。
+  - title: 运行与日志
+    details: 启动 / 停止 / 重启，停止时结束整棵进程树；每个运行一个可交互的终端标签页，支持搜索和可点击链接。
+  - title: 端口与健康检查
+    details: 从命令推断端口，启动前提示端口占用并指出占用进程；运行中显示启动中 / 就绪 / 无响应。
+  - title: 批量任务
+    details: 跨项目组合脚本，并行或串行启动；串行时可等待日志文字、端口可连接或 HTTP 返回成功后再启动下一步。
+  - title: 工作区
+    details: 指定代码目录，自动发现其中的项目，并随仓库的新增、删除保持同步。
+  - title: 运行历史
+    details: 每个脚本保留最近 20 次运行的结果与日志，重启 DevHub 后仍可查看。
 ---
 
 <div class="vp-doc" style="max-width: 1152px; margin: 64px auto 0; padding: 0 24px">
 
-![DevHub main window: project list, detected scripts and a running terminal](../../docs/assets/main.png)
+![DevHub 主界面：项目列表、识别到的脚本与运行中的终端](../../docs/assets/main.png)
 
-![A batch task: start the backend, wait until it reports it has started, then start the frontend](../../docs/assets/batch.png)
+![批量任务：先启动后端，等它输出启动完成后再启动前端](../../docs/assets/batch.png)
 
 </div>

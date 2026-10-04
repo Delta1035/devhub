@@ -8,8 +8,8 @@ MVP 范围为桌面端项目/脚本管理、进程与终端、批量任务、设
 
 ### 已完成
 
-- 官网（2026-10-04，ADR 0020）：新增 `apps/website`（VitePress 1.6，中英双语，英文在根路径、中文在 `/zh/`），包含首页（介绍、功能、截图、下载按钮指向 `releases/latest`）与三篇指南：快速上手（安装、项目与工作区、运行、托盘、更新）、`.devhub.yaml` 参考、批量任务。截图直接引用 `docs/assets/`。新增 `website.yml`：PR 只构建，`main` 构建并部署到 GitHub Pages（`https://delta1035.github.io/devhub/`）。README 加官网链接。`pnpm check` 通过；本地构建与预览后截图确认了英文首页、中文深色文档页和手机宽度。
-  - 待办：仓库 Settings → Pages 的 Source 需设为「GitHub Actions」，否则部署失败；推送后确认首次部署。
+- 官网（2026-10-04，ADR 0020）：新增 `apps/website`（VitePress 1.6，中英双语；按用户要求中文为主语言放在根路径，英文在 `/en/`，搜索框与 404 页也已汉化），包含首页（介绍、功能、截图、下载按钮指向 `releases/latest`）与三篇指南：快速上手（安装、项目与工作区、运行、托盘、更新）、`.devhub.yaml` 参考、批量任务。截图直接引用 `docs/assets/`。新增 `website.yml`：PR 只构建，`main` 构建并部署到 GitHub Pages（`https://delta1035.github.io/devhub/`）。README 加官网链接。`pnpm check` 通过；本地构建与预览后截图确认了英文首页、中文深色文档页和手机宽度。
+  - 已上线：Pages 首次部署成功，仓库 About 的 Website 已设为官网地址。同日发布了 v1.1.0 草稿（Release 工作流只建草稿，需人工发布），并删除遗留的 v0.1.6 草稿 Release（tag 保留）。
   - 注意：Playwright 自带的浏览器版本与本机已下载的不一致（需 1243，本机为 1228），临时截图改用 `channel: 'msedge'`；E2E 不受影响（驱动 Electron）。
 
 - 撤销误操作发布（2026-10-04）：移除未推送的 `chore(release): v2.0.0` 提交与本地 `v2.0.0` tag，版本恢复为 `1.0.0`，保留此前全部功能提交。

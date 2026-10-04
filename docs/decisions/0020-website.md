@@ -11,7 +11,7 @@
 
 - 新增 workspace 包 `apps/website`（`@devhub/website`），与桌面端互不依赖。
 - 使用 **VitePress 1.6**（devDependency，只在构建站点时使用，不进入安装包）。2.0 仍是 alpha，暂不采用。它自带 Vite 5，与桌面端的 Vite 7 由 pnpm 分别安装，互不影响。
-- 中英双语：英文在根路径，中文在 `/zh/`，用 VitePress 内置的 locales；本地搜索用内置的 `local` 提供方，无外部服务。
+- 中英双语，用 VitePress 内置的 locales：中文为主语言，放在根路径；英文在 `/en/`（2026-10-04 按用户要求由「英文根路径 + `/zh/`」调整）。本地搜索用内置的 `local` 提供方，无外部服务。
 - 截图直接引用 `docs/assets/`（Vite 构建时打包），与 README 共用一份，避免两处不同步；图标复制到 `public/logo.png`。
 - 下载按钮指向 `releases/latest`，发版后站点无需修改。
 - 部署到 GitHub Pages（`https://delta1035.github.io/devhub/`，`base: '/devhub/'`）。工作流 `website.yml`：PR 只构建（VitePress 构建会检查站内死链），`main` 上的相关改动构建并部署；只安装站点自身依赖并跳过安装脚本，不下载 Electron。

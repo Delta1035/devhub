@@ -20,7 +20,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![pnpm](https://img.shields.io/badge/pnpm-11-F69220?logo=pnpm&logoColor=white)
 
-[官网](https://delta1035.github.io/devhub/zh/) · [下载](https://github.com/Delta1035/devhub/releases/latest) · [功能](#功能) · [使用](#使用) · [开发](#开发) · [参与贡献](CONTRIBUTING.md)
+[官网](https://delta1035.github.io/devhub/) · [下载](https://github.com/Delta1035/devhub/releases/latest) · [功能](#功能) · [使用](#使用) · [开发](#开发) · [参与贡献](CONTRIBUTING.md)
 
 </div>
 

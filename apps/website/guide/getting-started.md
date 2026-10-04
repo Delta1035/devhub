@@ -1,57 +1,57 @@
-# Getting started
+# 快速上手
 
-DevHub runs on Windows and Linux (Ubuntu / X11). The interface is currently in Chinese; this guide gives the English meaning next to each label.
+DevHub 支持 Windows 与 Linux（Ubuntu / X11）。
 
-## Install
+## 安装
 
-Download the latest version from [GitHub Releases](https://github.com/Delta1035/devhub/releases/latest):
+从 [GitHub Releases](https://github.com/Delta1035/devhub/releases/latest) 下载最新版本：
 
-| Platform | File                                                     |
-| -------- | -------------------------------------------------------- |
-| Windows  | `devhub-*-setup.exe` (installer, lets you pick a folder) |
-| Linux    | `.AppImage` (auto-updates) or `.deb`                     |
+| 平台    | 文件                                         |
+| ------- | -------------------------------------------- |
+| Windows | `devhub-*-setup.exe`（安装向导，可选择目录） |
+| Linux   | `.AppImage`（支持自动更新）或 `.deb`         |
 
-The installers are not code-signed, so Windows SmartScreen warns on first launch; choose **More info → Run anyway**.
+安装包未签名，Windows 首次运行会出现 SmartScreen 提示，选择「更多信息 → 仍要运行」。
 
-To verify a download, compare it with `SHA256SUMS.txt` from the same release, or check its build provenance with the GitHub CLI:
+可以用同一 Release 中的 `SHA256SUMS.txt` 校验文件，或用 GitHub CLI 验证构建来源：
 
 ```bash
-gh attestation verify <file> --repo Delta1035/devhub
+gh attestation verify <文件> --repo Delta1035/devhub
 ```
 
-## Add projects
+## 添加项目
 
-There are two ways to add projects, both from the **添加** (Add) button in the sidebar:
+在侧栏点击「添加」，有两种方式：
 
-- **A single project**: pick a project folder. Its scripts are listed on the right.
-- **A workspace** (**添加工作区**): pick a folder that contains many repositories. DevHub finds the projects inside — any folder with `package.json`, `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)` or `.devhub.yaml` — and keeps the list in sync: new repositories are added when you rescan or switch back to the window. By default only direct subfolders are scanned; the workspace settings allow 1 to 5 levels.
+- **单个项目**：选择项目文件夹，右侧列出识别到的脚本。
+- **工作区**（「添加工作区」）：选择存放多个仓库的目录。DevHub 会找出其中的项目——含有 `package.json`、`pom.xml`、`build.gradle(.kts)`、`settings.gradle(.kts)` 或 `.devhub.yaml` 的文件夹——并保持同步：重新扫描或切回窗口时自动添加新仓库。默认只扫描直接子目录，可在工作区设置中改为 1～5 层。
 
-Removing a project that belongs to a workspace excludes it from later scans; you can restore it in the workspace settings. A project whose folder disappears is kept and marked as missing, so switching branches or unplugging a drive does not wipe its history.
+从侧栏移除工作区中的项目后，以后的扫描不会再加回它，可在工作区设置中恢复。项目目录消失时不会被自动移除，而是标记为「目录缺失」，切换分支或拔掉移动硬盘不会清空它的历史。
 
-## Run scripts
+## 运行脚本
 
-1. Click a script's run button. Its output appears in a terminal tab in the panel below, where you can type input, search and click links.
-2. The script row shows the port the script uses and its health:
-   - **starting** until its ports accept connections (or its [health path](./devhub-yaml#health-checks) answers 2xx),
-   - **ready** while checks pass,
-   - **unresponsive** after three failed checks in a row.
-3. Stopping a script ends its whole process tree, including servers started by a wrapper such as `mvnw` or `pnpm`.
-4. The history button lists the last 20 runs of the script, with their logs.
+1. 点击脚本的运行按钮，输出显示在下方终端面板的标签页中，可以输入、搜索、点击链接。
+2. 脚本行显示所用端口和健康状态：
+   - **启动中**：端口还不能连接（或 [健康检查路径](./devhub-yaml#健康检查) 还没有返回 2xx）；
+   - **就绪**：检查通过；
+   - **无响应**：连续 3 次检查失败。
+3. 停止脚本会结束整棵进程树，包括 `mvnw`、`pnpm` 等包装命令拉起的服务。
+4. 「历史」按钮列出该脚本最近 20 次运行及其日志。
 
-If a port is already taken when you start a script, DevHub tells you which process holds it before starting.
+启动时如果端口已被占用，DevHub 会先提示占用它的进程。
 
-DevHub also detects:
+DevHub 能自动识别：
 
-- **npm**: `package.json` scripts, run with pnpm / yarn / npm according to the `packageManager` field or the lockfile; packages in a monorepo inherit the root's package manager.
-- **Maven**: common lifecycle goals, plus `spring-boot:run` for Spring Boot; multi-module builds get a start command per application module.
-- **Gradle**: `clean` / `build` / `test`, plus `bootRun` / `run` depending on plugins; multi-project builds are supported.
+- **npm**：`package.json` 的 scripts，按 `packageManager` 字段或 lockfile 选择 pnpm / yarn / npm；monorepo 子包继承仓库根目录的包管理器。
+- **Maven**：常用生命周期命令，Spring Boot 项目加 `spring-boot:run`；多模块项目为每个应用模块生成启动命令。
+- **Gradle**：`clean` / `build` / `test`，按插件加 `bootRun` / `run`；支持多项目构建。
 
-Commands it cannot detect go in [`.devhub.yaml`](./devhub-yaml).
+识别不到的命令写进 [`.devhub.yaml`](./devhub-yaml)。
 
-## Tray and quitting
+## 托盘与退出
 
-Closing the window keeps DevHub in the tray with scripts still running; quitting DevHub stops every run. Settings can make closing the window quit instead.
+关闭窗口默认最小化到托盘，脚本继续运行；退出 DevHub 时停止所有运行。可在设置中改为关闭即退出。
 
-## Updates
+## 更新
 
-The Windows installer and the Linux AppImage update themselves from GitHub Releases. The `.deb` package does not; install the new version manually.
+Windows 安装版和 Linux AppImage 会从 GitHub Releases 自动更新；`.deb` 包不会自动更新，需要手动安装新版本。
