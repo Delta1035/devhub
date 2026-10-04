@@ -3,6 +3,7 @@ node_modules
 dist
 out
 coverage
+.vitepress/cache
 test-results
 playwright-report
 dependency-audit.json

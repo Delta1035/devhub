@@ -39,6 +39,7 @@ devhub/                        pnpm monorepo
 │           ├── features/<x>/  按功能组织：组件 + hooks（projects、scripts、terminal）
 │           ├── components/ui/ shadcn 生成的组件（由 CLI 管理，不手改）
 │           └── lib/           工具函数
+├── apps/website/              官网与使用文档（VitePress，中英双语，部署到 GitHub Pages，ADR 0020）
 └── packages/shared/           平台无关：API 契约、领域模型（zod schema）、错误类型
 ```
 

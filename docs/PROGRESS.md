@@ -8,6 +8,10 @@ MVP 范围为桌面端项目/脚本管理、进程与终端、批量任务、设
 
 ### 已完成
 
+- 官网（2026-10-04，ADR 0020）：新增 `apps/website`（VitePress 1.6，中英双语，英文在根路径、中文在 `/zh/`），包含首页（介绍、功能、截图、下载按钮指向 `releases/latest`）与三篇指南：快速上手（安装、项目与工作区、运行、托盘、更新）、`.devhub.yaml` 参考、批量任务。截图直接引用 `docs/assets/`。新增 `website.yml`：PR 只构建，`main` 构建并部署到 GitHub Pages（`https://delta1035.github.io/devhub/`）。README 加官网链接。`pnpm check` 通过；本地构建与预览后截图确认了英文首页、中文深色文档页和手机宽度。
+  - 待办：仓库 Settings → Pages 的 Source 需设为「GitHub Actions」，否则部署失败；推送后确认首次部署。
+  - 注意：Playwright 自带的浏览器版本与本机已下载的不一致（需 1243，本机为 1228），临时截图改用 `channel: 'msedge'`；E2E 不受影响（驱动 Electron）。
+
 - 撤销误操作发布（2026-10-04）：移除未推送的 `chore(release): v2.0.0` 提交与本地 `v2.0.0` tag，版本恢复为 `1.0.0`，保留此前全部功能提交。
 - 设计风格切换（2026-10-04，试用）：设置 → 外观新增「风格」，共 6 套：Neutral（原样）/ Material 3（官方 baseline 色板、12px 圆角、按钮全圆角）/ Fluent（Windows 11 配色与默认强调色、6px 圆角、Segoe UI Variable）/ Nord（Polar Night + Frost，低对比）/ Yaru（Ubuntu 橙、Ubuntu 字体，深色终端为经典茄紫色）/ Terminal（全等宽字体、直角、绿色强调，`--spacing` 缩小约 10% 更紧凑）。实现为 `<html data-style>` 下的 CSS 变量覆盖（`assets/styles/*.css`），组件未改；与亮/暗独立组合，存 localStorage（`devhub.style`），终端配色随风格切换。
   - 字体与状态色（ADR 0019）：随附 Roboto / Ubuntu Sans / JetBrains Mono 可变字体（Fontsource，约 470 KB，devDependencies）；Fluent 的 Segoe UI Variable 为专有字体不能打包，依赖系统。Terminal 风格关闭连字，命令原样显示。新增状态 token `success` / `warning` / `info`，运行中 / 启动中 / 停止中 / 批量进行中 / 扫描警告等不再写死颜色，各风格亮暗各一份；编辑器徽标与标题栏关闭按钮的红色保留。12 张截图人工确认，`pnpm check` 与 E2E 28/28 通过。`pnpm check` 与 E2E 28/28 通过（settings 用例覆盖切换与重启保持；一次整套运行中 `groups.spec.ts` 串行用例偶发关闭超时，单独 ×3 与重跑整套均通过）。待用户试用后决定保留哪些。

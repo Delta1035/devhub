@@ -9,7 +9,14 @@ const nodeBuiltins = ['fs', 'path', 'child_process', 'os', 'net', 'node:*']
 
 export default defineConfig(
   {
-    ignores: ['**/node_modules', '**/dist', '**/out', '**/coverage', '**/.pnpm-store']
+    ignores: [
+      '**/node_modules',
+      '**/dist',
+      '**/out',
+      '**/coverage',
+      '**/.pnpm-store',
+      '**/.vitepress/cache'
+    ]
   },
   tseslint.configs.recommended,
   eslintPluginReact.configs.flat.recommended,
