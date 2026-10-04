@@ -8,10 +8,12 @@ import { useRunEventsSync } from '@renderer/features/runs/use-runs'
 import { SettingsPage } from '@renderer/features/settings/settings-page'
 import { Sidebar } from '@renderer/features/sidebar/sidebar'
 import { TitleBar } from '@renderer/features/title-bar/title-bar'
+import { useWorkspaceEventsSync } from '@renderer/features/workspaces/use-workspaces'
 
 function App(): React.JSX.Element {
   useRunEventsSync()
   useGroupEventsSync()
+  useWorkspaceEventsSync()
   const { data: projects } = useProjects()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)

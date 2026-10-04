@@ -1,13 +1,33 @@
 import { useState } from 'react'
-import { FolderGit2, FolderPlus, X } from 'lucide-react'
-import type { Project, Run } from '@devhub/shared'
+import { ChevronDown, FolderPlus, FolderTree } from 'lucide-react'
+import type { Project, WorkspaceView } from '@devhub/shared'
 import { shell } from '@renderer/api'
 import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
-import { EditorButtons } from '@renderer/features/editors/editor-buttons'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@renderer/components/ui/dropdown-menu'
 import { useRuns } from '@renderer/features/runs/use-runs'
-import { cn } from '@renderer/lib/utils'
+import {
+  useAddWorkspace,
+  useRescanWorkspaces,
+  useWorkspaces
+} from '@renderer/features/workspaces/use-workspaces'
+import {
+  relativeToWorkspace,
+  useCollapsedWorkspaces
+} from '@renderer/features/workspaces/workspace-display'
+import { WorkspaceSection } from '@renderer/features/workspaces/workspace-section'
+import { WorkspaceSettingsDialog } from '@renderer/features/workspaces/workspace-settings-dialog'
+import { ProjectItem } from './project-item'
 import { useAddProject, useProjects, useRemoveProject } from './use-projects'
+
+const removeStandaloneTitle = '从 DevHub 移除，并清理运行历史与历史日志（不会删除项目文件）'
+const removeFromWorkspaceTitle =
+  '从 DevHub 移除并在此工作区中排除（可在工作区设置中恢复），同时清理运行历史与历史日志（不会删除项目文件）'
 
 interface ProjectListProps {
   selectedId: string | null
@@ -16,17 +36,64 @@ interface ProjectListProps {
 
 export function ProjectList({ selectedId, onSelect }: ProjectListProps): React.JSX.Element {
   const projects = useProjects()
+  const workspaces = useWorkspaces()
   // Pushed by run events, so the indicators follow starts and exits without polling.
   const activeRuns = (useRuns().data ?? []).filter((run) => run.status !== 'exited')
   const addProject = useAddProject()
+  const addWorkspace = useAddWorkspace()
+  const rescan = useRescanWorkspaces()
   const removeProject = useRemoveProject()
+  const [collapsed, toggleCollapsed] = useCollapsedWorkspaces()
+  const [settingsId, setSettingsId] = useState<string | null>(null)
   const [editorError, setEditorError] = useState<Error | null>(null)
-  const error = projects.error ?? addProject.error ?? removeProject.error ?? editorError
+  const error =
+    projects.error ??
+    workspaces.error ??
+    addProject.error ??
+    addWorkspace.error ??
+    rescan.error ??
+    removeProject.error ??
+    editorError
 
-  const handleAdd = async (): Promise<void> => {
+  const allProjects = projects.data ?? []
+  const workspaceList = workspaces.data ?? []
+  const known = new Set(workspaceList.map((workspace) => workspace.id))
+  // Sorted like a file tree: projects found by a later scan would otherwise trail at the end.
+  const projectsOf = (workspace: WorkspaceView): Project[] =>
+    allProjects
+      .filter((project) => project.workspaceId === workspace.id)
+      .sort((a, b) =>
+        relativeToWorkspace(a.path, workspace).localeCompare(relativeToWorkspace(b.path, workspace))
+      )
+  // Added by hand, or discovered by a workspace this list has not loaded yet.
+  const standalone = allProjects.filter(
+    (project) => !project.workspaceId || !known.has(project.workspaceId)
+  )
+  const settingsWorkspace = workspaceList.find((workspace) => workspace.id === settingsId)
+
+  const handleAddProject = async (): Promise<void> => {
     const path = await shell?.pickDirectory()
     if (path) addProject.mutate(path, { onSuccess: (project) => onSelect(project.id) })
   }
+  const handleAddWorkspace = async (): Promise<void> => {
+    const path = await shell?.pickDirectory()
+    if (path) addWorkspace.mutate(path)
+  }
+
+  const renderItem = (project: Project, workspace?: WorkspaceView): React.JSX.Element => (
+    <ProjectItem
+      key={project.id}
+      project={project}
+      subtitle={workspace ? relativeToWorkspace(project.path, workspace) : project.path}
+      selected={project.id === selectedId}
+      activeRuns={activeRuns.filter((run) => run.projectId === project.id)}
+      removeTitle={workspace ? removeFromWorkspaceTitle : removeStandaloneTitle}
+      onSelect={() => onSelect(project.id)}
+      onRemove={() => removeProject.mutate(project.id)}
+      onEditorError={setEditorError}
+      removing={removeProject.isPending && removeProject.variables === project.id}
+    />
+  )
 
   return (
     <section className="flex flex-col gap-3">
@@ -35,10 +102,33 @@ export function ProjectList({ selectedId, onSelect }: ProjectListProps): React.J
           {projects.data && `${projects.data.length} 个项目`}
         </span>
         {shell && (
-          <Button size="sm" onClick={handleAdd} disabled={addProject.isPending}>
-            <FolderPlus data-icon="inline-start" />
-            添加
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" disabled={addProject.isPending || addWorkspace.isPending}>
+                <FolderPlus data-icon="inline-start" />
+                添加
+                <ChevronDown data-icon="inline-end" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-56">
+              <DropdownMenuItem onSelect={handleAddProject}>
+                <FolderPlus />
+                <span className="flex flex-col">
+                  添加项目
+                  <span className="text-xs text-muted-foreground">选择一个代码目录</span>
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleAddWorkspace}>
+                <FolderTree />
+                <span className="flex flex-col">
+                  添加工作区
+                  <span className="text-xs text-muted-foreground">
+                    自动发现目录中的项目并保持同步
+                  </span>
+                </span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </header>
 
@@ -49,117 +139,48 @@ export function ProjectList({ selectedId, onSelect }: ProjectListProps): React.J
         </Alert>
       )}
 
-      {projects.data?.length === 0 && (
+      {projects.data?.length === 0 && workspaceList.length === 0 && (
         <p className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
-          还没有项目。点击「添加」选择一个代码目录。
+          还没有项目。点击「添加」选择一个代码目录，或添加工作区自动发现其中的项目。
         </p>
       )}
 
-      <ul className="flex flex-col gap-1">
-        {projects.data?.map((project) => (
-          <ProjectItem
-            key={project.id}
-            project={project}
-            selected={project.id === selectedId}
-            activeRuns={activeRuns.filter((run) => run.projectId === project.id)}
-            onSelect={() => onSelect(project.id)}
-            onRemove={() => removeProject.mutate(project.id)}
-            onEditorError={setEditorError}
-            removing={removeProject.isPending && removeProject.variables === project.id}
-          />
-        ))}
-      </ul>
+      {workspaceList.map((workspace) => {
+        const members = projectsOf(workspace)
+        return (
+          <WorkspaceSection
+            key={workspace.id}
+            workspace={workspace}
+            projectCount={members.length}
+            collapsed={collapsed.has(workspace.id)}
+            rescanning={rescan.isPending}
+            onToggle={() => toggleCollapsed(workspace.id)}
+            onRescan={() => rescan.mutate()}
+            onOpenSettings={() => setSettingsId(workspace.id)}
+          >
+            {members.map((project) => renderItem(project, workspace))}
+          </WorkspaceSection>
+        )
+      })}
+
+      {standalone.length > 0 && (
+        <section aria-label="独立项目" className="flex flex-col gap-1">
+          {workspaceList.length > 0 && (
+            <h3 className="px-1 py-1 text-xs font-medium text-muted-foreground">独立项目</h3>
+          )}
+          <ul className="flex flex-col gap-1">
+            {standalone.map((project) => renderItem(project))}
+          </ul>
+        </section>
+      )}
+
+      {settingsWorkspace && (
+        <WorkspaceSettingsDialog
+          workspace={settingsWorkspace}
+          projectCount={projectsOf(settingsWorkspace).length}
+          onClose={() => setSettingsId(null)}
+        />
+      )}
     </section>
-  )
-}
-
-interface ProjectItemProps {
-  project: Project
-  selected: boolean
-  /** Scripts and shells of this project that have not exited. */
-  activeRuns: Run[]
-  onSelect: () => void
-  onRemove: () => void
-  onEditorError: (error: Error) => void
-  removing: boolean
-}
-
-function ProjectItem({
-  project,
-  selected,
-  activeRuns,
-  onSelect,
-  onRemove,
-  onEditorError,
-  removing
-}: ProjectItemProps): React.JSX.Element {
-  return (
-    <li
-      className={cn(
-        'group flex items-center gap-1 rounded-lg pr-1 hover:bg-muted',
-        selected && 'bg-muted'
-      )}
-    >
-      <button
-        type="button"
-        onClick={onSelect}
-        aria-current={selected ? 'true' : undefined}
-        className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <FolderGit2 className="size-4 shrink-0 text-muted-foreground" />
-        <span className="min-w-0">
-          <span className="flex items-center gap-1.5">
-            <span className="truncate text-sm font-medium">{project.name}</span>
-            <ActiveRunsIndicator runs={activeRuns} />
-          </span>
-          <span className="block truncate text-xs text-muted-foreground" title={project.path}>
-            {project.path}
-          </span>
-        </span>
-      </button>
-      <EditorButtons
-        projectId={project.id}
-        projectName={project.name}
-        variant="icon"
-        onError={onEditorError}
-        className="opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"
-      />
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        onClick={onRemove}
-        disabled={removing}
-        title="从 DevHub 移除，并清理运行历史与历史日志（不会删除项目文件）"
-        aria-label={`移除 ${project.name}`}
-        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-      >
-        <X />
-      </Button>
-    </li>
-  )
-}
-
-/** Shows that a project still has live terminals (scripts or shells), and which ones. */
-function ActiveRunsIndicator({ runs }: { runs: Run[] }): React.JSX.Element | null {
-  if (runs.length === 0) return null
-  const stopping = runs.some((run) => run.status === 'stopping')
-  return (
-    <span
-      role="status"
-      aria-label={`${runs.length} 个活动终端`}
-      title={`运行中：${runs.map((run) => run.title).join('、')}`}
-      className={cn(
-        'flex shrink-0 items-center gap-1 text-[11px] font-medium tabular-nums',
-        stopping ? 'text-amber-600' : 'text-emerald-600'
-      )}
-    >
-      <span
-        className={cn(
-          'size-1.5 rounded-full',
-          stopping ? 'animate-pulse bg-amber-500' : 'bg-emerald-500'
-        )}
-      />
-      {runs.length}
-    </span>
   )
 }

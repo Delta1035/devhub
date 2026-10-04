@@ -113,6 +113,12 @@ export async function stubFolderPicker(app: ElectronApplication, path: string): 
   }, path)
 }
 
+/** Opens the sidebar's 「添加」 menu and picks an entry (pair with `stubFolderPicker`). */
+export async function addFromMenu(page: Page, item: '添加项目' | '添加工作区'): Promise<void> {
+  await page.locator('aside').getByRole('button', { name: '添加', exact: true }).click()
+  await page.getByRole('menuitem', { name: new RegExp(`^${item}`) }).click()
+}
+
 /** Registers a project through the API (for tests that are not about adding projects). */
 export async function addProjectViaApi(page: Page, path: string): Promise<void> {
   // page.evaluate serializes the callback, so it cannot call helpers from this module.

@@ -1,4 +1,4 @@
-import { packageJson, stubFolderPicker, test, expect } from './fixtures'
+import { addFromMenu, packageJson, stubFolderPicker, test, expect } from './fixtures'
 
 test('adds a project with the folder picker, rejects duplicates, survives a restart, removes it', async ({
   launchDevhub,
@@ -12,12 +12,12 @@ test('adds a project with the folder picker, rejects duplicates, survives a rest
   await expect(page.getByText('还没有项目')).toBeVisible()
 
   await stubFolderPicker(app, dir)
-  await page.getByRole('button', { name: '添加' }).click()
+  await addFromMenu(page, '添加项目')
   const projectItem = page.locator('aside').getByRole('button', { name: /^web-app/ })
   await expect(projectItem).toBeVisible()
   await expect(page.getByRole('heading', { name: 'web-app' })).toBeVisible()
 
-  await page.getByRole('button', { name: '添加' }).click()
+  await addFromMenu(page, '添加项目')
   await expect(page.getByText('项目已存在：web-app')).toBeVisible()
 
   await app.close()
