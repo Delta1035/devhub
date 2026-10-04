@@ -1,8 +1,8 @@
-/* Yaru: Ubuntu's desktop look — warm greys, Ubuntu orange accent, Ubuntu font. */
+/* Yaru: Ubuntu's desktop look — warm greys, Ubuntu orange accent, Ubuntu Sans. */
 
 :root[data-style='yaru'] {
   --app-font-sans:
-    Ubuntu, 'Ubuntu Sans', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+    'Ubuntu Sans Variable', Ubuntu, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
   --radius: 0.5rem;
 
   --background: #fafafa;
@@ -20,6 +20,9 @@
   --accent: #ebebeb;
   --accent-foreground: #3d3d3d;
   --destructive: #c7162b;
+  --success: #0e8420;
+  --warning: #c77700;
+  --info: #0b7fb3;
   --border: #dcdcdc;
   --input: #cdcdcd;
   --ring: #e95420;
@@ -49,6 +52,9 @@
   --accent: #424242;
   --accent-foreground: #f7f7f7;
   --destructive: #f0606e;
+  --success: #5ccf6a;
+  --warning: #f99b11;
+  --info: #4fc3f7;
   --border: #444444;
   --input: #555555;
   --ring: #e95420;

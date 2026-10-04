@@ -48,7 +48,7 @@ export function WorkspaceSection({
             role="img"
             aria-label="扫描警告"
             title={warnings.join('\n')}
-            className="flex shrink-0 text-amber-600"
+            className="flex shrink-0 text-warning"
           >
             <TriangleAlert className="size-3.5" />
           </span>

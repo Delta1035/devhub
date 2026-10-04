@@ -78,7 +78,7 @@ export function WorkspaceSettingsDialog({
           </label>
 
           {warnings.length > 0 && (
-            <div role="status" className="flex flex-col gap-1 text-xs text-amber-700">
+            <div role="status" className="flex flex-col gap-1 text-xs text-warning">
               <span className="font-medium">上次扫描的警告</span>
               {warnings.map((warning) => (
                 <span key={warning} className="break-all">

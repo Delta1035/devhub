@@ -48,7 +48,7 @@ export function Sidebar({
             <span
               role="status"
               aria-label="有批量任务执行中"
-              className="size-1.5 animate-pulse rounded-full bg-sky-500"
+              className="size-1.5 animate-pulse rounded-full bg-info"
             />
           )}
         </TabsTrigger>

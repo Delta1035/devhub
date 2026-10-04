@@ -90,13 +90,13 @@ function ActiveRunsIndicator({ runs }: { runs: Run[] }): React.JSX.Element | nul
       title={`运行中：${runs.map((run) => run.title).join('、')}`}
       className={cn(
         'flex shrink-0 items-center gap-1 text-[11px] font-medium tabular-nums',
-        stopping ? 'text-amber-600' : 'text-emerald-600'
+        stopping ? 'text-warning' : 'text-success'
       )}
     >
       <span
         className={cn(
           'size-1.5 rounded-full',
-          stopping ? 'animate-pulse bg-amber-500' : 'bg-emerald-500'
+          stopping ? 'animate-pulse bg-warning' : 'bg-success'
         )}
       />
       {runs.length}

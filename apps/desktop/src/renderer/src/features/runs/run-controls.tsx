@@ -92,8 +92,8 @@ export function RunControls({
 
 /** Colors shared with the terminal tab dot: amber starting, green ready, red unhealthy. */
 const healthBadgeClass: Record<RunHealth['state'], string> = {
-  starting: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
-  ready: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400',
+  starting: 'bg-warning/15 text-warning',
+  ready: 'bg-success/15 text-success',
   unhealthy: 'bg-destructive/15 text-destructive'
 }
 

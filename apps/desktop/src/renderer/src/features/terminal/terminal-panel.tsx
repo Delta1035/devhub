@@ -152,10 +152,10 @@ function RunTab({ run, selected, closing, onSelect, onClose }: RunTabProps): Rea
           title={health ? `${healthLabels[health.state]}（${health.target}）` : undefined}
           className={cn(
             'size-2 rounded-full',
-            run.status === 'running' && 'bg-emerald-500',
-            health?.state === 'starting' && 'bg-amber-500',
+            run.status === 'running' && 'bg-success',
+            health?.state === 'starting' && 'bg-warning',
             health?.state === 'unhealthy' && 'bg-destructive',
-            run.status === 'stopping' && 'animate-pulse bg-amber-500',
+            run.status === 'stopping' && 'animate-pulse bg-warning',
             exited && (failed ? 'bg-destructive' : 'bg-muted-foreground/40')
           )}
         />

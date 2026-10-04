@@ -3,7 +3,8 @@
    muted = surface-container-high, secondary/accent = secondary-container, border = outline-variant. */
 
 :root[data-style='material'] {
-  --app-font-sans: Roboto, 'Segoe UI Variable Text', 'Segoe UI', Ubuntu, system-ui, sans-serif;
+  --app-font-sans:
+    'Roboto Variable', 'Segoe UI Variable Text', 'Segoe UI', Ubuntu, system-ui, sans-serif;
   --radius: 0.75rem;
 
   --background: #fef7ff;
@@ -21,6 +22,9 @@
   --accent: #e8def8;
   --accent-foreground: #1d192b;
   --destructive: #b3261e;
+  --success: #386a20;
+  --warning: #8b5000;
+  --info: #00639b;
   --border: #cac4d0;
   --input: #79747e;
   --ring: #6750a4;
@@ -50,6 +54,9 @@
   --accent: #4a4458;
   --accent-foreground: #e8def8;
   --destructive: #f2b8b5;
+  --success: #9cd67d;
+  --warning: #ffb870;
+  --info: #94ccff;
   --border: #49454f;
   --input: #938f99;
   --ring: #d0bcff;

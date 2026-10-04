@@ -3,7 +3,8 @@
 
 :root[data-style='terminal'] {
   --app-font-sans:
-    ui-monospace, 'Cascadia Mono', Consolas, 'DejaVu Sans Mono', 'Noto Sans Mono CJK SC', monospace;
+    'JetBrains Mono Variable', ui-monospace, 'Cascadia Mono', Consolas, 'DejaVu Sans Mono',
+    'Noto Sans Mono CJK SC', monospace;
   --radius: 0rem;
   /* Tailwind derives all paddings, gaps and control heights from this (default 0.25rem). */
   --spacing: 0.225rem;
@@ -23,6 +24,9 @@
   --accent: #e3e1d4;
   --accent-foreground: #1c1c1c;
   --destructive: #c62828;
+  --success: #1a7f37;
+  --warning: #9a6700;
+  --info: #0969da;
   --border: #d6d3c4;
   --input: #c4c0ad;
   --ring: #1a7f37;
@@ -34,6 +38,11 @@
   --sidebar-accent-foreground: #1c1c1c;
   --sidebar-border: #d6d3c4;
   --sidebar-ring: #1a7f37;
+}
+
+/* JetBrains Mono would draw "=>" as an arrow; commands must show exactly what was typed. */
+:root[data-style='terminal'] body {
+  font-variant-ligatures: none;
 }
 
 :root[data-style='terminal'].dark {
@@ -52,6 +61,9 @@
   --accent: #1f2a1f;
   --accent-foreground: #d4d4d4;
   --destructive: #ff5555;
+  --success: #39d353;
+  --warning: #e3b341;
+  --info: #58a6ff;
   --border: #263326;
   --input: #2f402f;
   --ring: #39d353;

@@ -245,9 +245,9 @@ function StepIcon({ state }: { state: GroupStepState }): React.JSX.Element {
   const className = 'mt-0.5 size-3 shrink-0'
   switch (state) {
     case 'running':
-      return <Loader2 className={cn(className, 'animate-spin text-sky-600')} aria-label="进行中" />
+      return <Loader2 className={cn(className, 'animate-spin text-info')} aria-label="进行中" />
     case 'done':
-      return <Check className={cn(className, 'text-emerald-600')} aria-label="完成" />
+      return <Check className={cn(className, 'text-success')} aria-label="完成" />
     case 'failed':
       return <XIcon className={cn(className, 'text-destructive')} aria-label="失败" />
     default:

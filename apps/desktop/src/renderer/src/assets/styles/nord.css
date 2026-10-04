@@ -19,6 +19,10 @@
   --accent: #d8dee9;
   --accent-foreground: #2e3440;
   --destructive: #bf616a;
+  /* Aurora colors, darkened on the light background so text stays readable. */
+  --success: #5f8a45;
+  --warning: #b07d20;
+  --info: #5e81ac;
   --border: #cbd2de;
   --input: #b9c1cf;
   --ring: #5e81ac;
@@ -48,6 +52,9 @@
   --accent: #434c5e;
   --accent-foreground: #eceff4;
   --destructive: #bf616a;
+  --success: #a3be8c;
+  --warning: #ebcb8b;
+  --info: #88c0d0;
   --border: #434c5e;
   --input: #4c566a;
   --ring: #88c0d0;
