@@ -8,6 +8,7 @@ MVP 范围为桌面端项目/脚本管理、进程与终端、批量任务、设
 
 ### 已完成
 
+- 撤销误操作发布（2026-10-04）：移除未推送的 `chore(release): v2.0.0` 提交与本地 `v2.0.0` tag，版本恢复为 `1.0.0`，保留此前全部功能提交。
 - 设计风格切换（2026-10-04，试用）：设置 → 外观新增「风格」，共 6 套：Neutral（原样）/ Material 3（官方 baseline 色板、12px 圆角、按钮全圆角）/ Fluent（Windows 11 配色与默认强调色、6px 圆角、Segoe UI Variable）/ Nord（Polar Night + Frost，低对比）/ Yaru（Ubuntu 橙、Ubuntu 字体，深色终端为经典茄紫色）/ Terminal（全等宽字体、直角、绿色强调，`--spacing` 缩小约 10% 更紧凑）。实现为 `<html data-style>` 下的 CSS 变量覆盖（`assets/styles/*.css`），组件未改；与亮/暗独立组合，存 localStorage（`devhub.style`），终端配色随风格切换。
   - 字体与状态色（ADR 0019）：随附 Roboto / Ubuntu Sans / JetBrains Mono 可变字体（Fontsource，约 470 KB，devDependencies）；Fluent 的 Segoe UI Variable 为专有字体不能打包，依赖系统。Terminal 风格关闭连字，命令原样显示。新增状态 token `success` / `warning` / `info`，运行中 / 启动中 / 停止中 / 批量进行中 / 扫描警告等不再写死颜色，各风格亮暗各一份；编辑器徽标与标题栏关闭按钮的红色保留。12 张截图人工确认，`pnpm check` 与 E2E 28/28 通过。`pnpm check` 与 E2E 28/28 通过（settings 用例覆盖切换与重启保持；一次整套运行中 `groups.spec.ts` 串行用例偶发关闭超时，单独 ×3 与重跑整套均通过）。待用户试用后决定保留哪些。
 - 工作区（2026-10-04，ADR 0018）：用户选定「工作区」方案——记住一个目录，自动发现其中的项目并保持同步（默认扫描 1 层，可设 1～5 层；JS monorepo 子包暂不展开）。侧栏「添加」改为菜单（添加项目 / 添加工作区），项目按工作区分组（可折叠、显示扫描警告、重新扫描、设置），有工作区时手动项目归入「独立项目」；设置对话框可改层数、恢复已排除项目、二次确认移除工作区。
