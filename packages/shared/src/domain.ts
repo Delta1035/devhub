@@ -164,6 +164,13 @@ export const editorInfoSchema = z.object({
 })
 export type EditorInfo = z.infer<typeof editorInfoSchema>
 
+/** The terminal application a project opens in outside DevHub (Windows Terminal, GNOME Terminal…). */
+export const systemTerminalInfoSchema = z.object({
+  name: z.string(),
+  path: z.string()
+})
+export type SystemTerminalInfo = z.infer<typeof systemTerminalInfoSchema>
+
 /** A local code directory managed by DevHub. */
 export const projectSchema = z.object({
   id: z.string().min(1),

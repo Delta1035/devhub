@@ -20,6 +20,9 @@ export type DevhubErrorCode =
   | 'SETTINGS_INVALID'
   | 'PORT_IN_USE'
   | 'EDITOR_LAUNCH_FAILED'
+  | 'OPEN_FOLDER_FAILED'
+  | 'TERMINAL_NOT_FOUND'
+  | 'TERMINAL_LAUNCH_FAILED'
   | 'INTERNAL'
 
 /** Expected, user-facing failure. `message` is shown in the UI as-is. */

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { Run } from '@devhub/shared'
 import { ProjectDetail } from '@renderer/features/projects/project-detail'
 import { GroupDetail } from '@renderer/features/groups/group-detail'
 import { useGroups, useGroupEventsSync } from '@renderer/features/groups/use-groups'
@@ -7,6 +8,7 @@ import { OrphansBanner } from '@renderer/features/runs/orphans-banner'
 import { useRunEventsSync } from '@renderer/features/runs/use-runs'
 import { SettingsPage } from '@renderer/features/settings/settings-page'
 import { Sidebar } from '@renderer/features/sidebar/sidebar'
+import { useResizableWidth } from '@renderer/features/sidebar/use-resizable-width'
 import { TitleBar } from '@renderer/features/title-bar/title-bar'
 import { useWorkspaceEventsSync } from '@renderer/features/workspaces/use-workspaces'
 
@@ -17,6 +19,8 @@ function App(): React.JSX.Element {
   const { data: projects } = useProjects()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
+  // Long project names stay readable when the sidebar is widened (default = Tailwind w-64).
+  const sidebar = useResizableWidth('devhub.sidebarWidth', 256, 200)
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [requestedRunId, setRequestedRunId] = useState<string | null>(null)
   const groups = useGroups().data ?? []
@@ -27,6 +31,11 @@ function App(): React.JSX.Element {
     setSelectedGroupId(null)
     setRequestedRunId(null)
     setShowSettings(false)
+  }
+  // Shows a specific run's terminal tab, e.g. a group step's log or a shell opened from the list.
+  const openRun = (run: Run): void => {
+    selectProject(run.projectId)
+    setRequestedRunId(run.id)
   }
 
   // Derived rather than synced: falls back to the first project when nothing is selected
@@ -40,7 +49,10 @@ function App(): React.JSX.Element {
         onToggleSettings={() => setShowSettings(!showSettings)}
       />
       <div className="flex min-h-0 flex-1">
-        <aside className="flex w-64 shrink-0 flex-col border-r p-3">
+        <aside
+          className="relative flex shrink-0 flex-col border-r p-3"
+          style={{ width: sidebar.width }}
+        >
           <Sidebar
             selectedGroupId={showSettings ? null : selectedGroupId}
             onSelectGroup={(groupId) => {
@@ -50,6 +62,17 @@ function App(): React.JSX.Element {
             selectedProjectId={showSettings || selectedGroup ? null : (selected?.id ?? null)}
             currentProjectId={selected?.id ?? null}
             onSelectProject={selectProject}
+            onOpenRun={openRun}
+          />
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="调整侧栏宽度"
+            aria-valuenow={sidebar.width}
+            tabIndex={0}
+            title="拖动调整宽度，双击恢复默认"
+            {...sidebar.handleProps}
+            className="absolute inset-y-0 -right-1 z-10 w-2 cursor-col-resize touch-none outline-none after:absolute after:inset-y-0 after:left-1/2 after:w-0.5 after:-translate-x-1/2 after:transition-colors hover:after:bg-primary/50 focus-visible:after:bg-primary"
           />
         </aside>
         <main className="flex min-w-0 flex-1 flex-col">
@@ -58,14 +81,7 @@ function App(): React.JSX.Element {
             {showSettings ? (
               <SettingsPage onClose={() => setShowSettings(false)} />
             ) : selectedGroup ? (
-              <GroupDetail
-                key={selectedGroup.id}
-                group={selectedGroup}
-                onOpenRun={(run) => {
-                  selectProject(run.projectId)
-                  setRequestedRunId(run.id)
-                }}
-              />
+              <GroupDetail key={selectedGroup.id} group={selectedGroup} onOpenRun={openRun} />
             ) : selected ? (
               <ProjectDetail
                 key={`${selected.id}:${requestedRunId ?? ''}`}

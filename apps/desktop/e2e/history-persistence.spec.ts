@@ -72,6 +72,7 @@ test('retains capped history logs across restart, clears ended logs, and cleans 
   ).toHaveCount(1)
   await page.keyboard.press('Escape')
   await page.getByRole('button', { name: '移除 history-app', exact: true }).click()
+  await page.getByRole('dialog').getByRole('button', { name: '确认移除' }).click()
   await expect(page.getByRole('button', { name: '移除 history-app', exact: true })).toBeHidden()
   await expect
     .poll(async () => (await readdir(join(workDir, 'userdata', 'history-logs'))).length)

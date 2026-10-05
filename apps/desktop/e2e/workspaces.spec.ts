@@ -46,6 +46,8 @@ test('a workspace discovers projects, follows changes on disk, excludes, restore
 
   // Removing a discovered project excludes it; the settings dialog can bring it back.
   await page.getByRole('button', { name: '移除 api' }).click()
+  await expect(page.getByRole('dialog')).toContainText('在此工作区中排除')
+  await page.getByRole('dialog').getByRole('button', { name: '确认移除' }).click()
   await expect(projectButton(page, 'api')).toHaveCount(0)
 
   await page.getByRole('button', { name: 'code 工作区设置' }).click()

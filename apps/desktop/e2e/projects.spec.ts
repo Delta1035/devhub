@@ -24,6 +24,14 @@ test('adds a project with the folder picker, rejects duplicates, survives a rest
   page = (await launchDevhub()).page
   await expect(page.locator('aside').getByRole('button', { name: /^web-app/ })).toBeVisible()
 
+  // The × only asks: cancelling keeps the project.
   await page.getByRole('button', { name: '移除 web-app' }).click()
+  const confirm = page.getByRole('dialog', { name: '移除项目「web-app」？' })
+  await confirm.getByRole('button', { name: '取消' }).click()
+  await expect(confirm).toBeHidden()
+  await expect(page.locator('aside').getByRole('button', { name: /^web-app/ })).toBeVisible()
+
+  await page.getByRole('button', { name: '移除 web-app' }).click()
+  await confirm.getByRole('button', { name: '确认移除' }).click()
   await expect(page.getByText('还没有项目')).toBeVisible()
 })

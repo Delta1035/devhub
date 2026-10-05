@@ -8,14 +8,8 @@ import { Skeleton } from '@renderer/components/ui/skeleton'
 import { RunControls } from '@renderer/features/runs/run-controls'
 import { RunHistoryButton } from '@renderer/features/runs/run-history-button'
 import { useRuns } from '@renderer/features/runs/use-runs'
+import { sourceLabels } from './source-labels'
 import { useProjectScripts } from './use-scripts'
-
-const sourceLabels: Record<ScriptSource, string> = {
-  npm: 'npm',
-  maven: 'Maven',
-  gradle: 'Gradle',
-  custom: '自定义'
-}
 
 interface ScriptListProps {
   project: Project

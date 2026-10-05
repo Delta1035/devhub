@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ChevronDown, FolderPlus, FolderTree } from 'lucide-react'
-import type { Project, WorkspaceView } from '@devhub/shared'
+import type { Project, Run, WorkspaceView } from '@devhub/shared'
 import { shell } from '@renderer/api'
 import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
@@ -22,19 +22,31 @@ import {
 } from '@renderer/features/workspaces/workspace-display'
 import { WorkspaceSection } from '@renderer/features/workspaces/workspace-section'
 import { WorkspaceSettingsDialog } from '@renderer/features/workspaces/workspace-settings-dialog'
+import { ProjectDetailsDialog, RemoveProjectDialog } from './project-dialogs'
 import { ProjectItem } from './project-item'
-import { useAddProject, useProjects, useRemoveProject } from './use-projects'
+import { useAddProject, useProjects } from './use-projects'
 
 const removeStandaloneTitle = '从 DevHub 移除，并清理运行历史与历史日志（不会删除项目文件）'
 const removeFromWorkspaceTitle =
   '从 DevHub 移除并在此工作区中排除（可在工作区设置中恢复），同时清理运行历史与历史日志（不会删除项目文件）'
 
+interface ProjectDialog {
+  kind: 'remove' | 'details'
+  projectId: string
+}
+
 interface ProjectListProps {
   selectedId: string | null
   onSelect: (projectId: string) => void
+  /** Shows a run's terminal tab in its project (after opening a shell from the context menu). */
+  onOpenRun: (run: Run) => void
 }
 
-export function ProjectList({ selectedId, onSelect }: ProjectListProps): React.JSX.Element {
+export function ProjectList({
+  selectedId,
+  onSelect,
+  onOpenRun
+}: ProjectListProps): React.JSX.Element {
   const projects = useProjects()
   const workspaces = useWorkspaces()
   // Pushed by run events, so the indicators follow starts and exits without polling.
@@ -42,18 +54,18 @@ export function ProjectList({ selectedId, onSelect }: ProjectListProps): React.J
   const addProject = useAddProject()
   const addWorkspace = useAddWorkspace()
   const rescan = useRescanWorkspaces()
-  const removeProject = useRemoveProject()
   const [collapsed, toggleCollapsed] = useCollapsedWorkspaces()
   const [settingsId, setSettingsId] = useState<string | null>(null)
-  const [editorError, setEditorError] = useState<Error | null>(null)
+  // Dialogs are opened from an item (× button or context menu) but live here, once per list.
+  const [dialog, setDialog] = useState<ProjectDialog | null>(null)
+  const [actionError, setActionError] = useState<Error | null>(null)
   const error =
     projects.error ??
     workspaces.error ??
     addProject.error ??
     addWorkspace.error ??
     rescan.error ??
-    removeProject.error ??
-    editorError
+    actionError
 
   const allProjects = projects.data ?? []
   const workspaceList = workspaces.data ?? []
@@ -80,18 +92,28 @@ export function ProjectList({ selectedId, onSelect }: ProjectListProps): React.J
     if (path) addWorkspace.mutate(path)
   }
 
+  const runsOf = (projectId: string): Run[] =>
+    activeRuns.filter((run) => run.projectId === projectId)
+  // Looked up again on render, so a dialog follows renames and closes once the project is gone.
+  const dialogProject = allProjects.find((project) => project.id === dialog?.projectId)
+  const dialogWorkspace = workspaceList.find(
+    (workspace) => workspace.id === dialogProject?.workspaceId
+  )
+
   const renderItem = (project: Project, workspace?: WorkspaceView): React.JSX.Element => (
     <ProjectItem
       key={project.id}
       project={project}
+      workspace={workspace}
       subtitle={workspace ? relativeToWorkspace(project.path, workspace) : project.path}
       selected={project.id === selectedId}
-      activeRuns={activeRuns.filter((run) => run.projectId === project.id)}
+      activeRuns={runsOf(project.id)}
       removeTitle={workspace ? removeFromWorkspaceTitle : removeStandaloneTitle}
       onSelect={() => onSelect(project.id)}
-      onRemove={() => removeProject.mutate(project.id)}
-      onEditorError={setEditorError}
-      removing={removeProject.isPending && removeProject.variables === project.id}
+      onRemove={() => setDialog({ kind: 'remove', projectId: project.id })}
+      onShowDetails={() => setDialog({ kind: 'details', projectId: project.id })}
+      onShellStarted={onOpenRun}
+      onError={setActionError}
     />
   )
 
@@ -179,6 +201,23 @@ export function ProjectList({ selectedId, onSelect }: ProjectListProps): React.J
           workspace={settingsWorkspace}
           projectCount={projectsOf(settingsWorkspace).length}
           onClose={() => setSettingsId(null)}
+        />
+      )}
+
+      {dialog?.kind === 'remove' && dialogProject && (
+        <RemoveProjectDialog
+          project={dialogProject}
+          description={dialogWorkspace ? removeFromWorkspaceTitle : removeStandaloneTitle}
+          activeRunCount={runsOf(dialogProject.id).length}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog?.kind === 'details' && dialogProject && (
+        <ProjectDetailsDialog
+          project={dialogProject}
+          workspace={dialogWorkspace}
+          activeRuns={runsOf(dialogProject.id)}
+          onClose={() => setDialog(null)}
         />
       )}
     </section>

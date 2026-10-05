@@ -26,6 +26,7 @@ devhub/                        pnpm monorepo
 │       │       ├── events/          事件总线：把 core 事件分发给各传输层（ADR 0004）
 │       │       ├── editors/         检测并启动外部编辑器（VS Code / IDEA）
 │       │       ├── shells/          检测可用的交互式 shell，Git Bash 启动文件（ADR 0005）
+│       │       ├── terminals/       检测并启动系统终端（Windows Terminal / GNOME Terminal 等），不受 DevHub 管理
 │       │       ├── groups/          批量执行：任务存储、继续条件、执行器（ADR 0006）
 │       │       ├── settings/        核心设置（settings.json）（ADR 0007）
 │       │       ├── ports/           推断脚本端口、查找占用进程、启动前冲突检测
@@ -71,6 +72,7 @@ React UI ──> @renderer/api ──> DevhubApi (packages/shared)
 原生对话框、用系统浏览器打开链接、自动更新（`main/updater.ts`，ADR 0009）、窗口控制（自制标题栏，`main/window-controls.ts`，ADR 0010）等只在本机有意义的能力放在 `ShellApi`（`window.devhubShell`），不进入 `DevhubApi`。
 UI 通过 `@renderer/api` 的 `shell` 访问；远程客户端中它为 `null`，UI 需据此隐藏相关入口。
 ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动映射）。
+`openProjectFolder(projectId)` 在系统文件管理器中打开项目目录：renderer 只传 id，路径由 `core/shell/project-folder.ts` 从项目注册表查出并确认是目录，再交给 `shell.openPath`。
 
 更新安装入口通过注入的清理函数等待 `core.dispose()` 成功，再调用 `quitAndInstall()`；不能仅依赖 `before-quit`，因为 electron-updater 会先启动安装再请求退出。清理失败不安装。
 
@@ -112,7 +114,7 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 - `workspace-sync.ts`：纯函数，根据扫描结果规划增删。扫描不完整、根目录不可用、项目运行中、目录已删除时都不移除；已排除路径始终移除。
 - `workspace-service.ts`：工作区存储与 API 实现；所有操作排队串行，并发重扫合并；通过 `ProjectService.addDiscovered` / `removeMany` 一次写入，移除的项目经注入的 `forgetProject` 清理历史。`removeProject`（DevhubApi）也由它实现，以便把被移除的工作区内项目记入 `excluded`。
 - 路径比较统一用 `core/fs/path-compare.ts`（Windows 不区分大小写；`isWithin` 只把 `..` 段视为越界）。
-- renderer：`features/workspaces/` 提供查询（查询即重扫，挂载与窗口聚焦时触发）、`projects-updated` 事件同步、侧栏分组与设置对话框；项目条目在 `features/projects/project-item.tsx`。
+- renderer：`features/workspaces/` 提供查询（查询即重扫，挂载与窗口聚焦时触发）、`projects-updated` 事件同步、侧栏分组与设置对话框；项目条目在 `features/projects/project-item.tsx`（悬停详情 `project-summary.tsx`、右键菜单 `project-context-menu.tsx`、移除确认与详情对话框 `project-dialogs.tsx`，对话框状态由 `project-list.tsx` 统一持有）。侧栏宽度由 `features/sidebar/use-resizable-width.ts` 管理（拖动 / 方向键 / 双击复位，存 localStorage）。
 
 ## 进程管理（`core/process/`，见 ADR 0003）
 
@@ -130,6 +132,7 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 
 - `editor-locator.ts`：按平台列出候选位置（PATH、注册表、Toolbox、默认安装目录），第一个存在的胜出；文件系统 / 注册表经参数注入，路径用 `path.win32` / `path.posix`，两个平台的查找逻辑在任何系统上都可测试。
 - `editor-launch.ts`：可执行文件直接启动（不经 shell）；Windows 的 `.cmd` 启动脚本经 `cmd /d /s /c` 并加引号。以 detached 独立进程启动，不进入 RunManager。去掉 `ELECTRON_RUN_AS_NODE`，否则 VS Code（同为 Electron）会以 Node 模式启动。
+- 系统终端（`core/terminals/`，`getSystemTerminal` / `openInSystemTerminal`）同理：`terminal-locator.ts` 按平台给出候选终端及「在目录中打开」的参数，第一个存在的胜出；复用 `launchDetached` 与 `launchEnv`，不隐藏窗口。
 - 放在 `DevhubApi`（`listEditors` / `openInEditor`）而不是 ShellApi：启动进程不需要 Electron，逻辑可测试；renderer 只传项目 id 与编辑器 id，路径由 core 查出。
 
 ## 事件推送（见 ADR 0004）

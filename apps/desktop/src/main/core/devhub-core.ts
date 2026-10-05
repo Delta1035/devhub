@@ -43,6 +43,8 @@ import {
 import { withCustomShells } from './shells/custom-shells'
 import { withPreferredShell } from './shells/prefer-shell'
 import { createShellLocator } from './shells/shell-locator'
+import { createTerminalLocator } from './terminals/terminal-locator'
+import { createSystemTerminalService } from './terminals/terminal-service'
 import { scanWorkspace } from './workspaces/workspace-scanner'
 import {
   createWorkspaceService,
@@ -124,6 +126,12 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     platform: env.platform,
     customPath: async (editor) => (await settings.get()).editorPaths[editor],
     isFile
+  })
+  const systemTerminal = createSystemTerminalService({
+    projects,
+    locator: createTerminalLocator(system),
+    launch: launchDetached,
+    env: process.env
   })
 
   const portConflicts = createPortGuard({
@@ -270,6 +278,8 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     listGroupStates: () => groupRunner.states(),
     listEditors: () => editors.list(),
     openInEditor: (projectId, editor) => editors.open(projectId, editor),
+    getSystemTerminal: () => systemTerminal.get(),
+    openInSystemTerminal: (projectId) => systemTerminal.open(projectId),
     subscribe: (listener) => events.subscribe(listener),
     dispose: async () => {
       // Cancel sequences first so no step starts while the runs are being stopped.

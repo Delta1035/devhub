@@ -17,7 +17,7 @@ export function buildLaunchSpec(
   dir: string,
   env: NodeJS.ProcessEnv
 ): LaunchSpec {
-  const cleanEnv = editorEnv(env)
+  const cleanEnv = launchEnv(env)
   if (launcher.kind === 'batch') {
     // cmd /s strips the outer quotes, leaving `"<launcher>" "<dir>"`. Windows paths cannot
     // contain double quotes, so quoting each part is enough.
@@ -41,8 +41,9 @@ export function buildLaunchSpec(
 /**
  * Inherited from DevHub's own environment, but `ELECTRON_RUN_AS_NODE` (set when DevHub runs
  * from a VS Code terminal) would make VS Code, itself an Electron app, start as plain Node.
+ * Also used for system terminals, so tools started from them behave the same.
  */
-function editorEnv(env: NodeJS.ProcessEnv): Record<string, string> {
+export function launchEnv(env: NodeJS.ProcessEnv): Record<string, string> {
   const result: Record<string, string> = {}
   for (const [key, value] of Object.entries(env)) {
     if (value !== undefined && key !== 'ELECTRON_RUN_AS_NODE') result[key] = value

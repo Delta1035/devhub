@@ -8,6 +8,12 @@ MVP 范围为桌面端项目/脚本管理、进程与终端、批量任务、设
 
 ### 已完成
 
+- 项目列表交互（2026-10-05）：① 侧栏 × 不再直接移除，弹出确认对话框（说明清理范围、显示路径与活动终端数，可取消）；② 悬停项目 0.6 秒显示详情卡片（名称、完整路径、来源工作区、添加时间、各来源脚本数与警告、活动终端），替代原 `title` 提示；③ 侧栏右边缘可拖动调整宽度（200px～窗口宽减 480px，方向键微调，双击恢复 256px，存 localStorage `devhub.sidebarWidth`）；④ 项目右键菜单：显示详情（对话框，含打开目录与编辑器按钮）、打开项目目录、打开方式（VS Code / IDEA，未检测到的禁用）、复制路径、移除（同样需确认）。
+  - 打开目录为 ShellApi `openProjectFolder(projectId)`：只接收 id，由 `core/shell/project-folder.ts` 校验并查出注册路径、确认是目录后才交给 `shell.openPath`（避免任意路径被系统「打开」执行）。新增 shadcn `hover-card`（来自已有 radix-ui，无新依赖）。修复：右键菜单打开时悬停卡片会弹出并遮挡菜单，现菜单打开期间不显示卡片。
+  - 右键菜单补充（同日）：「在 DevHub 终端中打开」用默认 shell 新开终端，并切换到该项目、选中新标签（复用 App 的 `openRun`，与批量任务查看日志相同）；「打开方式」子菜单新增「系统终端（名称）」，未检测到时禁用。系统终端为 DevhubApi `getSystemTerminal` / `openInSystemTerminal`，`core/terminals/` 实现：与编辑器一样以独立进程启动、不进入运行列表。查找顺序：Windows 为 Windows Terminal（`wt -d`，`;` 转义为 `\;`）→ PowerShell 7 → Windows PowerShell → cmd（控制台程序 detached 启动即获得独立窗口）；Linux 为 `x-terminal-emulator` → GNOME Terminal / Konsole / Xfce / MATE / Tilix / kitty / Alacritty（各自的工作目录参数）→ xterm，同时以项目目录作为 cwd。暂不支持在设置中指定终端。
+    - 验证：`pnpm check` 通过（desktop 543）；E2E 29/29，`project-actions.spec.ts` 增加 DevHub 终端打开与切换、系统终端菜单项（实际启动由单元测试覆盖）；本机实际点击一次，Windows Terminal 在项目目录打开。Linux 终端未在真机上验证。
+  - 验证：`pnpm check` 通过（desktop 522、shared 61）；`pnpm e2e` 29/29 通过，新增 `project-actions.spec.ts`（悬停卡片、右键详情 / 打开目录（桩替换 `shell.openPath`）/ 打开方式 / 移除确认、拖动宽度、重载保持、双击复位），受影响用例重复 5 次均通过；截图人工确认卡片、菜单与确认框。
+
 - 官网（2026-10-04，ADR 0020）：新增 `apps/website`（VitePress 1.6，中英双语；按用户要求中文为主语言放在根路径，英文在 `/en/`，搜索框与 404 页也已汉化），包含首页（介绍、功能、截图、下载按钮指向 `releases/latest`）与三篇指南：快速上手（安装、项目与工作区、运行、托盘、更新）、`.devhub.yaml` 参考、批量任务。截图直接引用 `docs/assets/`。新增 `website.yml`：PR 只构建，`main` 构建并部署到 GitHub Pages（`https://delta1035.github.io/devhub/`）。README 加官网链接。`pnpm check` 通过；本地构建与预览后截图确认了英文首页、中文深色文档页和手机宽度。
   - 已上线：Pages 首次部署成功，仓库 About 的 Website 已设为官网地址。同日发布了 v1.1.0 草稿（Release 工作流只建草稿，需人工发布），并删除遗留的 v0.1.6 草稿 Release（tag 保留）。
   - 注意：Playwright 自带的浏览器版本与本机已下载的不一致（需 1243，本机为 1228），临时截图改用 `channel: 'msedge'`；E2E 不受影响（驱动 Electron）。

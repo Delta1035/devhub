@@ -9,7 +9,9 @@ import {
   type DevhubEvents,
   type IpcResult
 } from '@devhub/shared'
+import { isDirectory } from './core/fs/is-directory'
 import { parseExternalUrl } from './core/shell/external-url'
+import { resolveProjectFolder } from './core/shell/project-folder'
 
 type AnyApiMethod = (...args: unknown[]) => Promise<unknown>
 
@@ -58,6 +60,18 @@ export function registerIpcHandlers(core: DevhubApi & DevhubEvents): void {
 
   ipcMain.handle(shellChannel.openExternal, (_event, url: unknown) =>
     toIpcResult('openExternal', () => shell.openExternal(parseExternalUrl(url)))
+  )
+
+  ipcMain.handle(shellChannel.openProjectFolder, (_event, projectId: unknown) =>
+    toIpcResult('openProjectFolder', async () => {
+      const folder = await resolveProjectFolder(projectId, {
+        listProjects: () => core.listProjects(),
+        isDirectory
+      })
+      // Resolves to an error message rather than rejecting.
+      const failure = await shell.openPath(folder)
+      if (failure) throw new DevhubError('OPEN_FOLDER_FAILED', `无法打开目录：${failure}`)
+    })
   )
 }
 

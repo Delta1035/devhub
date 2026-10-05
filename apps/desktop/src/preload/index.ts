@@ -49,6 +49,9 @@ const shell: ShellApi = {
   openExternal: async (url) => {
     await invoke(shellChannel.openExternal, url)
   },
+  openProjectFolder: async (projectId) => {
+    await invoke(shellChannel.openProjectFolder, projectId)
+  },
   getWindowState: () => invoke(shellChannel.getWindowState) as Promise<WindowState>,
   onWindowState(listener) {
     const handler = (_event: IpcRendererEvent, state: WindowState): void => listener(state)

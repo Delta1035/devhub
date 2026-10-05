@@ -8,7 +8,8 @@ import type {
   ProjectScripts,
   Run,
   ShellId,
-  ShellInfo
+  ShellInfo,
+  SystemTerminalInfo
 } from './domain'
 import type { RunOutputSnapshot } from './events'
 import type { Group, GroupInput, GroupRunState } from './groups'
@@ -96,6 +97,10 @@ export interface DevhubApi {
   listEditors(): Promise<EditorInfo[]>
   /** Opens the project directory in the editor, as a separate process DevHub does not manage. */
   openInEditor(projectId: string, editor: EditorId): Promise<void>
+  /** The system terminal detected on this machine; null when none was found. */
+  getSystemTerminal(): Promise<SystemTerminalInfo | null>
+  /** Opens a system terminal window in the project directory, not managed by DevHub. */
+  openInSystemTerminal(projectId: string): Promise<void>
 }
 
 export interface AppInfo {
@@ -144,7 +149,9 @@ export const devhubApiMethods = [
   'stopGroup',
   'listGroupStates',
   'listEditors',
-  'openInEditor'
+  'openInEditor',
+  'getSystemTerminal',
+  'openInSystemTerminal'
 ] as const satisfies readonly DevhubApiMethod[]
 
 type MissingMethods = Exclude<DevhubApiMethod, (typeof devhubApiMethods)[number]>
@@ -171,6 +178,8 @@ export interface ShellApi {
   pickFile(title: string): Promise<string | null>
   /** Opens an http(s) URL in the default browser; other protocols are rejected. */
   openExternal(url: string): Promise<void>
+  /** Shows the project directory in the system file manager. */
+  openProjectFolder(projectId: string): Promise<void>
   getUpdateStatus(): Promise<UpdateStatus>
   /** Looks for a newer release; the result arrives as a status change. */
   checkForUpdates(): Promise<void>
@@ -220,6 +229,7 @@ export const shellChannel = {
   /** Pushed from main to the renderer. */
   updateStatus: 'shell:updateStatus',
   openExternal: 'shell:openExternal',
+  openProjectFolder: 'shell:openProjectFolder',
   getWindowState: 'shell:getWindowState',
   /** Pushed from main to the renderer. */
   windowState: 'shell:windowState',

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { Run } from '@devhub/shared'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { GroupList } from '@renderer/features/groups/group-list'
 import { useGroupStates } from '@renderer/features/groups/use-groups'
@@ -16,6 +17,8 @@ interface SidebarProps {
   /** Project new groups start from. */
   currentProjectId: string | null
   onSelectProject: (projectId: string) => void
+  /** Selects the run's project and shows its terminal tab. */
+  onOpenRun: (run: Run) => void
 }
 
 /** Projects and batch groups share the sidebar as tabs, so each gets the full height. */
@@ -24,7 +27,8 @@ export function Sidebar({
   onSelectGroup,
   selectedProjectId,
   currentProjectId,
-  onSelectProject
+  onSelectProject,
+  onOpenRun
 }: SidebarProps): React.JSX.Element {
   const [tab, setTab] = useState<SidebarTab>(() =>
     localStorage.getItem(tabKey) === 'groups' ? 'groups' : 'projects'
@@ -54,7 +58,11 @@ export function Sidebar({
         </TabsTrigger>
       </TabsList>
       <TabsContent value="projects" className="min-h-0 overflow-y-auto">
-        <ProjectList selectedId={selectedProjectId} onSelect={onSelectProject} />
+        <ProjectList
+          selectedId={selectedProjectId}
+          onSelect={onSelectProject}
+          onOpenRun={onOpenRun}
+        />
       </TabsContent>
       <TabsContent value="groups" className="min-h-0 overflow-y-auto">
         <GroupList

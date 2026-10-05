@@ -4,7 +4,7 @@ import {
   type UseMutationResult,
   type UseQueryResult
 } from '@tanstack/react-query'
-import type { EditorId, EditorInfo } from '@devhub/shared'
+import type { EditorId, EditorInfo, SystemTerminalInfo } from '@devhub/shared'
 import { api } from '@renderer/api'
 
 /** Re-checked on window focus, so installing an editor shows up without restarting DevHub. */
@@ -21,4 +21,13 @@ export function useOpenInEditor(): UseMutationResult<void, Error, OpenInEditorIn
   return useMutation({
     mutationFn: ({ projectId, editor }) => api.openInEditor(projectId, editor)
   })
+}
+
+/** Windows Terminal, GNOME Terminal…; null when none is installed. Re-checked on focus. */
+export function useSystemTerminal(): UseQueryResult<SystemTerminalInfo | null> {
+  return useQuery({ queryKey: ['system-terminal'], queryFn: () => api.getSystemTerminal() })
+}
+
+export function useOpenInSystemTerminal(): UseMutationResult<void, Error, string> {
+  return useMutation({ mutationFn: (projectId: string) => api.openInSystemTerminal(projectId) })
 }
