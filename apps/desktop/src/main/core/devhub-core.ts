@@ -9,6 +9,8 @@ import {
 } from './projects/project-service'
 import { createDefaultDetectors } from './detectors/detect-scripts'
 import { launchDetached } from './editors/editor-launch'
+import { readRegistryKey, runInLoginShell } from './env/env-readers'
+import { createLaunchEnvResolver } from './env/launch-env'
 import { createEditorService } from './editors/editor-service'
 import { createEditorLocator } from './editors/editor-locator'
 import { isDirectory } from './fs/is-directory'
@@ -113,6 +115,14 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
   })
 
   const system = systemDeps(env.platform, process.env)
+  const launchEnv = createLaunchEnvResolver({
+    platform: env.platform,
+    env: process.env,
+    readRegistryKey,
+    runInLoginShell
+  })
+  // Linux captures the login shell once; start now so the first script does not wait for it.
+  void launchEnv()
   const shells = withPreferredShell(
     withCustomShells(
       createShellLocator({
@@ -129,7 +139,7 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     projects,
     locator: createEditorLocator(system),
     launch: launchDetached,
-    env: process.env,
+    resolveEnv: launchEnv,
     platform: env.platform,
     customPath: async (editor) => (await settings.get()).editorPaths[editor],
     isFile
@@ -138,7 +148,7 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     projects,
     locator: createTerminalLocator(system),
     launch: launchDetached,
-    env: process.env
+    resolveEnv: launchEnv
   })
 
   const portConflicts = createPortGuard({
@@ -177,6 +187,7 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     projects,
     shells,
     spawn: nodePtySpawner,
+    resolveEnv: launchEnv,
     killer,
     platform: env.platform,
     emit: (event) => events.emit(event),

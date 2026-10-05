@@ -39,7 +39,7 @@ describe('createSystemTerminalService', () => {
       },
       locator: { locate: async () => terminal },
       launch,
-      env: { PATH: '/bin', ELECTRON_RUN_AS_NODE: '1' }
+      resolveEnv: async () => ({ PATH: '/bin', ELECTRON_RUN_AS_NODE: '1' })
     })
   })
 

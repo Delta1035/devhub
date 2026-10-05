@@ -105,7 +105,7 @@ export function createHarness(): TestHarness {
         killer: harness.killer,
         platform: 'linux',
         emit: (event) => harness.events.push(event),
-        env: { PATH: '/bin', EMPTY: undefined },
+        resolveEnv: async () => ({ PATH: '/bin', EMPTY: undefined }),
         graceMs: 1000,
         forceTimeoutMs: 500,
         outputLimit: 10,

@@ -55,7 +55,8 @@ export interface RunManagerDeps {
   platform: NodeJS.Platform
   /** Receives run lifecycle and output events for connected UIs. */
   emit?: (event: DevhubEvent) => void
-  env?: NodeJS.ProcessEnv
+  /** The environment for each started process; read at every start (ADR 0024). */
+  resolveEnv?: () => Promise<NodeJS.ProcessEnv>
   /** How long a run may take to exit after the interrupt before it is force-killed. */
   /** A function is read at each stop, so a changed setting applies to the next stop. */
   graceMs?: number | (() => number)
@@ -88,7 +89,7 @@ export function createRunManager({
   killer,
   platform,
   emit = () => undefined,
-  env = process.env,
+  resolveEnv = async () => process.env,
   graceMs = 5000,
   forceTimeoutMs = 5000,
   outputLimit = 512 * 1024,
@@ -127,6 +128,8 @@ export function createRunManager({
     const { project, script } = await scripts.find(projectId, scriptId)
     const options = startOptions.safeParse(rawOptions ?? {})
     if (!options.success) throw new DevhubError('INVALID_INPUT', '启动选项无效')
+    // Resolved before the running check, so it adds no await between the check and the launch.
+    const runEnv = definedEnv(await resolveEnv())
 
     // Keep only the latest run per script: an active one blocks, an exited one is replaced.
     const previous = [...entries.values()].filter(
@@ -152,7 +155,6 @@ export function createRunManager({
       emit({ type: 'run-removed', runId: run.id })
     }
 
-    const runEnv = definedEnv(env)
     const run = launch({
       projectId: project.id,
       identity: { kind: 'script', scriptId: script.id },
@@ -183,6 +185,7 @@ export function createRunManager({
       const detail = error instanceof Error ? error.message : String(error)
       throw new DevhubError('SPAWN_FAILED', `无法准备 ${shell.name} 的启动文件：${detail}`)
     }
+    const shellEnv = definedEnv(await resolveEnv())
 
     return launch({
       projectId: project.id,
@@ -192,7 +195,7 @@ export function createRunManager({
       file: shell.file,
       args: shell.args,
       cwd: project.path,
-      env: { ...definedEnv(env), ...shell.env }
+      env: { ...shellEnv, ...shell.env }
     })
   }
 

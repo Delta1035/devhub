@@ -18,7 +18,8 @@ export interface EditorServiceDeps {
   projects: Pick<ProjectService, 'get'>
   locator: EditorLocator
   launch: (spec: LaunchSpec, cwd: string) => Promise<void>
-  env: NodeJS.ProcessEnv
+  /** The environment for the editor process; read at every launch (ADR 0024). */
+  resolveEnv: () => Promise<NodeJS.ProcessEnv>
   platform: NodeJS.Platform
   /** The user's chosen executable from settings, or null to auto-detect. */
   customPath: (editor: EditorId) => Promise<string | null>
@@ -29,7 +30,7 @@ export function createEditorService({
   projects,
   locator,
   launch,
-  env,
+  resolveEnv,
   platform,
   customPath,
   isFile
@@ -76,6 +77,7 @@ export function createEditorService({
       const found = await resolve(editor.data)
       if (!found) throw new DevhubError('EDITOR_NOT_FOUND', `未检测到 ${name}`)
       const { launcher } = found
+      const env = await resolveEnv()
 
       try {
         await launch(buildLaunchSpec(launcher, project.path, env), project.path)
