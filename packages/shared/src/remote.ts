@@ -79,6 +79,13 @@ export interface RemoteInfo {
   protocol: number
 }
 
+/** Body of `GET ${remoteApiPrefix}/session`: checks the token and says what this client may do. */
+export interface RemoteSession {
+  protocol: number
+  /** Whether `terminal` methods (new shells, terminal input) are allowed. */
+  allowTerminal: boolean
+}
+
 /** An address of this machine the remote server can listen on. */
 export interface NetworkAddress {
   address: string

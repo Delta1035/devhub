@@ -55,6 +55,15 @@ describe('remote server', () => {
     expect(await response.json()).toEqual({ protocol: 1 })
   })
 
+  it('describes the session only to a client with the token', async () => {
+    const base = await start({ allowTerminal: true })
+    expect((await fetch(`${base}/api/v1/session`)).status).toBe(401)
+    const response = await fetch(`${base}/api/v1/session`, {
+      headers: { authorization: `Bearer ${token}` }
+    })
+    expect(await response.json()).toEqual({ protocol: 1, allowTerminal: true })
+  })
+
   it('calls the method with the given arguments and returns the IPC envelope', async () => {
     const listScripts = vi.fn(async (projectId: string) => ({ projectId }))
     const base = await start({ api: fakeApi({ listScripts }) })

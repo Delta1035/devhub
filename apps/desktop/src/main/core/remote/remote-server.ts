@@ -9,7 +9,8 @@ import {
   type DevhubApiMethod,
   type IpcResult,
   type RemoteErrorCode,
-  type RemoteInfo
+  type RemoteInfo,
+  type RemoteSession
 } from '@devhub/shared'
 import { toIpcResult } from '../api-result'
 import { bearerToken, createFailureLimiter, tokensEqual, type FailureLimiter } from './auth'
@@ -83,6 +84,14 @@ export function startRemoteServer({
         return reject(response, 405, 'METHOD_NOT_ALLOWED', { allow: 'GET' })
       const info: RemoteInfo = { protocol: remoteProtocolVersion }
       return send(response, 200, info)
+    }
+
+    if (path === `${remoteApiPrefix}/session`) {
+      if (request.method !== 'GET')
+        return reject(response, 405, 'METHOD_NOT_ALLOWED', { allow: 'GET' })
+      if (!authorized(request, response)) return
+      const session: RemoteSession = { protocol: remoteProtocolVersion, allowTerminal }
+      return send(response, 200, session)
     }
 
     if (path === `${remoteApiPrefix}/events`) {
