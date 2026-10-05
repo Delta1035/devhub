@@ -42,6 +42,10 @@ jobs:
             echo "::error::Tag $GITHUB_REF_NAME does not match apps/desktop/package.json version $version"
             exit 1
           fi
+      - name: Verify CHANGELOG has a section for the tag
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: node scripts/changelog.mjs notes "$GITHUB_REF_NAME" > /dev/null
       - run: pnpm install --frozen-lockfile
       # A tag can point at a commit CI never saw, so run the full checks again.
       - run: pnpm check
@@ -77,6 +81,19 @@ jobs:
       attestations: write
       artifact-metadata: write
     steps:
+      # Only the release notes are needed here; `pnpm release` wrote them into CHANGELOG.md.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            CHANGELOG.md
+            scripts
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: Write release notes
+        run: node scripts/changelog.mjs notes "$GITHUB_REF_NAME" > "$RUNNER_TEMP/release-notes.md"
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: installers-*
@@ -104,4 +121,4 @@ jobs:
             --draft \
             --verify-tag \
             --title "DevHub $GITHUB_REF_NAME" \
-            --generate-notes
+            --notes-file "$RUNNER_TEMP/release-notes.md"

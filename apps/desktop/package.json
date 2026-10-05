@@ -23,7 +23,8 @@
     "build": "pnpm typecheck && electron-vite build && pnpm build:web",
     "build:unpack": "pnpm build && electron-builder --dir",
     "build:win": "pnpm build && electron-builder --win",
-    "build:linux": "pnpm build && electron-builder --linux"
+    "build:linux": "pnpm build && electron-builder --linux",
+    "version": "node ../../scripts/changelog.mjs release"
   },
   "dependencies": {
     "@electron-toolkit/utils": "^4.0.0",

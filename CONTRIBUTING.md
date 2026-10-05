@@ -49,7 +49,7 @@ docs/              需求、架构、进度与架构决策记录（ADR）
 
 1. 从 `main` 拉分支，一个 PR 只做一件事。
 2. `pnpm check` 必须通过；改动 UI、IPC/preload 或进程管理时还要跑 `pnpm e2e`。CI 会在 Windows 与 Ubuntu 上重复这两项。
-3. 提交信息使用 [Conventional Commits](https://www.conventionalcommits.org/)（`feat:` / `fix:` / `refactor:` / `docs:` / `test:` / `chore:`），正文说明「为什么」。
+3. 提交信息使用 [Conventional Commits](https://www.conventionalcommits.org/)（`feat:` / `fix:` / `refactor:` / `docs:` / `test:` / `chore:`，另有 `perf` / `build` / `ci` / `style` / `revert`），正文说明「为什么」。本地 `commit-msg` 钩子与 CI 都会校验（`scripts/commit-msg.mjs`，首行不超过 100 字符）。`feat` / `fix` / `perf` 的主题会原样进入 CHANGELOG，请写成用户能看懂的话。
 4. 改了结构或约定时同步更新 `docs/ARCHITECTURE.md`。
 
 ## 发布（维护者）
@@ -59,7 +59,7 @@ pnpm release patch          # 或 minor / major / 1.2.3；工作区必须干净
 git push --follow-tags      # 推送提交和 v* tag，触发 Release 工作流
 ```
 
-`pnpm release` 修改 `apps/desktop/package.json` 的 `version`，提交 `chore(release): vX.Y.Z` 并打 tag。Release 工作流在 Windows / Ubuntu 重新跑检查与 E2E，打包 `.exe` / `.AppImage` / `.deb`，附上 `SHA256SUMS.txt`、自动更新元数据和构建溯源证明，创建**草稿** GitHub Release；下载验证后在 GitHub 上发布。
+`pnpm release` 修改 `apps/desktop/package.json` 的 `version`，把上个 tag 以来的 feat / fix / perf 提交写成 `CHANGELOG.md` 的新段落，一起提交为 `chore(release): vX.Y.Z` 并打 tag。推送前可以修改这一段的措辞（改完后 `git commit --amend` 并重新打 tag）。Release 工作流用这一段作为 Release 正文（缺少时直接失败），在 Windows / Ubuntu 重新跑检查与 E2E，打包 `.exe` / `.AppImage` / `.deb`，附上 `SHA256SUMS.txt`、自动更新元数据和构建溯源证明，创建**草稿** GitHub Release；下载验证后在 GitHub 上发布。
 
 在 Actions 页手动运行 Release 工作流只打包（产物在运行页下载），不创建 Release。
 
