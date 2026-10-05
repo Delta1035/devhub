@@ -1,6 +1,6 @@
 # 桌面应用基础模板提取方案
 
-状态：用户已确认；基础代码、初始化、打包与 CI/发布配置已完成（ADR 0017），并迁出到同级目录 `../electron-desktop-template`，等待用户创建独立仓库；Linux 与远端 CI 待验证。日期：2026-10-03。
+状态：用户已确认；基础代码、初始化、打包与 CI/发布配置已完成（ADR 0017），并迁出到同级目录 `../electron-desktop-template`；Linux 与远端 CI 待验证。日期：2026-10-03。独立仓库：[Delta1035/electron-desktop-template](https://github.com/Delta1035/electron-desktop-template)（2026-10-05 记录）。
 
 ## 交付形式与范围
 

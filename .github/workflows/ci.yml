@@ -38,6 +38,35 @@ jobs:
           path: dependency-audit.json
           if-no-files-found: ignore
 
+  # Re-checks what the local commit-msg hook checks, catching --no-verify and web edits.
+  commit-messages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: Check commit messages
+        shell: bash
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          if [ -n "$PR_BASE" ]; then
+            range="$PR_BASE..$PR_HEAD"
+          elif git cat-file -e "$PUSH_BEFORE^{commit}" 2>/dev/null; then
+            range="$PUSH_BEFORE..$GITHUB_SHA"
+          else
+            # New branch or force push: the previous tip is unknown, so check the pushed commit.
+            range="$GITHUB_SHA^!"
+          fi
+          node scripts/commit-msg.mjs --range "$range"
+
   check:
     strategy:
       fail-fast: false

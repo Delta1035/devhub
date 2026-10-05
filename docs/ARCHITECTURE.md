@@ -2,7 +2,7 @@
 
 ## 总览
 
-桌面基础模板已迁出本仓库，位于同级目录 `../electron-desktop-template`（将作为独立仓库维护，ADR 0016 补充）；DevHub 不依赖模板。提取方案见 `docs/DESKTOP-TEMPLATE.md`，模板标识与初始化方式见 ADR 0017。
+桌面基础模板已迁出本仓库，独立维护于 [Delta1035/electron-desktop-template](https://github.com/Delta1035/electron-desktop-template)（本地同级目录 `../electron-desktop-template`，ADR 0016 补充）；DevHub 不依赖模板。DevHub 中适用于任何桌面应用的基础设施改动（CI、发布、提交校验等）需手动同步到模板仓库。提取方案见 `docs/DESKTOP-TEMPLATE.md`，模板标识与初始化方式见 ADR 0017。
 
 ```
 devhub/                        pnpm monorepo
@@ -85,6 +85,7 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 - `pnpm check` 包含格式、架构 lint、类型检查和测试；E2E 驱动真实 Electron 构建产物。
 - E2E 从启动起捕获 Electron stdout / stderr；失败或关闭超过 10 秒时保存退出状态与系统进程快照至 `test-results`，随 CI 失败产物上传。诊断不扩大测试超时，也不吞掉活应用的关闭错误。
 - CI 的独立依赖审计任务展示全部依赖告警并保存原始 JSON；目前为报告模式，网络或格式错误仍失败（ADR 0012）。
+- 提交信息由 husky `commit-msg` 钩子与 CI `commit-messages` 任务校验（`scripts/commit-msg.mjs`）；`pnpm release` 经 `apps/desktop` 的 `version` 生命周期调用 `scripts/changelog.mjs` 生成 `CHANGELOG.md` 段落，Release 工作流以其作为 Release 正文（ADR 0026）。仓库根的 `scripts/*.mjs` 是零依赖 Node 脚本，测试为同名 `*.test.mjs`（`node --test`，包含在 `pnpm test` 中）。
 
 ## 领域模型（`packages/shared/src/domain.ts`）
 
