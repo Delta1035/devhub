@@ -25,6 +25,7 @@ devhub/                        pnpm monorepo
 │       │       ├── detectors/       脚本探测器：每种项目类型一个文件
 │       │       ├── scripts/         按项目扫描脚本（listScripts）
 │       │       ├── process/         进程管理：PTY、杀进程树、RunManager、输出缓冲（ADR 0003）
+│       │       ├── env/             子进程环境：Windows 读注册表、Linux 捕获登录 shell（ADR 0024）
 │       │       ├── events/          事件总线：把 core 事件分发给各传输层（ADR 0004）
 │       │       ├── editors/         检测并启动外部编辑器（VS Code / IDEA）
 │       │       ├── shells/          检测可用的交互式 shell，Git Bash 启动文件（ADR 0005）
@@ -42,7 +43,7 @@ devhub/                        pnpm monorepo
 │           ├── features/<x>/  按功能组织：组件 + hooks（projects、scripts、terminal）
 │           ├── components/ui/ shadcn 生成的组件（由 CLI 管理，不手改）
 │           └── lib/           工具函数
-├── apps/website/              官网与使用文档（VitePress，中英双语，部署到 GitHub Pages，ADR 0020；构建后 `verify` 检查中文搜索与旧 /zh/ 跳转）
+├── apps/website/              官网与使用文档（VitePress，中英双语，部署到 GitHub Pages，ADR 0020；构建后 `verify` 检查中文搜索与旧 /zh/ 跳转；Vite 经 overrides 提升到 6.x，ADR 0025）
 └── packages/shared/           平台无关：API 契约、领域模型（zod schema）、错误类型
 ```
 
@@ -84,7 +85,7 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 - `pnpm check` 包含格式、架构 lint、类型检查和测试；E2E 驱动真实 Electron 构建产物。
 - E2E 从启动起捕获 Electron stdout / stderr；失败或关闭超过 10 秒时保存退出状态与系统进程快照至 `test-results`，随 CI 失败产物上传。诊断不扩大测试超时，也不吞掉活应用的关闭错误。
 - CI 的独立依赖审计任务展示全部依赖告警并保存原始 JSON；目前为报告模式，网络或格式错误仍失败（ADR 0012）。
-- 提交信息由 husky `commit-msg` 钩子与 CI `commit-messages` 任务校验（`scripts/commit-msg.mjs`）；`pnpm release` 经 `apps/desktop` 的 `version` 生命周期调用 `scripts/changelog.mjs` 生成 `CHANGELOG.md` 段落，Release 工作流以其作为 Release 正文（ADR 0024）。仓库根的 `scripts/*.mjs` 是零依赖 Node 脚本，测试为同名 `*.test.mjs`（`node --test`，包含在 `pnpm test` 中）。
+- 提交信息由 husky `commit-msg` 钩子与 CI `commit-messages` 任务校验（`scripts/commit-msg.mjs`）；`pnpm release` 经 `apps/desktop` 的 `version` 生命周期调用 `scripts/changelog.mjs` 生成 `CHANGELOG.md` 段落，Release 工作流以其作为 Release 正文（ADR 0026）。仓库根的 `scripts/*.mjs` 是零依赖 Node 脚本，测试为同名 `*.test.mjs`（`node --test`，包含在 `pnpm test` 中）。
 
 ## 领域模型（`packages/shared/src/domain.ts`）
 
@@ -123,6 +124,7 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 ## 进程管理（`core/process/`，见 ADR 0003）
 
 - `pty.ts`：`PtySpawner` 接口 + node-pty 实现；命令经平台 shell 执行。
+- 子进程环境（`core/env/`，ADR 0024）：不直接继承 DevHub 的环境，而是在每次启动前调用 `createLaunchEnvResolver`。Windows 读注册表 Environment，修复并补全 PATH（`windows-env.ts`，缓存 5 秒）；Linux / macOS 每个会话用 `$SHELL -ilc` 捕获一次环境（`shell-env.ts`）；失败时退回继承的环境。真正的 I/O 在 `env-readers.ts` 中，通过注入使用。RunManager、编辑器和系统终端统一使用解析后的环境。
 - `process-killer.ts`：两阶段停止。Windows：Ctrl+C → `taskkill /T /F`；Linux：进程组 SIGTERM → SIGKILL。
 - `run-manager.ts`：对外 API 与输入校验；脚本每个只保留最新一次运行；交互式 shell 每个项目可多个（ADR 0005）；`dispose()` 停止全部运行。
 - `run-entry.ts`：启动一个运行（spawn、输出缓冲最近 512 KB、退出时更新状态）；`stop-run.ts`：两阶段停止一个运行。

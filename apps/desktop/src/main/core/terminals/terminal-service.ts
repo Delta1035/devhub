@@ -13,7 +13,8 @@ export interface SystemTerminalServiceDeps {
   projects: Pick<ProjectService, 'get'>
   locator: TerminalLocator
   launch: (spec: LaunchSpec, cwd: string) => Promise<void>
-  env: NodeJS.ProcessEnv
+  /** The environment for the terminal process; read at every launch (ADR 0024). */
+  resolveEnv: () => Promise<NodeJS.ProcessEnv>
 }
 
 /**
@@ -24,7 +25,7 @@ export function createSystemTerminalService({
   projects,
   locator,
   launch,
-  env
+  resolveEnv
 }: SystemTerminalServiceDeps): SystemTerminalService {
   return {
     async get() {
@@ -40,6 +41,7 @@ export function createSystemTerminalService({
       }
       const terminal = await locator.locate()
       if (!terminal) throw new DevhubError('TERMINAL_NOT_FOUND', '未检测到系统终端')
+      const env = await resolveEnv()
 
       try {
         await launch(

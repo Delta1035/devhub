@@ -35,7 +35,7 @@ describe('createEditorService', () => {
       },
       locator: { locate: async (editor) => installed[editor] ?? null },
       launch,
-      env: { PATH: '/bin' },
+      resolveEnv: async () => ({ PATH: '/bin' }),
       platform: 'win32',
       customPath: async (editor) => custom[editor] ?? null,
       isFile: async (path) => existingFiles.includes(path)

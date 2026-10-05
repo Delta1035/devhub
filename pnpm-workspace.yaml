@@ -7,3 +7,8 @@ allowBuilds:
   esbuild: true
   node-pty: true
   electron-winstaller: false
+
+# ADR 0025: VitePress 1.6.4 pins vite ^5, which has no patched release.
+# Drop this once VitePress 2 is stable.
+overrides:
+  vite@5: ^6.4.3
