@@ -15,6 +15,7 @@ import {
 import { toIpcResult } from '../api-result'
 import { bearerToken, createFailureLimiter, tokensEqual, type FailureLimiter } from './auth'
 import { openEventStream, type EventStreamOptions } from './event-stream'
+import { serveStaticFile } from './static-files'
 
 export interface RemoteServerOptions extends EventStreamOptions {
   api: DevhubApi
@@ -26,6 +27,8 @@ export interface RemoteServerOptions extends EventStreamOptions {
   allowTerminal: boolean
   limiter?: FailureLimiter
   maxBodyBytes?: number
+  /** Built web app served outside `/api`; absent in dev builds that did not build it. */
+  webRoot?: string
 }
 
 export interface RemoteServer {
@@ -56,7 +59,8 @@ export function startRemoteServer({
   maxBodyBytes = 1024 * 1024,
   subscribe,
   heartbeatMs,
-  maxBufferedBytes
+  maxBufferedBytes,
+  webRoot
 }: RemoteServerOptions): Promise<RemoteServer> {
   // Ended explicitly on close, so no subscription outlives the server.
   const streams = new Set<{ end(): void }>()
@@ -79,6 +83,11 @@ export function startRemoteServer({
 
   const handle = async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
     const path = new URL(request.url ?? '/', 'http://localhost').pathname
+    // Everything outside /api is the web app.
+    if (path !== '/api' && !path.startsWith('/api/')) {
+      return serveStaticFile(request, response, webRoot)
+    }
+
     if (path === `${remoteApiPrefix}/info`) {
       if (request.method !== 'GET')
         return reject(response, 405, 'METHOD_NOT_ALLOWED', { allow: 'GET' })

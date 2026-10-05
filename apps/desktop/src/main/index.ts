@@ -1,3 +1,4 @@
+import { join } from 'path'
 import { app, BrowserWindow, Tray } from 'electron'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -52,7 +53,9 @@ if (!app.requestSingleInstanceLock()) {
     core = createDevhubCore({
       version: app.getVersion(),
       platform: process.platform,
-      dataDir: app.getPath('userData')
+      dataDir: app.getPath('userData'),
+      // Built next to the main bundle by `build:web` (out/web; inside app.asar when packaged).
+      webRoot: join(__dirname, '../web')
     })
     registerIpcHandlers(core)
     registerUpdater(() => core?.dispose() ?? Promise.resolve())

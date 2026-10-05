@@ -5,6 +5,7 @@ directories:
 files:
   - '!src/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!vite.web.config.{js,ts,mjs,cjs}'
   - '!vitest.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'

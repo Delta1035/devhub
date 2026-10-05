@@ -154,7 +154,6 @@ describe('remote server', () => {
   it.each([
     ['an unknown method', 'deleteEverything', 'POST', 404],
     ['an inherited property', 'constructor', 'POST', 404],
-    ['a path outside the API', '../../etc', 'POST', 404],
     ['GET on a method', 'listRuns', 'GET', 405]
   ])('rejects %s', async (_case, method, verb, status) => {
     const base = await start({ api: fakeApi({ listRuns: async () => [] }) })

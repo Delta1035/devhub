@@ -32,6 +32,7 @@ export function createRemoteHost({
   subscribe,
   config,
   addresses,
+  webRoot,
   log = console
 }: {
   api: DevhubApi
@@ -39,6 +40,8 @@ export function createRemoteHost({
   config: RemoteConfigStore
   /** Current addresses of this machine. */
   addresses: () => NetworkAddress[]
+  /** The built web app to serve at `/`. */
+  webRoot?: string
   log?: Pick<Console, 'info' | 'error'>
 }): RemoteHost {
   let server: RemoteServer | null = null
@@ -59,7 +62,15 @@ export function createRemoteHost({
     if (!current.enabled || disposed) return
     const { host, port, token, allowTerminal } = current
     try {
-      server = await startRemoteServer({ api, subscribe, host, port, token, allowTerminal })
+      server = await startRemoteServer({
+        api,
+        subscribe,
+        host,
+        port,
+        token,
+        allowTerminal,
+        webRoot
+      })
       status = { state: 'listening', port: server.port }
       log.info(`[remote] listening on ${host}:${server.port}`)
     } catch (error) {

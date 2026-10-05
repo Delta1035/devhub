@@ -62,6 +62,8 @@ export interface CoreEnvironment {
   platform: NodeJS.Platform
   /** Directory for DevHub's own persistent data. */
   dataDir: string
+  /** The built web app the remote server serves to phones; omitted when there is none. */
+  webRoot?: string
 }
 
 export interface DevhubCore extends DevhubApi, DevhubEvents {
@@ -295,6 +297,7 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     api,
     subscribe: (listener) => events.subscribe(listener),
     addresses: () => listNetworkAddresses(networkInterfaces()),
+    webRoot: env.webRoot,
     config: createRemoteConfigStore({
       store: createJsonStore({
         filePath: join(env.dataDir, 'remote.json'),
