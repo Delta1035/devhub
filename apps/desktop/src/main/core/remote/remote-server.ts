@@ -13,8 +13,9 @@ import {
 } from '@devhub/shared'
 import { toIpcResult } from '../api-result'
 import { bearerToken, createFailureLimiter, tokensEqual, type FailureLimiter } from './auth'
+import { openEventStream, type EventStreamOptions } from './event-stream'
 
-export interface RemoteServerOptions {
+export interface RemoteServerOptions extends EventStreamOptions {
   api: DevhubApi
   /** IP address to listen on. */
   host: string
@@ -42,6 +43,7 @@ const requestSchema = z.object({ args: z.array(z.unknown()).max(8).default([]) }
  * The remote transport of DevhubApi (ADR 0022): `POST /api/v1/<method>` with `{ "args": [...] }`,
  * answered with the same `IpcResult` envelope as IPC. Arguments are validated by the core services,
  * exactly as for IPC; this layer only authenticates, applies `remoteAccess` and bounds the body.
+ * `GET /api/v1/events` streams core events as SSE (`event-stream.ts`).
  */
 export function startRemoteServer({
   api,
@@ -50,8 +52,30 @@ export function startRemoteServer({
   token,
   allowTerminal,
   limiter = createFailureLimiter(),
-  maxBodyBytes = 1024 * 1024
+  maxBodyBytes = 1024 * 1024,
+  subscribe,
+  heartbeatMs,
+  maxBufferedBytes
 }: RemoteServerOptions): Promise<RemoteServer> {
+  // Ended explicitly on close, so no subscription outlives the server.
+  const streams = new Set<{ end(): void }>()
+
+  /** Answers 429 / 401 itself and returns false when the request may not proceed. */
+  const authorized = (request: IncomingMessage, response: ServerResponse): boolean => {
+    const address = request.socket.remoteAddress ?? ''
+    if (limiter.isBlocked(address)) {
+      reject(response, 429, 'TOO_MANY_REQUESTS')
+      return false
+    }
+    const given = bearerToken(request.headers.authorization)
+    if (given === null || !tokensEqual(given, token)) {
+      limiter.recordFailure(address)
+      reject(response, 401, 'UNAUTHORIZED', { 'www-authenticate': 'Bearer' })
+      return false
+    }
+    return true
+  }
+
   const handle = async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
     const path = new URL(request.url ?? '/', 'http://localhost').pathname
     if (path === `${remoteApiPrefix}/info`) {
@@ -59,6 +83,17 @@ export function startRemoteServer({
         return reject(response, 405, 'METHOD_NOT_ALLOWED', { allow: 'GET' })
       const info: RemoteInfo = { protocol: remoteProtocolVersion }
       return send(response, 200, info)
+    }
+
+    if (path === `${remoteApiPrefix}/events`) {
+      if (request.method !== 'GET')
+        return reject(response, 405, 'METHOD_NOT_ALLOWED', { allow: 'GET' })
+      if (!authorized(request, response)) return
+      const stream = openEventStream(response, { subscribe, heartbeatMs, maxBufferedBytes }, () =>
+        streams.delete(stream)
+      )
+      streams.add(stream)
+      return
     }
 
     const name = path.startsWith(`${remoteApiPrefix}/`)
@@ -69,13 +104,7 @@ export function startRemoteServer({
     if (request.method !== 'POST')
       return reject(response, 405, 'METHOD_NOT_ALLOWED', { allow: 'POST' })
 
-    const address = request.socket.remoteAddress ?? ''
-    if (limiter.isBlocked(address)) return reject(response, 429, 'TOO_MANY_REQUESTS')
-    const given = bearerToken(request.headers.authorization)
-    if (given === null || !tokensEqual(given, token)) {
-      limiter.recordFailure(address)
-      return reject(response, 401, 'UNAUTHORIZED', { 'www-authenticate': 'Bearer' })
-    }
+    if (!authorized(request, response)) return
     if (!isRemoteAllowed(method, { allowTerminal })) return reject(response, 403, 'FORBIDDEN')
     if (!/^application\/json\s*(;|$)/i.test(request.headers['content-type'] ?? '')) {
       return reject(response, 415, 'UNSUPPORTED_MEDIA_TYPE')
@@ -110,6 +139,7 @@ export function startRemoteServer({
         port: typeof address === 'object' && address ? address.port : port,
         close: () =>
           new Promise((resolveClose) => {
+            for (const stream of [...streams]) stream.end()
             server.close(() => resolveClose())
             server.closeAllConnections()
           })

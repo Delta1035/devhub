@@ -6,6 +6,7 @@ import { createRemoteHost } from './remote-host'
 
 const token = 'x'.repeat(43)
 const api = { listRuns: async () => [] } as Partial<DevhubApi> as DevhubApi
+const subscribe = () => () => undefined
 const silent = { info: vi.fn(), error: vi.fn() }
 
 /** A port that was free a moment ago. */
@@ -38,6 +39,7 @@ describe('remote host', () => {
     const port = await freePort()
     const host = createRemoteHost({
       api,
+      subscribe,
       config: { get: async () => config({ port }) },
       log: silent
     })
@@ -51,6 +53,7 @@ describe('remote host', () => {
     const port = await freePort()
     const host = createRemoteHost({
       api,
+      subscribe,
       config: { get: async () => config({ enabled: false, port }) },
       log: silent
     })
@@ -63,6 +66,7 @@ describe('remote host', () => {
     const log = { info: vi.fn(), error: vi.fn() }
     const host = createRemoteHost({
       api,
+      subscribe,
       config: {
         get: async () => {
           throw new Error('unreadable')
@@ -79,6 +83,7 @@ describe('remote host', () => {
     const port = await freePort()
     const host = createRemoteHost({
       api,
+      subscribe,
       config: { get: async () => config({ port }) },
       log: silent
     })

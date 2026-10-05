@@ -22,7 +22,8 @@ M4 要让手机（先 PWA，后 Android）查看和控制桌面端的项目与�
 ### 事件推送：SSE
 
 - `GET /api/v1/events` 返回 `text/event-stream`，每个 `DevhubEvent` 一条 `data: <JSON>`，内容与 `DevhubEvents.subscribe` 完全相同；每 15 秒发送注释行心跳；带 `Cache-Control: no-cache` 与 `X-Accel-Buffering: no`。
-- 不实现 `Last-Event-ID` 重放。断线重连后客户端按现有方式补齐：先订阅，再 `getRunOutput` 用 `OutputCursor` 拼接输出（ADR 0004），其余状态重新 `list*`。
+- 连接建立并完成订阅后，先发一条 `event: ready`（`data: {"protocol":1}`）。客户端收到它之后再取快照，保证快照与后续事件之间不漏数据。
+- 不实现 `Last-Event-ID` 重放。断线重连后客户端按现有方式补齐：等到 `ready`，再 `getRunOutput` 用 `OutputCursor` 拼接输出（ADR 0004），其余状态重新 `list*`。
 - 背压：某连接未发出的数据超过 4 MB 时断开该连接，客户端退避重连后补齐；不影响其他客户端与桌面 UI。
 - 客户端用 `fetch` 读取流（可带 `Authorization` 头），不用浏览器 `EventSource`（不能设置请求头，Token 只能放进 URL 而被日志记录）。React Native 的流式读取方案在 M4-3 的 ADR（#19）中决定（如 `expo/fetch` 或基于 XHR 的 SSE 库）。
 

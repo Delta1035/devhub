@@ -60,7 +60,7 @@ React UI ──> @renderer/api ──> DevhubApi (packages/shared)
 - `core/` 实现该契约，与传输方式无关，依赖通过参数注入，因此可直接单元测试。
 - IPC 层和 preload 根据 `devhubApiMethods` 自动生成，新增方法无需手写通道。
 - 将来的手机端 / PWA 只需实现一个基于 HTTP 的 `DevhubApi` 客户端，UI 代码可复用。
-- 远程 HTTP（`core/remote/`，ADR 0022）：`remote-server.ts` 用 `node:http` 把 `devhubApiMethods` 映射为 `POST /api/v1/<method>`（请求体 `{ args }`，上限 1 MB），依次检查失败次数限速、Bearer Token、shared 的 `remoteAccess` 分级与 JSON 类型，再调用与 IPC 相同的 `api` 对象，返回同一 `IpcResult` 信封（`api-result.ts`）。`remote-host.ts` 由 `createDevhubCore` 创建，按 `remote.json`（`remote-config.ts`，首次读取时生成 Token）决定是否监听，启动失败只记录日志；`dispose` 时最先关闭。远程配置的界面与 API 尚未提供（#15），目前只能手动编辑 `remote.json`。
+- 远程 HTTP（`core/remote/`，ADR 0022）：`remote-server.ts` 用 `node:http` 把 `devhubApiMethods` 映射为 `POST /api/v1/<method>`（请求体 `{ args }`，上限 1 MB），依次检查失败次数限速、Bearer Token、shared 的 `remoteAccess` 分级与 JSON 类型，再调用与 IPC 相同的 `api` 对象，返回同一 `IpcResult` 信封（`api-result.ts`）。`GET /api/v1/events`（`event-stream.ts`）以 SSE 推送全部 core 事件：订阅后先发 `ready`，15 秒心跳，单连接积压超过 4 MB 即断开；服务关闭时主动结束所有事件流并取消订阅。`remote-host.ts` 由 `createDevhubCore` 创建，按 `remote.json`（`remote-config.ts`，首次读取时生成 Token）决定是否监听，启动失败只记录日志；`dispose` 时最先关闭。远程配置的界面与 API 尚未提供（#15），目前只能手动编辑 `remote.json`。
 
 这些边界由 ESLint 强制（见根目录 `eslint.config.mjs`）。
 

@@ -1,4 +1,4 @@
-import type { DevhubApi } from '@devhub/shared'
+import type { DevhubApi, DevhubEvents } from '@devhub/shared'
 import type { RemoteConfigStore } from './remote-config'
 import { startRemoteServer, type RemoteServer } from './remote-server'
 
@@ -12,10 +12,12 @@ export interface RemoteHost {
 /** Owns the remote server's lifecycle inside the core, driven by `remote.json`. */
 export function createRemoteHost({
   api,
+  subscribe,
   config,
   log = console
 }: {
   api: DevhubApi
+  subscribe: DevhubEvents['subscribe']
   config: RemoteConfigStore
   log?: Pick<Console, 'info' | 'error'>
 }): RemoteHost {
@@ -26,7 +28,7 @@ export function createRemoteHost({
     try {
       const { enabled, host, port, token, allowTerminal } = await config.get()
       if (!enabled) return
-      server = await startRemoteServer({ api, host, port, token, allowTerminal })
+      server = await startRemoteServer({ api, subscribe, host, port, token, allowTerminal })
       log.info(`[remote] listening on ${host}:${server.port}`)
     } catch (error) {
       log.error('[remote] failed to start', error)

@@ -288,6 +288,7 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
   // Off unless enabled in remote.json; serves the same api object as IPC (ADR 0022).
   const remote = createRemoteHost({
     api,
+    subscribe: (listener) => events.subscribe(listener),
     config: createRemoteConfigStore({
       store: createJsonStore({
         filePath: join(env.dataDir, 'remote.json'),

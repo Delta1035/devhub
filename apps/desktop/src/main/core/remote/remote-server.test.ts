@@ -19,6 +19,7 @@ describe('remote server', () => {
   const start = async (options: Partial<RemoteServerOptions> = {}): Promise<string> => {
     server = await startRemoteServer({
       api: fakeApi({}),
+      subscribe: () => () => undefined,
       host: '127.0.0.1',
       port: 0,
       token,
@@ -188,6 +189,7 @@ describe('remote server', () => {
     await expect(
       startRemoteServer({
         api: fakeApi({}),
+        subscribe: () => () => undefined,
         host: '127.0.0.1',
         port: server!.port,
         token,
