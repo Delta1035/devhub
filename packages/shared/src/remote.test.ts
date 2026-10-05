@@ -1,6 +1,30 @@
 import { describe, expect, it } from 'vitest'
 import { devhubApiMethods } from './api'
-import { isRemoteAllowed, remoteAccess } from './remote'
+import { isRemoteAllowed, remoteAccess, remoteConfigPatchSchema, remoteConnectUrl } from './remote'
+
+describe('remoteConnectUrl', () => {
+  it('puts the token in the fragment and brackets IPv6 hosts', () => {
+    expect(remoteConnectUrl('100.64.1.2', 7420, 'a-b_c')).toBe(
+      'http://100.64.1.2:7420/#token=a-b_c'
+    )
+    expect(remoteConnectUrl('fd7a:115c:a1e0::1', 7420, 't')).toBe(
+      'http://[fd7a:115c:a1e0::1]:7420/#token=t'
+    )
+  })
+})
+
+describe('remoteConfigPatchSchema', () => {
+  it.each([{ port: 80 }, { port: 70000 }, { host: '' }, { token: 'mine' }, { enabled: 'yes' }])(
+    'rejects %o',
+    (patch) => {
+      expect(remoteConfigPatchSchema.safeParse(patch).success).toBe(false)
+    }
+  )
+
+  it('accepts a partial change', () => {
+    expect(remoteConfigPatchSchema.parse({ enabled: true })).toEqual({ enabled: true })
+  })
+})
 
 describe('remoteAccess', () => {
   it('classifies exactly the API methods', () => {
@@ -14,7 +38,10 @@ describe('remoteAccess', () => {
     'updateSettings',
     'saveGroup',
     'openInEditor',
-    'openInSystemTerminal'
+    'openInSystemTerminal',
+    'getRemoteState',
+    'updateRemoteConfig',
+    'regenerateRemoteToken'
   ] as const)('never exposes %s, which changes or launches what runs on the host', (method) => {
     expect(isRemoteAllowed(method, { allowTerminal: true })).toBe(false)
   })

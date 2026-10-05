@@ -15,6 +15,7 @@ import type { RunOutputSnapshot } from './events'
 import type { Group, GroupInput, GroupRunState } from './groups'
 import type { RunHealth } from './health'
 import type { RunHistoryOutput, RunRecord } from './history'
+import type { RemoteConfigPatch, RemoteState } from './remote'
 import type { Settings, SettingsPatch } from './settings'
 import type { WorkspacePatch, WorkspaceView } from './workspaces'
 
@@ -101,6 +102,12 @@ export interface DevhubApi {
   getSystemTerminal(): Promise<SystemTerminalInfo | null>
   /** Opens a system terminal window in the project directory, not managed by DevHub. */
   openInSystemTerminal(projectId: string): Promise<void>
+  /** Remote access configuration, token and server status (ADR 0022). Never remote. */
+  getRemoteState(): Promise<RemoteState>
+  /** Saves the change and restarts the remote server. */
+  updateRemoteConfig(patch: RemoteConfigPatch): Promise<RemoteState>
+  /** Replaces the token; connected devices are disconnected and must reconnect with the new one. */
+  regenerateRemoteToken(): Promise<RemoteState>
 }
 
 export interface AppInfo {
@@ -151,7 +158,10 @@ export const devhubApiMethods = [
   'listEditors',
   'openInEditor',
   'getSystemTerminal',
-  'openInSystemTerminal'
+  'openInSystemTerminal',
+  'getRemoteState',
+  'updateRemoteConfig',
+  'regenerateRemoteToken'
 ] as const satisfies readonly DevhubApiMethod[]
 
 type MissingMethods = Exclude<DevhubApiMethod, (typeof devhubApiMethods)[number]>

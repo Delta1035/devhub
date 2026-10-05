@@ -32,6 +32,9 @@ export const emptyRemoteFile = (): RemoteFile => ({
 export interface RemoteConfigStore {
   /** The configuration, generating and saving a token the first time. */
   get(): Promise<RemoteConfig>
+  /** Saves an already validated change. */
+  update(change: Partial<Omit<RemoteConfig, 'token'>>): Promise<RemoteConfig>
+  regenerateToken(): Promise<RemoteConfig>
 }
 
 export function createRemoteConfigStore({
@@ -41,16 +44,27 @@ export function createRemoteConfigStore({
   store: JsonStore<RemoteFile>
   generateToken: () => string
 }): RemoteConfigStore {
-  return {
-    async get() {
-      const file = await store.read()
-      let token = file.token
-      if (token === null) {
-        token = generateToken()
-        await store.write({ ...file, token })
-      }
+  let queue: Promise<unknown> = Promise.resolve()
+  // Read-modify-write steps run one at a time so concurrent changes are not lost.
+  const serial = <T>(step: () => Promise<T>): Promise<T> => {
+    const next = queue.then(step)
+    queue = next.catch(() => undefined)
+    return next
+  }
+
+  const change = (modify: (file: RemoteFile) => RemoteFile): Promise<RemoteConfig> =>
+    serial(async () => {
+      const current = await store.read()
+      const file = modify(current)
+      const token = file.token ?? generateToken()
+      if (file !== current || current.token === null) await store.write({ ...file, token })
       const { enabled, host, port, allowTerminal } = file
       return { enabled, host, port, allowTerminal, token }
-    }
+    })
+
+  return {
+    get: () => change((file) => file),
+    update: (patch) => change((file) => remoteFileSchema.parse({ ...file, ...patch })),
+    regenerateToken: () => change((file) => ({ ...file, token: generateToken() }))
   }
 }

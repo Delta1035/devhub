@@ -1,3 +1,4 @@
+import { networkInterfaces } from 'os'
 import { join } from 'path'
 import type { DevhubApi, DevhubEvents } from '@devhub/shared'
 import { createJsonStore } from './storage/json-store'
@@ -35,6 +36,7 @@ import { nodePtySpawner } from './process/pty'
 import { createRunManager } from './process/run-manager'
 import { createRunRegistry, emptyRunsFile, runsFileSchema } from './process/run-registry'
 import { generateToken } from './remote/auth'
+import { listNetworkAddresses } from './remote/network-addresses'
 import { createRemoteConfigStore, emptyRemoteFile, remoteFileSchema } from './remote/remote-config'
 import { createRemoteHost } from './remote/remote-host'
 import { createScriptService } from './scripts/script-service'
@@ -282,13 +284,17 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     listEditors: () => editors.list(),
     openInEditor: (projectId, editor) => editors.open(projectId, editor),
     getSystemTerminal: () => systemTerminal.get(),
-    openInSystemTerminal: (projectId) => systemTerminal.open(projectId)
+    openInSystemTerminal: (projectId) => systemTerminal.open(projectId),
+    getRemoteState: () => remote.state(),
+    updateRemoteConfig: (patch) => remote.update(patch),
+    regenerateRemoteToken: () => remote.regenerateToken()
   }
 
   // Off unless enabled in remote.json; serves the same api object as IPC (ADR 0022).
   const remote = createRemoteHost({
     api,
     subscribe: (listener) => events.subscribe(listener),
+    addresses: () => listNetworkAddresses(networkInterfaces()),
     config: createRemoteConfigStore({
       store: createJsonStore({
         filePath: join(env.dataDir, 'remote.json'),

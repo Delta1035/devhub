@@ -45,6 +45,28 @@ describe('remote config', () => {
     expect(config.token).toBe(token)
   })
 
+  it('saves changes and keeps the token', async () => {
+    const config = open()
+    await config.get()
+    await config.update({ enabled: true, port: 8000 })
+    expect(await open().get()).toMatchObject({ enabled: true, port: 8000, token })
+  })
+
+  it('replaces the token on request', async () => {
+    let counter = 0
+    const config = open(() => `${++counter}`.padEnd(43, 'k'))
+    const first = (await config.get()).token
+    const second = (await config.regenerateToken()).token
+    expect(second).not.toBe(first)
+    expect((await open().get()).token).toBe(second)
+  })
+
+  it('applies concurrent changes one after another', async () => {
+    const config = open()
+    await Promise.all([config.update({ enabled: true }), config.update({ allowTerminal: true })])
+    expect(await config.get()).toMatchObject({ enabled: true, allowTerminal: true })
+  })
+
   it.each([{ host: 'example.com' }, { port: 0 }, { token: 'short' }])(
     'starts from the defaults when the file has %o',
     async (patch) => {

@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import type { DevhubApiMethod } from './api'
 
 /**
@@ -50,7 +51,10 @@ export const remoteAccess = {
   listEditors: 'read',
   openInEditor: 'local',
   getSystemTerminal: 'read',
-  openInSystemTerminal: 'local'
+  openInSystemTerminal: 'local',
+  getRemoteState: 'local',
+  updateRemoteConfig: 'local',
+  regenerateRemoteToken: 'local'
 } as const satisfies Record<DevhubApiMethod, RemoteAccess>
 
 export interface RemotePolicy {
@@ -73,6 +77,52 @@ export const defaultRemotePort = 7420
 /** Body of `GET ${remoteApiPrefix}/info`, the only request that needs no token. */
 export interface RemoteInfo {
   protocol: number
+}
+
+/** An address of this machine the remote server can listen on. */
+export interface NetworkAddress {
+  address: string
+  family: 'IPv4' | 'IPv6'
+  /** Network adapter name, e.g. `Tailscale` or `eth0`. */
+  interfaceName: string
+  /** In Tailscale's ranges (100.64.0.0/10, fd7a:115c:a1e0::/48): encrypted, recommended. */
+  tailscale: boolean
+}
+
+export type RemoteStatus =
+  { state: 'off' } | { state: 'listening'; port: number } | { state: 'error'; message: string }
+
+/** Everything the desktop settings page shows about remote access; local only (has the token). */
+export interface RemoteState {
+  enabled: boolean
+  /** Listen address: one of `addresses`, `127.0.0.1`, or `0.0.0.0` for every interface. */
+  host: string
+  port: number
+  allowTerminal: boolean
+  token: string
+  status: RemoteStatus
+  /** Current addresses of this machine, Tailscale first; loopback and link-local excluded. */
+  addresses: NetworkAddress[]
+}
+
+export const remoteConfigPatchSchema = z
+  .object({
+    enabled: z.boolean(),
+    host: z.string().min(1).max(64),
+    port: z.number().int().min(1024).max(65535),
+    allowTerminal: z.boolean()
+  })
+  .partial()
+  .strict()
+export type RemoteConfigPatch = z.infer<typeof remoteConfigPatchSchema>
+
+/**
+ * What the connection QR code encodes (ADR 0023). The token sits in the fragment, which
+ * browsers never send to the server, so it stays out of request logs.
+ */
+export function remoteConnectUrl(host: string, port: number, token: string): string {
+  const hostPart = host.includes(':') ? `[${host}]` : host
+  return `http://${hostPart}:${port}/#token=${encodeURIComponent(token)}`
 }
 
 /** Transport-level failures, answered with the matching HTTP status and an `IpcResult` body. */
