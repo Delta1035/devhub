@@ -5,5 +5,5 @@ LICENSE.md
 tsconfig.json
 tsconfig.*.json
 coverage
-.vitepress/cache
+**/.vitepress/cache
 .pnpm-store
