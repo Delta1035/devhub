@@ -80,10 +80,12 @@ gh attestation verify <文件> --repo Delta1035/devhub
 scripts:
   api:
     command: mvnw.cmd spring-boot:run -pl server # 也可以按平台写：{ windows: ..., linux: ... }
-    cwd: server # 可选，相对项目目录，不能跳出项目
     description: 后端 # 可选
     port: 8081 # 可选，也可以写 ports: [8081, 8082]；省略时从命令推断
     health: /actuator/health # 可选，就绪检查改为请求该路径，期望 HTTP 2xx
+  db:
+    command: docker compose up postgres
+    cwd: deploy # 可选，相对项目目录，不能跳出项目
 ```
 
 保存后刷新或切回窗口即生效；写错时脚本列表会显示行号或字段路径。

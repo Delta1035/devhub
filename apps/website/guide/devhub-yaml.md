@@ -6,12 +6,12 @@ DevHub 识别不到的命令——`docker compose`、带参数的启动命令、
 scripts:
   api:
     command: mvnw.cmd spring-boot:run -pl server
-    cwd: server
     description: 后端
     port: 8081
     health: /actuator/health
   db:
     command: docker compose up postgres
+    cwd: deploy
     port: 5432
 ```
 

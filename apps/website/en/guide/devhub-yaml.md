@@ -6,12 +6,12 @@ When DevHub cannot detect a command — `docker compose`, a command with argumen
 scripts:
   api:
     command: mvnw.cmd spring-boot:run -pl server
-    cwd: server
     description: Backend
     port: 8081
     health: /actuator/health
   db:
     command: docker compose up postgres
+    cwd: deploy
     port: 5432
 ```
 

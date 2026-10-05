@@ -80,10 +80,12 @@ Create `.devhub.yaml` in the project root for commands DevHub cannot detect (doc
 scripts:
   api:
     command: mvnw.cmd spring-boot:run -pl server # or per platform: { windows: ..., linux: ... }
-    cwd: server # optional, relative to the project; cannot leave it
     description: Backend # optional
     port: 8081 # optional, or ports: [8081, 8082]; inferred from the command when omitted
     health: /actuator/health # optional; readiness then means this path returns HTTP 2xx
+  db:
+    command: docker compose up postgres
+    cwd: deploy # optional, relative to the project; cannot leave it
 ```
 
 Changes apply on refresh or when the window regains focus; mistakes are reported in the script list with a line number or field path.
