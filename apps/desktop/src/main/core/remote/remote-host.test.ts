@@ -35,6 +35,7 @@ function memoryConfig(initial: Partial<RemoteConfig>): RemoteConfigStore & { val
       token: 'token-0'.padEnd(43, 'x'),
       ...initial
     },
+    isEnabled: async () => store.value.enabled,
     get: async () => ({ ...store.value }),
     update: async (change: Partial<RemoteConfig>) => {
       store.value = { ...store.value, ...change }

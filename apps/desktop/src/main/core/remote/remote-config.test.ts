@@ -39,6 +39,11 @@ describe('remote config', () => {
     expect(JSON.parse(await readFile(filePath, 'utf8')).token).toBe(token)
   })
 
+  it('checks whether it is enabled without creating the file', async () => {
+    await expect(open().isEnabled()).resolves.toBe(false)
+    await expect(readFile(filePath, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
   it('keeps an existing token', async () => {
     await open().get()
     const config = await open(() => 'x'.repeat(43)).get()

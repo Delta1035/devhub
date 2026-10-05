@@ -30,6 +30,8 @@ export const emptyRemoteFile = (): RemoteFile => ({
 })
 
 export interface RemoteConfigStore {
+  /** Reads without writing, so starting DevHub with remote access off creates no file. */
+  isEnabled(): Promise<boolean>
   /** The configuration, generating and saving a token the first time. */
   get(): Promise<RemoteConfig>
   /** Saves an already validated change. */
@@ -63,6 +65,7 @@ export function createRemoteConfigStore({
     })
 
   return {
+    isEnabled: () => serial(async () => (await store.read()).enabled),
     get: () => change((file) => file),
     update: (patch) => change((file) => remoteFileSchema.parse({ ...file, ...patch })),
     regenerateToken: () => change((file) => ({ ...file, token: generateToken() }))

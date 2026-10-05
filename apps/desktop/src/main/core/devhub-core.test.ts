@@ -23,6 +23,8 @@ describe('createDevhubCore', () => {
   it('does not write any data file just by starting', async () => {
     const core = createDevhubCore({ version: '1.2.3', platform: process.platform, dataDir })
     await core.listOrphanedRuns()
+    // Waits for background start-up work, such as checking whether remote access is on.
+    await core.dispose()
     await expect(readdir(dataDir)).resolves.toEqual([])
   })
 })

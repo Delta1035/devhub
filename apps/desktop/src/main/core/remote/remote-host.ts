@@ -78,7 +78,8 @@ export function createRemoteHost({
     start: () =>
       serial(async () => {
         try {
-          await restart(await config.get())
+          // Disabled: nothing to do, and no token is generated (nor remote.json written).
+          if (await config.isEnabled()) await restart(await config.get())
         } catch (error) {
           status = { state: 'error', message: '无法读取远程访问设置' }
           log.error('[remote] failed to start', error)
