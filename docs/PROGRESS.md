@@ -8,6 +8,8 @@ MVP 范围为桌面端项目/脚本管理、进程与终端、批量任务、设
 
 ### 已完成
 
+- 悬停卡片遮挡菜单 / 对话框（2026-10-05）：推送后 Ubuntu CI 的 `project-actions` 与 `workspaces` E2E 失败（`885d581` 首次进 CI）。Linux 真机诊断：弹出的是**另一个**项目（此前点过的 `other`）的卡片——菜单 / 对话框关闭时 Radix 把焦点还给原项目按钮，HoverCard 获得焦点也会计时打开，600ms 后盖在下一个菜单上；对话框场景中 Escape 先关掉卡片，对话框未关。原有的 `menuOpen` 只管本项目，拦不住。改为只有指针在项目上时才打开（`project-item.tsx` 记录 pointerenter/leave，`onOpenChange` 过滤），键盘用户用右键菜单的「显示详情」。E2E 增加「仅获得焦点不弹卡片」检查（修复前 Windows 上同样失败，可确定性复现）。`pnpm check` 通过；E2E Windows 29/29、Linux 真机 28 通过 / 1 跳过，两个用例 Linux ×5 通过。
+
 - 审查遗留问题修复（2026-10-05）：
   - 官网中文搜索：MiniSearch 默认只按空格与标点切分，中文整句成为一个词。改为先用 `Intl.Segmenter('zh')` 分词，再按标点细分（`devhub.yaml` 仍得到 `devhub`、`yaml`）。VitePress 通过 `toString()` 把函数发到浏览器，因此函数需自包含。多词查询改为 AND（「端口」会被切成「端」「口」，OR 加前缀匹配几乎命中所有页面）。
   - 旧地址：`public/zh/` 下 4 个静态跳转页（`/zh/` 与 3 篇指南），`noindex` 并带 canonical，保留 `#锚点`。

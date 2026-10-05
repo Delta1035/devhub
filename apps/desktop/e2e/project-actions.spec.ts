@@ -19,6 +19,11 @@ test('project hover details, context menu actions and a resizable sidebar', asyn
   await expect(card).toContainText('2 个（npm 2）')
   await page.mouse.move(600, 400)
   await expect(card).toBeHidden()
+  // Focus alone does not open it: menus and dialogs return focus to the item they came from,
+  // and a card opening then covered the next menu (seen on Linux).
+  await item.focus()
+  await page.waitForTimeout(1000)
+  await expect(card).toBeHidden()
 
   // Context menu → details dialog.
   await item.click({ button: 'right' })

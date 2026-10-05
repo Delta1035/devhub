@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { FolderGit2, X } from 'lucide-react'
 import type { Project, Run, WorkspaceView } from '@devhub/shared'
 import { Button } from '@renderer/components/ui/button'
@@ -43,6 +43,10 @@ export function ProjectItem({
   const [hoverOpen, setHoverOpen] = useState(false)
   // The pointer is still over the item while its context menu is open; the card would cover it.
   const [menuOpen, setMenuOpen] = useState(false)
+  // Radix also opens the card on focus, and menus and dialogs hand focus back to the item
+  // they were opened from: another item's card then popped up over the next menu or dialog.
+  // The card is a hover preview (the context menu has 显示详情), so only the pointer opens it.
+  const pointerOver = useRef(false)
   return (
     <ProjectContextMenu
       project={project}
@@ -63,7 +67,7 @@ export function ProjectItem({
       >
         <HoverCard
           open={hoverOpen && !menuOpen}
-          onOpenChange={setHoverOpen}
+          onOpenChange={(open) => setHoverOpen(open && pointerOver.current)}
           openDelay={600}
           closeDelay={100}
         >
@@ -71,6 +75,8 @@ export function ProjectItem({
             <button
               type="button"
               onClick={onSelect}
+              onPointerEnter={() => (pointerOver.current = true)}
+              onPointerLeave={() => (pointerOver.current = false)}
               aria-current={selected ? 'true' : undefined}
               className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
