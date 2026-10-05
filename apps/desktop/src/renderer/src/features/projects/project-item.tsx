@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { FolderGit2, X } from 'lucide-react'
 import type { Project, Run, WorkspaceView } from '@devhub/shared'
+import { access } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@renderer/components/ui/hover-card'
 import { EditorButtons } from '@renderer/features/editors/editor-buttons'
@@ -105,16 +106,18 @@ export function ProjectItem({
           onError={onError}
           className="opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"
         />
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={onRemove}
-          title={removeTitle}
-          aria-label={`移除 ${project.name}`}
-          className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-        >
-          <X />
-        </Button>
+        {access.manage && (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={onRemove}
+            title={removeTitle}
+            aria-label={`移除 ${project.name}`}
+            className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+          >
+            <X />
+          </Button>
+        )}
       </li>
     </ProjectContextMenu>
   )

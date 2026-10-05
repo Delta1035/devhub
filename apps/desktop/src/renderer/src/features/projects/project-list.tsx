@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChevronDown, FolderPlus, FolderTree } from 'lucide-react'
 import type { Project, Run, WorkspaceView } from '@devhub/shared'
-import { shell } from '@renderer/api'
+import { access, shell } from '@renderer/api'
 import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
 import {
@@ -163,7 +163,9 @@ export function ProjectList({
 
       {projects.data?.length === 0 && workspaceList.length === 0 && (
         <p className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
-          还没有项目。点击「添加」选择一个代码目录，或添加工作区自动发现其中的项目。
+          {shell
+            ? '还没有项目。点击「添加」选择一个代码目录，或添加工作区自动发现其中的项目。'
+            : '还没有项目。项目需要在电脑上的 DevHub 中添加。'}
         </p>
       )}
 
@@ -178,7 +180,7 @@ export function ProjectList({
             rescanning={rescan.isPending}
             onToggle={() => toggleCollapsed(workspace.id)}
             onRescan={() => rescan.mutate()}
-            onOpenSettings={() => setSettingsId(workspace.id)}
+            onOpenSettings={access.manage ? () => setSettingsId(workspace.id) : undefined}
           >
             {members.map((project) => renderItem(project, workspace))}
           </WorkspaceSection>

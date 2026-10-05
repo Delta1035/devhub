@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Pencil, Play, Square } from 'lucide-react'
 import type { ContinueCondition, Group, GroupRunState, GroupStepState, Run } from '@devhub/shared'
+import { access } from '@renderer/api'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { useProjects } from '@renderer/features/projects/use-projects'
@@ -97,10 +98,12 @@ export function GroupDetail({
           <Square />
           停止全部
         </Button>
-        <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
-          <Pencil />
-          编辑
-        </Button>
+        {access.manage && (
+          <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+            <Pencil />
+            编辑
+          </Button>
+        )}
       </header>
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
         {error && (

@@ -69,3 +69,13 @@ M4 要让手机（先 PWA，后 Android）查看和控制桌面端的项目与�
 - 绑定局域网地址且不经 Tailscale 时为明文 HTTP，Token 与日志内容可被同网段嗅探。
 - 同一浏览器对同一来源最多 6 个 HTTP/1.1 连接；每个客户端只开一个事件流，不受影响。
 - 无 `Last-Event-ID` 重放，断线期间的非输出事件靠重新拉取列表恢复。
+
+## 补充（2026-10-05，#17）：网页版复用桌面 renderer
+
+用户选择让 PWA 复用桌面 renderer，而不是新建 `apps/web`。
+
+- 同一份 renderer 用普通 Vite 另行构建（`vite.web.config.ts` → `out/web`，`build` 包含它，随安装包发布），由远程服务在 `/api` 以外的路径托管：无需 Token（文件不含数据），路径严格限制在网页目录内，无扩展名的路径回退到 `index.html`，带哈希的资源长期缓存、页面本身不缓存，并带 `X-Frame-Options: DENY`。
+- 客户端（`packages/shared` 的 `createRemoteClient`）：fetch、解码、计时器由调用方注入，shared 不引入 DOM / Node 类型，React Native 也可复用。事件流在全部订阅者之间共享一个连接，退避重连，每次连上发出 `onReady`，UI 据此重新拉取全部查询。
+- 新增需要 Token 的 `GET /api/v1/session`（`{ protocol, allowTerminal }`）：网页连接时校验令牌，并决定是否显示终端入口。
+- `@renderer/api` 在没有 preload 时改用远程客户端，并导出 `access`（`manage`：仅桌面；`terminal`：桌面或远程允许终端时）。远程不允许的操作（`local` 方法、未开启时的 `terminal` 方法）在界面上隐藏，而不是点击后报 403；只观看的手机不调整 PTY 尺寸，避免把桌面终端改成手机宽度。
+- 布局仍是桌面布局，手机屏幕上的适配在 #18。

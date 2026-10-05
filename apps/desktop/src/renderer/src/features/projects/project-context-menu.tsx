@@ -1,6 +1,6 @@
 import { AppWindow, Copy, FolderOpen, Info, SquareTerminal, X } from 'lucide-react'
 import type { Project, Run } from '@devhub/shared'
-import { shell } from '@renderer/api'
+import { access, shell } from '@renderer/api'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -71,49 +71,61 @@ export function ProjectContextMenu({
             打开项目目录
           </ContextMenuItem>
         )}
-        <ContextMenuItem onSelect={openShell} disabled={startShell.isPending}>
-          <SquareTerminal />在 DevHub 终端中打开
-        </ContextMenuItem>
-        <ContextMenuSub>
-          <ContextMenuSubTrigger>
-            <AppWindow />
-            打开方式
-          </ContextMenuSubTrigger>
-          <ContextMenuSubContent className="min-w-40">
-            {(editors.data ?? []).map((editor) => (
+        {access.terminal && (
+          <ContextMenuItem onSelect={openShell} disabled={startShell.isPending}>
+            <SquareTerminal />在 DevHub 终端中打开
+          </ContextMenuItem>
+        )}
+        {/* Launches programs on the host: desktop only. */}
+        {access.manage && (
+          <ContextMenuSub>
+            <ContextMenuSubTrigger>
+              <AppWindow />
+              打开方式
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent className="min-w-40">
+              {(editors.data ?? []).map((editor) => (
+                <ContextMenuItem
+                  key={editor.id}
+                  disabled={!editor.available}
+                  onSelect={() =>
+                    openInEditor.mutate({ projectId: project.id, editor: editor.id }, { onError })
+                  }
+                >
+                  {editor.available ? editor.name : `${editor.name}（未检测到）`}
+                </ContextMenuItem>
+              ))}
+              {editors.isPending && <ContextMenuItem disabled>检测中…</ContextMenuItem>}
+              <ContextMenuSeparator />
               <ContextMenuItem
-                key={editor.id}
-                disabled={!editor.available}
-                onSelect={() =>
-                  openInEditor.mutate({ projectId: project.id, editor: editor.id }, { onError })
-                }
+                disabled={!systemTerminal.data}
+                onSelect={() => openInSystemTerminal.mutate(project.id, { onError })}
               >
-                {editor.available ? editor.name : `${editor.name}（未检测到）`}
+                {systemTerminal.data
+                  ? `系统终端（${systemTerminal.data.name}）`
+                  : systemTerminal.isPending
+                    ? '系统终端（检测中…）'
+                    : '系统终端（未检测到）'}
               </ContextMenuItem>
-            ))}
-            {editors.isPending && <ContextMenuItem disabled>检测中…</ContextMenuItem>}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+        )}
+        {/* Browsers only allow the clipboard on HTTPS or localhost. */}
+        {navigator.clipboard && (
+          <ContextMenuItem onSelect={copyPath}>
+            <Copy />
+            复制路径
+          </ContextMenuItem>
+        )}
+        {access.manage && (
+          <>
             <ContextMenuSeparator />
-            <ContextMenuItem
-              disabled={!systemTerminal.data}
-              onSelect={() => openInSystemTerminal.mutate(project.id, { onError })}
-            >
-              {systemTerminal.data
-                ? `系统终端（${systemTerminal.data.name}）`
-                : systemTerminal.isPending
-                  ? '系统终端（检测中…）'
-                  : '系统终端（未检测到）'}
+            <ContextMenuItem variant="destructive" onSelect={onRemove}>
+              <X />
+              移除…
             </ContextMenuItem>
-          </ContextMenuSubContent>
-        </ContextMenuSub>
-        <ContextMenuItem onSelect={copyPath}>
-          <Copy />
-          复制路径
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem variant="destructive" onSelect={onRemove}>
-          <X />
-          移除…
-        </ContextMenuItem>
+          </>
+        )}
       </ContextMenuContent>
     </ContextMenu>
   )

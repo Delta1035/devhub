@@ -5,7 +5,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links'
 import { WebglAddon } from '@xterm/addon-webgl'
 import { Terminal } from '@xterm/xterm'
 import { OutputCursor } from '@devhub/shared'
-import { api, events, shell } from '@renderer/api'
+import { access, api, events, shell } from '@renderer/api'
 import { createKeyHandler, isMac } from './terminal-keys'
 import { terminalFontFamily, terminalPrefs } from './terminal-prefs'
 
@@ -133,7 +133,9 @@ export class TerminalSession {
     this.terminal.focus()
   }
 
-  setAcceptsInput(accepts: boolean): void {
+  setAcceptsInput(running: boolean): void {
+    // A phone may type into terminals only when the desktop allows remote terminals.
+    const accepts = running && access.terminal
     this.acceptsInput = accepts
     this.terminal.options.disableStdin = !accepts
     this.terminal.options.cursorStyle = accepts ? 'block' : 'underline'
@@ -142,13 +144,15 @@ export class TerminalSession {
 
   async copy(): Promise<void> {
     const text = this.terminal.getSelection()
-    if (!text) return
+    // Browsers only allow the clipboard on HTTPS or localhost.
+    if (!text || !navigator.clipboard) return
     await navigator.clipboard.writeText(text)
     this.terminal.clearSelection()
   }
 
   /** Goes through xterm so bracketed paste is used when the program asked for it. */
   async paste(): Promise<void> {
+    if (!navigator.clipboard) return
     const text = await navigator.clipboard.readText()
     if (text && this.acceptsInput) this.terminal.paste(text)
     this.terminal.focus()
@@ -203,6 +207,8 @@ export class TerminalSession {
     const size = `${this.terminal.cols}x${this.terminal.rows}`
     if (size === this.lastSize) return
     this.lastSize = size
+    // A phone that only watches must not reflow the desktop's terminal to its narrow screen.
+    if (!access.terminal) return
     api.resizeRun(this.runId, this.terminal.cols, this.terminal.rows).catch(() => undefined)
   }
 }

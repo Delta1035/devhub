@@ -10,7 +10,8 @@ interface WorkspaceSectionProps {
   rescanning: boolean
   onToggle: () => void
   onRescan: () => void
-  onOpenSettings: () => void
+  /** Absent where workspaces cannot be changed (the web app). */
+  onOpenSettings?: () => void
   /** The project items, rendered while expanded. */
   children: React.ReactNode
 }
@@ -63,15 +64,17 @@ export function WorkspaceSection({
         >
           <RefreshCw className={cn(rescanning && 'animate-spin')} />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={onOpenSettings}
-          title="工作区设置：扫描层数、已排除的项目、移除"
-          aria-label={`${workspace.name} 工作区设置`}
-        >
-          <Settings2 />
-        </Button>
+        {onOpenSettings && (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={onOpenSettings}
+            title="工作区设置：扫描层数、已排除的项目、移除"
+            aria-label={`${workspace.name} 工作区设置`}
+          >
+            <Settings2 />
+          </Button>
+        )}
       </div>
       {!collapsed &&
         (projectCount > 0 ? (

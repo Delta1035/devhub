@@ -11,6 +11,7 @@ import {
   X as XIcon
 } from 'lucide-react'
 import type { Group, GroupRunState, GroupStepState, Project } from '@devhub/shared'
+import { access } from '@renderer/api'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { useProjects } from '@renderer/features/projects/use-projects'
@@ -48,10 +49,12 @@ export function GroupList({
         <span className="text-xs text-muted-foreground">
           {groups.data && `${groups.data.length} 个任务`}
         </span>
-        <Button size="sm" variant="outline" onClick={() => setEditing(null)}>
-          <Plus data-icon="inline-start" />
-          新建
-        </Button>
+        {access.manage && (
+          <Button size="sm" variant="outline" onClick={() => setEditing(null)}>
+            <Plus data-icon="inline-start" />
+            新建
+          </Button>
+        )}
       </header>
 
       {error && (
@@ -84,7 +87,7 @@ export function GroupList({
             }
             onStart={() => start.mutate(group.id, { onError: (e) => setError(e.message) })}
             onStop={() => stop.mutate(group.id, { onError: (e) => setError(e.message) })}
-            onEdit={() => setEditing(group)}
+            onEdit={access.manage ? () => setEditing(group) : undefined}
             onSelectProject={onSelectProject}
           />
         ))}
@@ -110,7 +113,8 @@ interface GroupItemProps {
   busy: boolean
   onStart: () => void
   onStop: () => void
-  onEdit: () => void
+  /** Absent where groups cannot be changed (the web app). */
+  onEdit?: () => void
   onSelectProject: (projectId: string) => void
 }
 
@@ -190,15 +194,17 @@ function GroupItem({
         >
           <Square />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={onEdit}
-          aria-label={`编辑 ${group.name}`}
-          title="编辑"
-        >
-          <Pencil />
-        </Button>
+        {onEdit && (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={onEdit}
+            aria-label={`编辑 ${group.name}`}
+            title="编辑"
+          >
+            <Pencil />
+          </Button>
+        )}
       </div>
 
       {showSteps && (

@@ -1,4 +1,5 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'fs/promises'
+import { createServer } from 'net'
 import { tmpdir } from 'os'
 import { dirname, join, resolve } from 'path'
 import {
@@ -130,6 +131,15 @@ export async function addProjectViaApi(page: Page, path: string): Promise<void> 
 export interface DevhubWindow {
   devhub: DevhubApi
 }
+
+/** A TCP port that was free a moment ago. */
+export const freePort = (): Promise<number> =>
+  new Promise((resolve) => {
+    const probe = createServer().listen(0, '127.0.0.1', () => {
+      const address = probe.address()
+      probe.close(() => resolve(typeof address === 'object' && address ? address.port : 0))
+    })
+  })
 
 /** A package.json whose scripts run through npm (always available next to Node). */
 export const packageJson = (scripts: Record<string, string>): string =>

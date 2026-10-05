@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Maximize2, Minimize2, SquareTerminal, X } from 'lucide-react'
 import type { Run } from '@devhub/shared'
+import { access } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
 import { healthLabels, useHealthOf } from '@renderer/features/runs/use-run-health'
 import { useRuns } from '@renderer/features/runs/use-runs'
@@ -73,11 +74,13 @@ export function TerminalPanel({
             />
           ))}
         </div>
-        <NewTerminalButton
-          projectId={projectId}
-          onStarted={(run) => onActiveRunChange(run.id)}
-          onError={setError}
-        />
+        {access.terminal && (
+          <NewTerminalButton
+            projectId={projectId}
+            onStarted={(run) => onActiveRunChange(run.id)}
+            onError={setError}
+          />
+        )}
         <div className="flex-1" />
         {error && (
           <p className="flex min-w-0 items-center gap-1 text-xs text-destructive">

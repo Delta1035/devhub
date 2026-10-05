@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ArrowLeft, TriangleAlert } from 'lucide-react'
 import type { EditorId, Settings, SettingsPatch } from '@devhub/shared'
-import { shell } from '@renderer/api'
+import { access, shell } from '@renderer/api'
 import { Alert, AlertDescription } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
 import { useEditors } from '@renderer/features/editors/use-editors'
@@ -52,15 +52,20 @@ export function SettingsPage({ onClose }: { onClose: () => void }): React.JSX.El
           {settings.data && (
             <>
               <TerminalSection settings={settings.data} save={save} />
-              <CustomShellsEditor
-                shells={settings.data.customShells}
-                save={save}
-                onError={setError}
-              />
-              <EditorsSection save={save} onError={setError} />
-              <ProcessSection settings={settings.data} save={save} />
+              {/* Core settings decide what runs on the host: changed on the desktop only. */}
+              {access.manage && (
+                <>
+                  <CustomShellsEditor
+                    shells={settings.data.customShells}
+                    save={save}
+                    onError={setError}
+                  />
+                  <EditorsSection save={save} onError={setError} />
+                  <ProcessSection settings={settings.data} save={save} />
+                </>
+              )}
               <RemoteSection onError={setError} />
-              <UpdatesSection />
+              {shell && <UpdatesSection />}
             </>
           )}
         </div>
@@ -105,28 +110,30 @@ function TerminalSection({ settings, save }: SectionProps): React.JSX.Element {
 
   return (
     <SettingsSection title="终端">
-      <SettingRow
-        label="默认 shell"
-        htmlFor="settings-default-shell"
-        description="「+」新建终端时使用；其他 shell 仍可从旁边的下拉菜单选择"
-      >
-        <select
-          id="settings-default-shell"
-          className={selectClass}
-          value={settings.defaultShell ?? ''}
-          onChange={(event) => {
-            const shellId = shells.data?.find((s) => s.id === event.target.value)?.id ?? null
-            save({ defaultShell: shellId })
-          }}
+      {access.manage && (
+        <SettingRow
+          label="默认 shell"
+          htmlFor="settings-default-shell"
+          description="「+」新建终端时使用；其他 shell 仍可从旁边的下拉菜单选择"
         >
-          <option value="">自动（优先 bash）</option>
-          {shells.data?.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-            </option>
-          ))}
-        </select>
-      </SettingRow>
+          <select
+            id="settings-default-shell"
+            className={selectClass}
+            value={settings.defaultShell ?? ''}
+            onChange={(event) => {
+              const shellId = shells.data?.find((s) => s.id === event.target.value)?.id ?? null
+              save({ defaultShell: shellId })
+            }}
+          >
+            <option value="">自动（优先 bash）</option>
+            {shells.data?.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name}
+              </option>
+            ))}
+          </select>
+        </SettingRow>
+      )}
       <SettingRow
         label="字号"
         htmlFor="settings-font-size"

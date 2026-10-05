@@ -1,15 +1,12 @@
-import { createServer } from 'net'
 import type { IpcResult, RemoteState } from '@devhub/shared'
-import { addProjectViaApi, packageJson, test, expect, type DevhubWindow } from './fixtures'
-
-/** A port that was free a moment ago. */
-const freePort = (): Promise<number> =>
-  new Promise((resolve) => {
-    const probe = createServer().listen(0, '127.0.0.1', () => {
-      const address = probe.address()
-      probe.close(() => resolve(typeof address === 'object' && address ? address.port : 0))
-    })
-  })
+import {
+  addProjectViaApi,
+  freePort,
+  packageJson,
+  test,
+  expect,
+  type DevhubWindow
+} from './fixtures'
 
 const listRuns = (port: number, token: string): Promise<Response> =>
   fetch(`http://127.0.0.1:${port}/api/v1/listRuns`, {

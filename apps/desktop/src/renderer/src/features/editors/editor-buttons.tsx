@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react'
 import type { EditorId, EditorInfo } from '@devhub/shared'
+import { access } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
 import { cn } from '@renderer/lib/utils'
 import { useEditors, useOpenInEditor } from './use-editors'
@@ -28,7 +29,8 @@ export function EditorButtons({
 }: EditorButtonsProps): React.JSX.Element | null {
   const editors = useEditors()
   const open = useOpenInEditor()
-  if (!editors.data) return null
+  // Opening an editor launches a program on the host: desktop only.
+  if (!access.manage || !editors.data) return null
 
   return (
     <div className={cn('flex shrink-0 items-center gap-1', className)}>
