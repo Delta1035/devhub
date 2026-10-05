@@ -4,7 +4,7 @@ export interface EventBus extends DevhubEvents {
   emit(event: DevhubEvent): void
 }
 
-/** Fans core events out to every transport (IPC today, WebSocket later). */
+/** Fans core events out to every transport (IPC today, SSE later). */
 export function createEventBus(onListenerError: (error: unknown) => void): EventBus {
   const listeners = new Set<(event: DevhubEvent) => void>()
   return {

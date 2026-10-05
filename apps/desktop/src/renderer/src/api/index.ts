@@ -14,7 +14,7 @@ declare global {
  */
 export const api: DevhubApi = window.devhub
 
-/** Pushed run updates and output. A remote build swaps in a WebSocket implementation. */
+/** Pushed run updates and output. A remote build swaps in an SSE implementation. */
 export const events: DevhubEvents = window.devhubEvents
 
 /** Local desktop capabilities (native dialogs). Null when running as a remote client. */

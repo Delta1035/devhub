@@ -20,7 +20,7 @@ import type { WorkspacePatch, WorkspaceView } from './workspaces'
 
 /**
  * The contract between any UI (desktop renderer, future mobile/PWA) and the DevHub core.
- * Transports (Electron IPC today, HTTP/WebSocket later) must implement exactly this interface.
+ * Transports (Electron IPC today, HTTP + SSE later, ADR 0022) must implement exactly this interface.
  * Every method returns a Promise so the contract stays transport-agnostic.
  */
 export interface DevhubApi {

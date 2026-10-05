@@ -15,7 +15,7 @@
 - `packages/shared/src/events.ts` 定义 `DevhubEvent`（`run-updated` / `run-removed` / `run-output`）和 `DevhubEvents.subscribe(listener) => unsubscribe`。
 - core 内部用 `core/events/event-bus.ts` 分发；单个监听器出错不影响其他传输。
 - 桌面：主进程 `webContents.send(devhubEventChannel)` 推给所有窗口（包括隐藏到托盘的），preload 暴露 `window.devhubEvents`，renderer 只通过 `@renderer/api` 的 `events` 访问。
-- 远程（M4）：同一接口用 WebSocket 实现。
+- 远程（M4）：同一接口用 SSE（Server-Sent Events）实现（ADR 0022，原计划为 WebSocket）。
 - 运行状态改为推送后，renderer 用事件直接更新 TanStack Query 缓存，不再轮询 `listRuns`。
 
 ### 输出用「流偏移量」拼接快照与实时数据
@@ -23,7 +23,7 @@
 - 每个运行的输出视为一条字符流；`run-output` 事件携带该段在流中的起始 `offset`。
 - `getRunOutput(runId)` 返回 `{ data, end }`：最近 512 KB 及其在流中的结束位置。
 - 客户端先订阅、暂存事件，再取快照，然后用 `OutputCursor`（shared，纯函数，有单元测试）丢弃已包含在快照中的部分。这样任意时刻打开终端都不丢、不重。
-- 输出在 core 中按 16 ms 合并后再发出（`core/process/run-output.ts`），避免高频输出（进度条）刷爆 IPC / WebSocket。实测 1 MB 输出合并为约 50 条事件。
+- 输出在 core 中按 16 ms 合并后再发出（`core/process/run-output.ts`），避免高频输出（进度条）刷爆 IPC / 远程事件流。实测 1 MB 输出合并为约 50 条事件。
 
 ### 终端渲染：@xterm/xterm 6 + @xterm/addon-fit
 

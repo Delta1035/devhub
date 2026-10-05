@@ -11,7 +11,7 @@ export interface RunOutputOptions {
 
 /**
  * Output of one run: a capped buffer for snapshots plus coalesced live chunks.
- * Coalescing keeps chatty processes (progress bars) from flooding IPC / WebSocket.
+ * Coalescing keeps chatty processes (progress bars) from flooding IPC / the remote event stream.
  */
 export class RunOutput {
   private buffer = ''

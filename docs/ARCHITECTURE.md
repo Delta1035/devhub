@@ -50,7 +50,7 @@ devhub/                        pnpm monorepo
 React UI ──> @renderer/api ──> DevhubApi (packages/shared)
                                    │
               桌面: preload ─IPC─> ipc.ts ─┐
-              远程(M4): HTTP/WS client ──> http server ─┤
+            远程(M4): HTTP/SSE client ──> http server ─┤
                                                          └─> core (createDevhubCore)
 ```
 
@@ -137,7 +137,7 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 
 ## 事件推送（见 ADR 0004）
 
-- `DevhubEvents.subscribe` 独立于 `DevhubApi`：请求-响应走自动映射的 IPC，推送走 `devhubEventChannel`（主进程 `webContents.send` → preload → `@renderer/api` 的 `events`）。远程端将改用 WebSocket。
+- `DevhubEvents.subscribe` 独立于 `DevhubApi`：请求-响应走自动映射的 IPC，推送走 `devhubEventChannel`（主进程 `webContents.send` → preload → `@renderer/api` 的 `events`）。远程端改用 SSE（`GET /api/v1/events`，ADR 0022）。
 - 事件：`run-updated`、`run-removed`、`run-output`（带流偏移量）、`run-health`（就绪状态，ADR 0011）、`history-updated`（历史处理完成，ADR 0015）、`group-updated`（批量任务进度）、`settings-updated`、`projects-updated`（工作区同步改变了项目或扫描结果，ADR 0018）。
 - 设置分两处（ADR 0007）：影响 core 行为的存 `settings.json`；纯显示偏好（主题、风格、终端字号等）存 renderer 的 localStorage（`lib/appearance.ts`、`terminal-prefs.ts`）。设计风格（ADR 0019）是 `<html data-style>` 下对语义 CSS 变量的覆盖（`assets/styles/`），组件只用语义 token（`bg-primary`，运行状态用 `success` / `warning` / `info`），不写死颜色，新增风格不改组件。renderer 用事件直接更新 TanStack Query 缓存（`useRunEventsSync`，在 App 挂载一次）。
 - 终端：先订阅再取 `getRunOutput` 快照，用 shared 的 `OutputCursor` 去重拼接；core 中输出按 16 ms 合并后推送。
@@ -157,4 +157,4 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 - renderer 运行在 sandbox + contextIsolation 下，只能访问 `window.devhub` 与 `window.devhubShell`。
 - 来自 renderer 的参数一律视为不可信，在 core 中用 zod 校验。
 - 交给系统打开的 URL（ShellApi `openExternal`、`setWindowOpenHandler`）统一经 `core/shell/external-url.ts` 校验，只允许 http / https：链接可能来自不可信的进程输出。
-- 远程 API 默认关闭；开启时必须 Token 鉴权。
+- 远程 API 默认关闭；开启时必须 Token 鉴权（ADR 0022）。每个 `DevhubApi` 方法在 shared 的 `remoteAccess` 中标注 `read` / `control` / `terminal` / `local`，新增方法不归类则编译失败；`local` 永不远程开放，`terminal` 需单独开关。Token 存 `remote.json`，不进 `settings.json`（设置会推送给所有客户端）。

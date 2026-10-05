@@ -4,7 +4,7 @@ import type { RunHealth } from './health'
 import type { Settings } from './settings'
 
 /**
- * Pushed from the core to every connected UI. Desktop: Electron IPC; remote: WebSocket.
+ * Pushed from the core to every connected UI. Desktop: Electron IPC; remote: Server-Sent Events.
  * Output offsets count characters of the run's whole output stream, so a client can stitch
  * a snapshot (`getRunOutput`) and live events together without gaps or duplicates.
  */

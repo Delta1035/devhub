@@ -7,18 +7,18 @@
 
 ## 当前阶段：桌面 MVP 发布 → M4 远程管理
 
-桌面 MVP（项目/脚本管理、进程与终端、批量任务、工作区、设置、健康检查、运行历史）已完成，最新版本 v1.2.0。收尾安装升级验证与发布后，进入 M4：远程 API → PWA → Android。CLI、Jira 与 Wayland 暂缓。
+桌面 MVP（项目/脚本管理、进程与终端、批量任务、工作区、设置、健康检查、运行历史）已完成，最新版本 v1.2.0。用户决定（2026-10-05）先不收尾 MVP 发布，直接开始 M4：远程 API → PWA → Android。CLI、Jira 与 Wayland 暂缓。
 
 | Milestone                                                        | 内容                                               | Issue    |
 | ---------------------------------------------------------------- | -------------------------------------------------- | -------- |
 | [桌面 MVP 发布](https://github.com/Delta1035/devhub/milestone/1) | 两平台升级验证、官网审计告警、提交校验与 CHANGELOG | #7～#11  |
-| [M4-1 远程 API](https://github.com/Delta1035/devhub/milestone/3) | ADR、HTTP 自动映射、WebSocket 推送、设置页、E2E    | #12～#16 |
-| [M4-2 PWA](https://github.com/Delta1035/devhub/milestone/2)      | HTTP / WS 客户端、手机布局与托管                   | #17、18  |
+| [M4-1 远程 API](https://github.com/Delta1035/devhub/milestone/3) | ADR、HTTP 自动映射、SSE 事件推送、设置页、E2E      | #12～#16 |
+| [M4-2 PWA](https://github.com/Delta1035/devhub/milestone/2)      | HTTP / SSE 客户端、手机布局与托管                  | #17、18  |
 | [M4-3 Android](https://github.com/Delta1035/devhub/milestone/4)  | Expo ADR、客户端骨架、构建与发布 CI                | #19～21  |
 
 ### 进行中
 
-（无）
+- #12 远程 API 的 ADR：已写 ADR 0022（HTTP + SSE、无新依赖、Token 存 `remote.json`、方法按 `read` / `control` / `terminal` / `local` 分级，远程终端单独开关默认关闭）。下一步 #13。
 
 ## 已知问题 / 待定
 

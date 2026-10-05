@@ -41,7 +41,7 @@
 
 ### M4 — 远程
 
-- 可选开启的 HTTP + WebSocket API（Token 鉴权，默认关闭，推荐经 Tailscale 访问）
+- 可选开启的 HTTP API + SSE 事件推送（Token 鉴权，默认关闭，推荐经 Tailscale 访问；ADR 0022）
 - 适配手机的 Web 界面 / PWA；之后 React Native (Expo) Android 客户端
 
 ## 非目标
