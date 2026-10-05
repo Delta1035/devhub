@@ -16,6 +16,23 @@ function zhSidebar(): DefaultTheme.SidebarItem[] {
   ]
 }
 
+/**
+ * MiniSearch splits only on spaces and punctuation, so a Chinese sentence became one huge
+ * term and「日志」never matched. Segment words first (Intl.Segmenter knows Chinese), then
+ * split each word on punctuation as before so `devhub.yaml` still yields `devhub` and `yaml`.
+ * VitePress ships this function to the browser via toString(), so it must stay self-contained.
+ */
+function tokenize(text: string): string[] {
+  const terms: string[] = []
+  for (const { segment, isWordLike } of new Intl.Segmenter('zh', { granularity: 'word' }).segment(
+    text
+  )) {
+    if (!isWordLike) continue
+    for (const term of segment.split(/[\p{Z}\p{P}]+/u)) if (term) terms.push(term)
+  }
+  return terms
+}
+
 function enSidebar(): DefaultTheme.SidebarItem[] {
   return [
     {
@@ -42,6 +59,10 @@ export default defineConfig({
     search: {
       provider: 'local',
       options: {
+        // Used both when building the index and for the query typed in the browser.
+        // AND: Chinese queries split into several short words (端口 → 端 + 口), which with
+        // prefix matching would otherwise match nearly every page.
+        miniSearch: { options: { tokenize }, searchOptions: { combineWith: 'AND' } },
         locales: {
           root: {
             translations: {
