@@ -8,11 +8,24 @@ MVP 范围为桌面端项目/脚本管理、进程与终端、批量任务、设
 
 ### 已完成
 
+- 审查遗留问题修复（2026-10-05）：
+  - 官网中文搜索：MiniSearch 默认只按空格与标点切分，中文整句成为一个词。改为先用 `Intl.Segmenter('zh')` 分词，再按标点细分（`devhub.yaml` 仍得到 `devhub`、`yaml`）。VitePress 通过 `toString()` 把函数发到浏览器，因此函数需自包含。多词查询改为 AND（「端口」会被切成「端」「口」，OR 加前缀匹配几乎命中所有页面）。
+  - 旧地址：`public/zh/` 下 4 个静态跳转页（`/zh/` 与 3 篇指南），`noindex` 并带 canonical，保留 `#锚点`。
+  - Maven 示例：README 中英文与官网两页删去 `cwd: server`（根目录的 `mvnw.cmd -pl server` 不需要进入子目录），`cwd` 改到 docker compose 示例（`cwd: deploy`，与应用内示例一致）。ADR 0008 属于历史记录，未改。
+  - 验证：新增 `apps/website/scripts/verify-build.mjs`（`pnpm --filter @devhub/website verify`，已接入 `website.yml` 构建之后）。它用 VitePress 自带的 MiniSearch、站点配置及按浏览器方式重建的函数，查询构建出的索引（「日志」「端口」「批量任务」/ `logs` `port`），并检查跳转页及其目标。修复前运行失败（「日志」无结果），修复后通过。
+  - CI：Electron 缓存从 `github.workspace/../.cache` 改为 `runner.temp/electron-cache`（job 级 env 不能使用 runner 上下文，改在步骤中写入 `$GITHUB_ENV`），尚待下一次 CI 确认缓存可以保存。
+  - 依赖：react-query 5.104.1、lucide-react 1.51.0。删除已与 main 一致的 Gradle / Maven 临时 worktree（未提交文件逐一核对过，Gradle 测试是 main 版本的子集）。
+  - 事故：Windows 上 `git worktree remove --force` 会穿过 worktree `node_modules` 中的 pnpm junction，误删主仓库的 `packages/shared` 源码与 `node_modules/.pnpm` 中的部分包。已用 git 恢复源码，删除全部 `node_modules` 后干净重装；Electron 二进制需在其包目录下手动执行 `node install.js` 补下载。以后删除 worktree 前，先用 `fs.rmSync`（不跟随链接）删掉其 `node_modules`。
+  - 重装后复验：`pnpm check` 通过（desktop 543 + 1 跳过、shared 61）；`pnpm e2e` 29/29；官网构建与 `verify` 通过。Vite 5 高危审计（VitePress 1.6.4 锁定）仍未处理。
+
 - 项目列表交互（2026-10-05）：① 侧栏 × 不再直接移除，弹出确认对话框（说明清理范围、显示路径与活动终端数，可取消）；② 悬停项目 0.6 秒显示详情卡片（名称、完整路径、来源工作区、添加时间、各来源脚本数与警告、活动终端），替代原 `title` 提示；③ 侧栏右边缘可拖动调整宽度（200px～窗口宽减 480px，方向键微调，双击恢复 256px，存 localStorage `devhub.sidebarWidth`）；④ 项目右键菜单：显示详情（对话框，含打开目录与编辑器按钮）、打开项目目录、打开方式（VS Code / IDEA，未检测到的禁用）、复制路径、移除（同样需确认）。
   - 打开目录为 ShellApi `openProjectFolder(projectId)`：只接收 id，由 `core/shell/project-folder.ts` 校验并查出注册路径、确认是目录后才交给 `shell.openPath`（避免任意路径被系统「打开」执行）。新增 shadcn `hover-card`（来自已有 radix-ui，无新依赖）。修复：右键菜单打开时悬停卡片会弹出并遮挡菜单，现菜单打开期间不显示卡片。
   - 右键菜单补充（同日）：「在 DevHub 终端中打开」用默认 shell 新开终端，并切换到该项目、选中新标签（复用 App 的 `openRun`，与批量任务查看日志相同）；「打开方式」子菜单新增「系统终端（名称）」，未检测到时禁用。系统终端为 DevhubApi `getSystemTerminal` / `openInSystemTerminal`，`core/terminals/` 实现：与编辑器一样以独立进程启动、不进入运行列表。查找顺序：Windows 为 Windows Terminal（`wt -d`，`;` 转义为 `\;`）→ PowerShell 7 → Windows PowerShell → cmd（控制台程序 detached 启动即获得独立窗口）；Linux 为 `x-terminal-emulator` → GNOME Terminal / Konsole / Xfce / MATE / Tilix / kitty / Alacritty（各自的工作目录参数）→ xterm，同时以项目目录作为 cwd。暂不支持在设置中指定终端。
     - 验证：`pnpm check` 通过（desktop 543）；E2E 29/29，`project-actions.spec.ts` 增加 DevHub 终端打开与切换、系统终端菜单项（实际启动由单元测试覆盖）；本机实际点击一次，Windows Terminal 在项目目录打开。Linux 终端未在真机上验证。
   - 验证：`pnpm check` 通过（desktop 522、shared 61）；`pnpm e2e` 29/29 通过，新增 `project-actions.spec.ts`（悬停卡片、右键详情 / 打开目录（桩替换 `shell.openPath`）/ 打开方式 / 移除确认、拖动宽度、重载保持、双击复位），受影响用例重复 5 次均通过；截图人工确认卡片、菜单与确认框。
+
+- 最新更改审查（2026-10-04，`bf7040c`～`18f07fc`）：`pnpm check` 与官网构建通过；本地 Edge 无头浏览器确认中英文页面正常。待修复：旧 `/zh/guide/*` 链接返回 404；中文搜索「日志」无结果；双语 Maven 示例同时使用 `cwd: server` 与 `-pl server`，与根目录 wrapper 布局不符。后续补旧地址跳转、中文关键词搜索及文档示例的验证；此次未修改实现，未运行桌面 E2E。
+  - 复查（2026-10-05）：实现仍为 `18f07fc`；官网重新构建通过。Edge 无头浏览器检查全部 8 页的桌面/375px 布局，无页面异常、缺图或整页横向溢出，52 个站内链接请求成功。中文「日志」仍无结果，英文 `logs` 正常；默认分词把「次运行及其日志」作为整词。Maven 示例未变；4 个旧 `/zh/` 地址仍为 404（兼容项，影响取决于旧地址是否已被使用）。未修改实现；建议补中文搜索及地址兼容的自动化测试。
 
 - 官网（2026-10-04，ADR 0020）：新增 `apps/website`（VitePress 1.6，中英双语；按用户要求中文为主语言放在根路径，英文在 `/en/`，搜索框与 404 页也已汉化），包含首页（介绍、功能、截图、下载按钮指向 `releases/latest`）与三篇指南：快速上手（安装、项目与工作区、运行、托盘、更新）、`.devhub.yaml` 参考、批量任务。截图直接引用 `docs/assets/`。新增 `website.yml`：PR 只构建，`main` 构建并部署到 GitHub Pages（`https://delta1035.github.io/devhub/`）。README 加官网链接。`pnpm check` 通过；本地构建与预览后截图确认了英文首页、中文深色文档页和手机宽度。
   - 已上线：Pages 首次部署成功，仓库 About 的 Website 已设为官网地址。同日发布了 v1.1.0 草稿（Release 工作流只建草稿，需人工发布），并删除遗留的 v0.1.6 草稿 Release（tag 保留）。
@@ -155,6 +168,11 @@ MVP 范围为桌面端项目/脚本管理、进程与终端、批量任务、设
    - 实现候选：自写零依赖脚本（推荐，发布流程不变）/ commitlint + git-cliff（新依赖，需 ADR）/ release-please（改为合并发布 PR 的流程）。
 
 ### 已知问题 / 待定
+
+- 仓库健康复查（2026-10-04，main `18f07fc`）：本机 `pnpm check` 全部通过（审计脚本 6、shared 61、desktop 515；1 个 Linux 权限测试跳过）。同一提交的 [CI](https://github.com/Delta1035/devhub/actions/runs/37197426258) 两平台检查与安装包构建成功，Windows E2E 28/28、Ubuntu 27 通过 / 1 跳过，无重试失败记录；官网构建部署成功。本机已有 dev 应用及另一会话检查，未额外并发运行 E2E。Windows 测试仍输出已知 `AttachConsole failed`，未造成测试失败。
+  - 全量审计现为 **3 high + 3 moderate**：官网 VitePress 1.6.4 引入 Vite 5.4.21 / esbuild 0.21.5，新增 1 high + 3 moderate；另外仍有 electron-builder 链的 http-cache-semantics 4.2.0 与 shadcn 链的 braces 3.0.3。Vite 高危涉及 Windows 开发服务器文件读取，官方条件包含显式对网络开放；静态 Pages 部署不运行该服务器。优先验证官网工具链修复方案，VitePress 当前稳定版仍为 1.6.4，不能仅更新其补丁解决。审计任务按 ADR 0012 只报告，CI 绿色不等于无漏洞；`audit --prod` 为零也不覆盖 renderer。
+  - 注册表新发布 http-cache-semantics 4.3.0（2026-10-04），但 GHSA-ch52-4w7c-c8xp 仍标记无修复，需核实上游修复与兼容后再更新；braces 最新仍为 3.0.3。直接依赖可更新 react-query 5.104.0 → 5.104.1、lucide-react 1.49.0 → 1.51.0；Vite 8.3.2 / plugin-react 6.1.1、ESLint 10.12.0、TypeScript 7.0.2 应独立验证，electron-vite 5 仅声明支持 Vite 5–7，typescript-eslint 8.70.1 要求 TypeScript <6.1。
+  - 调查开始时主工作区干净且与远端一致，无开放 PR。旧 Gradle / Maven 临时 worktree 各有 3 个未提交文件，实现均与 main 一致；Gradle 旧测试还少一个已在 main 的符号链接越界用例。建议核对后归档清理，避免误当作待合并功能；遗留 plugin-react 6 分支也不应直接合并。另发现当前 CI 四个检查/打包任务的 Electron 缓存保存均报含 `..` 的路径无效，建议改成规范绝对路径。v1.1.0 已公开发布（GitHub `isDraft=false`），此前草稿与未推送说明是历史状态；实际安装升级验证仍待办。
 
 - 仓库健康检查（2026-10-03，main `22443ad`）：本机 `pnpm check` 通过（435 个测试通过，1 个 Linux 权限测试在 Windows 跳过），E2E 23/23 通过；该提交的 Windows / Ubuntu CI 检查、E2E 与安装包构建均成功。调查前主工作区及另两个 worktree 均干净，无开放 PR。
   - 依赖审计：开发工具链有 2 项 high（electron-builder 间接依赖 `http-cache-semantics@4.2.0`、shadcn 间接依赖 `braces@3.0.3`）；官方 GHSA 尚无修复，npm 审计给出的 4.2.1 / 3.0.4 范围并非已发布、上游确认的修复。下载路径未默认启用 got HTTP 缓存，应用仅引用 shadcn CSS，未发现当前运行路径具备告警的触发条件；持续展示全部告警，不添加豁免。`audit --prod` 无告警，但 renderer 放在 devDependencies，不能据此断言整个安装包无漏洞。
