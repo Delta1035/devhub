@@ -4,6 +4,23 @@ User-facing changes in each DevHub release. `pnpm release` generates each sectio
 Conventional Commits since the previous tag (`scripts/changelog.mjs`), and the Release workflow
 uses it as the GitHub Release notes.
 
+## v1.3.0 - 2026-10-05
+
+### Features
+
+- **renderer:** run as the web app over the remote API (1d0d033)
+- build the renderer as a web app and serve it from the remote server (81e19e1)
+- **shared:** add the remote HTTP + SSE client and a session endpoint (387902c)
+- configure remote access from settings, with a connection QR code (7fdb100)
+- **core:** push core events to remote clients over SSE (2d89951)
+- **core:** serve DevhubApi over an opt-in remote HTTP API (4e3ee5a)
+
+### Fixes
+
+- **website:** override VitePress's vite 5 to the patched 6.4.3 (ae7085b)
+- **core:** resolve the user's environment for started processes (75ccf29)
+- **core:** do not create remote.json while remote access is off (5abdc8c)
+
 ## v1.2.0 - 2026-10-05
 
 ### Features
