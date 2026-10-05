@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain } from 'electron'
 import { shellChannel, type WindowState } from '@devhub/shared'
-import { toIpcResult } from './ipc'
+import { toIpcResult } from './core/api-result'
 
 /** Handlers behind the renderer's own title bar buttons (ADR 0010); each acts on the caller's window. */
 export function registerWindowControls(): void {

@@ -34,6 +34,9 @@ import { createProcessKiller } from './process/process-killer'
 import { nodePtySpawner } from './process/pty'
 import { createRunManager } from './process/run-manager'
 import { createRunRegistry, emptyRunsFile, runsFileSchema } from './process/run-registry'
+import { generateToken } from './remote/auth'
+import { createRemoteConfigStore, emptyRemoteFile, remoteFileSchema } from './remote/remote-config'
+import { createRemoteHost } from './remote/remote-host'
 import { createScriptService } from './scripts/script-service'
 import {
   createSettingsService,
@@ -232,7 +235,7 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     emit: (event) => events.emit(event)
   })
 
-  return {
+  const api: DevhubApi = {
     async getAppInfo() {
       return { version: env.version, platform: env.platform }
     },
@@ -279,9 +282,29 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     listEditors: () => editors.list(),
     openInEditor: (projectId, editor) => editors.open(projectId, editor),
     getSystemTerminal: () => systemTerminal.get(),
-    openInSystemTerminal: (projectId) => systemTerminal.open(projectId),
+    openInSystemTerminal: (projectId) => systemTerminal.open(projectId)
+  }
+
+  // Off unless enabled in remote.json; serves the same api object as IPC (ADR 0022).
+  const remote = createRemoteHost({
+    api,
+    config: createRemoteConfigStore({
+      store: createJsonStore({
+        filePath: join(env.dataDir, 'remote.json'),
+        schema: remoteFileSchema,
+        fallback: emptyRemoteFile
+      }),
+      generateToken
+    })
+  })
+  void remote.start()
+
+  return {
+    ...api,
     subscribe: (listener) => events.subscribe(listener),
     dispose: async () => {
+      // No new remote requests while shutting down.
+      await remote.dispose()
       // Cancel sequences first so no step starts while the runs are being stopped.
       groupRunner.dispose()
       health.dispose()

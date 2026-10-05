@@ -18,7 +18,7 @@
 
 ### 进行中
 
-- #12 远程 API 的 ADR：已写 ADR 0022（HTTP + SSE、无新依赖、Token 存 `remote.json`、方法按 `read` / `control` / `terminal` / `local` 分级，远程终端单独开关默认关闭）。下一步 #13。
+- M4-1 远程 API：#12（ADR 0022）、#13（HTTP 服务）已完成；下一步 #14 SSE 事件推送。远程访问目前只能手动编辑 `userData/remote.json` 开启（#15 加设置页）。
 
 ## 已知问题 / 待定
 

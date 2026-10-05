@@ -6,9 +6,9 @@ import {
   ipcChannel,
   shellChannel,
   type DevhubApi,
-  type DevhubEvents,
-  type IpcResult
+  type DevhubEvents
 } from '@devhub/shared'
+import { toIpcResult } from './core/api-result'
 import { isDirectory } from './core/fs/is-directory'
 import { parseExternalUrl } from './core/shell/external-url'
 import { resolveProjectFolder } from './core/shell/project-folder'
@@ -73,20 +73,4 @@ export function registerIpcHandlers(core: DevhubApi & DevhubEvents): void {
       if (failure) throw new DevhubError('OPEN_FOLDER_FAILED', `无法打开目录：${failure}`)
     })
   )
-}
-
-export async function toIpcResult(
-  name: string,
-  run: () => Promise<unknown>
-): Promise<IpcResult<unknown>> {
-  try {
-    return { ok: true, value: await run() }
-  } catch (error) {
-    if (error instanceof DevhubError) {
-      return { ok: false, error: { code: error.code, message: error.message } }
-    }
-    console.error(`[ipc] ${name} failed`, error)
-    const detail = error instanceof Error ? error.message : String(error)
-    return { ok: false, error: { code: 'INTERNAL', message: `内部错误：${detail}` } }
-  }
 }

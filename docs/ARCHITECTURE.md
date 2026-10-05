@@ -17,6 +17,8 @@ devhub/                        pnpm monorepo
 │       │   ├── ipc.ts         把 DevhubApi 自动映射为 IPC 通道；ShellApi 处理器
 │       │   └── core/          ★ 业务核心，不依赖 Electron
 │       │       ├── devhub-core.ts   组装各服务，实现 DevhubApi
+│       │       ├── api-result.ts    IPC 与远程共用的 IpcResult 信封
+│       │       ├── remote/          远程 HTTP API：鉴权、remote.json、服务与生命周期（ADR 0022）
 │       │       ├── storage/         通用 JSON 存储（见 ADR 0002）
 │       │       ├── projects/        项目注册与持久化
 │       │       ├── workspaces/      工作区：扫描目录发现项目、同步规则（ADR 0018）
@@ -58,6 +60,7 @@ React UI ──> @renderer/api ──> DevhubApi (packages/shared)
 - `core/` 实现该契约，与传输方式无关，依赖通过参数注入，因此可直接单元测试。
 - IPC 层和 preload 根据 `devhubApiMethods` 自动生成，新增方法无需手写通道。
 - 将来的手机端 / PWA 只需实现一个基于 HTTP 的 `DevhubApi` 客户端，UI 代码可复用。
+- 远程 HTTP（`core/remote/`，ADR 0022）：`remote-server.ts` 用 `node:http` 把 `devhubApiMethods` 映射为 `POST /api/v1/<method>`（请求体 `{ args }`，上限 1 MB），依次检查失败次数限速、Bearer Token、shared 的 `remoteAccess` 分级与 JSON 类型，再调用与 IPC 相同的 `api` 对象，返回同一 `IpcResult` 信封（`api-result.ts`）。`remote-host.ts` 由 `createDevhubCore` 创建，按 `remote.json`（`remote-config.ts`，首次读取时生成 Token）决定是否监听，启动失败只记录日志；`dispose` 时最先关闭。远程配置的界面与 API 尚未提供（#15），目前只能手动编辑 `remote.json`。
 
 这些边界由 ESLint 强制（见根目录 `eslint.config.mjs`）。
 
