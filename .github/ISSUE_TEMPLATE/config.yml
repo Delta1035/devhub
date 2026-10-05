@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: 已知问题 / Known issues
-    url: https://github.com/Delta1035/devhub/blob/main/docs/PROGRESS.md
+    url: https://github.com/Delta1035/devhub/blob/main/docs/PROGRESS.md#已知问题--待定
     about: 提交前先看看问题是否已经记录

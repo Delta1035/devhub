@@ -2,16 +2,19 @@
 
 DevHub 是一个桌面客户端：自动发现本地项目中的脚本（npm / maven / gradle / 自定义），统一启动、停止、查看日志，在内置终端中执行命令，并可把多个项目的脚本组成批量任务一键启动。目标平台：Windows、Ubuntu；后续 Android 远程管理。
 
-开始任何任务前先读：`docs/PROGRESS.md`（当前进度）→ `docs/ARCHITECTURE.md`（结构与边界）→ 需要时读 `docs/PRD.md`。
+开始任何任务前先读：`docs/PROGRESS.md`（当前阶段）→ 对应 issue（`gh issue view <n>`）→ `docs/ARCHITECTURE.md`（结构与边界）→ 需要时读 `docs/PRD.md`。
 
 ## 工作流程
 
-1. 非琐碎任务先给出方案，确认后再写代码。一次只做一个小任务。
-2. 完成标准：`pnpm check` 全部通过（格式、lint、类型、测试）。不通过不算完成。改动 UI、IPC/preload 或进程管理时，还要跑 `pnpm e2e`（构建后用 Playwright 驱动真实应用，约 30 秒；CI 每次都跑）。
+任务与进度在 GitHub Issues 中管理（ADR 0021，看板 DevHub Roadmap）。一个 issue 是一个小任务，按 milestone 归入阶段。
+
+1. 非琐碎任务先给出方案，确认后再写代码。一次只做一个小任务（一个 issue）；没有 issue 的非琐碎任务，先建 issue（模板「开发任务」）。
+2. 完成标准：issue 的验收标准全部满足，且 `pnpm check` 全部通过（格式、lint、类型、测试）。不通过不算完成。改动 UI、IPC/preload 或进程管理时，还要跑 `pnpm e2e`（构建后用 Playwright 驱动真实应用，约 30 秒；CI 每次都跑）。
 3. 新增或修改核心逻辑（`apps/desktop/src/main/core/`、`packages/shared/`）必须同时写测试。
-4. 任务结束时更新 `docs/PROGRESS.md`；改变了结构或约定则同步更新 `docs/ARCHITECTURE.md`。
-5. 做出重要技术决策（新依赖、新模式、推翻旧决策）时，在 `docs/decisions/` 新增 ADR。
-6. 提交信息使用 Conventional Commits（`feat:` / `fix:` / `refactor:` / `docs:` / `test:` / `chore:`），说明「为什么」。
+4. 任务结束时在 issue 下评论验证结果（跑了哪些检查、结果、未验证的部分），由完成提交的 `Closes #n` 关闭。阶段、进行中的 issue 或已知问题变化时更新 `docs/PROGRESS.md`；改变了结构或约定则同步更新 `docs/ARCHITECTURE.md`。
+5. 做出重要技术决策（新依赖、新模式、推翻旧决策）时，在 `docs/decisions/` 新增 ADR，并在 issue 中链接。
+6. 提交信息使用 Conventional Commits（`feat:` / `fix:` / `refactor:` / `docs:` / `test:` / `chore:`），说明「为什么」，并在末尾引用 issue（`Refs #n`；完成该 issue 的提交用 `Closes #n`）。
+7. 在 GitHub 上创建、关闭、评论 issue 或改看板属于对外操作：用户确认任务范围后可直接执行，但不要擅自关闭未完成的 issue。
 
 ## 架构硬规则（ESLint 已强制，不要绕过或禁用规则）
 

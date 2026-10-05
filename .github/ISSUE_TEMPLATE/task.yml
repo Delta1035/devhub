@@ -1,0 +1,28 @@
+name: 开发任务 / Task
+description: 维护者用于规划的一个小任务（一次提交或一个 PR 能完成）
+body:
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景
+      description: 为什么要做；相关 ADR、文档或前置 issue（写 #编号）
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 要做
+      description: 具体范围；明确不做的部分也写上
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 改动 UI、IPC/preload 或进程管理时包含 `pnpm e2e`
+      value: |
+        - [ ] `pnpm check` 通过
+        - [ ] 核心逻辑有测试
+        - [ ] 需要时更新 ARCHITECTURE.md / ADR
+    validations:
+      required: true
