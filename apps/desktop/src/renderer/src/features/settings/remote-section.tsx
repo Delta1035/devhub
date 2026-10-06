@@ -1,5 +1,10 @@
 import { useState } from 'react'
-import { remoteConnectUrl, type RemoteConfigPatch, type RemoteState } from '@devhub/shared'
+import {
+  remoteConnectUrl,
+  type NetworkAddress,
+  type RemoteConfigPatch,
+  type RemoteState
+} from '@devhub/shared'
 import { shell } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
 import { QrCode } from './qr-code'
@@ -148,7 +153,7 @@ function StatusText({ state }: { state: RemoteState }): React.JSX.Element {
 function hostOptions(state: RemoteState): { value: string; label: string }[] {
   const options = state.addresses.map((entry) => ({
     value: entry.address,
-    label: `${entry.address}（${entry.interfaceName}${entry.tailscale ? '，推荐' : ''}）`
+    label: `${entry.address}（${entry.interfaceName}${addressNote(entry)}）`
   }))
   options.push(
     { value: loopback, label: `${loopback}（仅本机，测试或配合 tailscale serve）` },
@@ -159,6 +164,12 @@ function hostOptions(state: RemoteState): { value: string; label: string }[] {
     options.unshift({ value: state.host, label: `${state.host}（当前不可用）` })
   }
   return options
+}
+
+function addressNote(entry: NetworkAddress): string {
+  if (entry.tailscale) return '，推荐'
+  if (entry.virtual) return '，虚拟网卡（手机通常无法访问）'
+  return ''
 }
 
 function hostAdvice(state: RemoteState): string {

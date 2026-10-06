@@ -1,6 +1,11 @@
 import type { NetworkInterfaceInfo } from 'os'
 import { describe, expect, it } from 'vitest'
-import { isTailscaleAddress, listNetworkAddresses } from './network-addresses'
+import {
+  isPrivateLanAddress,
+  isTailscaleAddress,
+  isVirtualAdapterAddress,
+  listNetworkAddresses
+} from './network-addresses'
 
 const info = (
   address: string,
@@ -49,7 +54,50 @@ describe('network addresses', () => {
       address: '100.101.1.2',
       family: 'IPv4',
       interfaceName: 'tailscale0',
-      tailscale: true
+      tailscale: true,
+      virtual: false
     })
+  })
+
+  it.each([
+    ['10.0.0.1', true],
+    ['172.16.0.1', true],
+    ['172.31.255.1', true],
+    ['172.15.0.1', false],
+    ['172.32.0.1', false],
+    ['192.168.5.4', true],
+    ['192.169.0.1', false],
+    ['198.18.0.1', false],
+    ['fd00::1', false]
+  ])('%s is private LAN: %s', (address, expected) => {
+    expect(isPrivateLanAddress(address)).toBe(expected)
+  })
+
+  it.each([
+    ['198.18.0.1', true],
+    ['198.19.255.254', true],
+    ['198.17.0.1', false],
+    ['198.20.0.1', false],
+    ['192.168.5.4', false],
+    ['2001:db8::1', false]
+  ])('%s is a proxy virtual adapter: %s', (address, expected) => {
+    expect(isVirtualAdapterAddress(address)).toBe(expected)
+  })
+
+  it('puts LAN before other addresses and proxy adapters last', () => {
+    const addresses = listNetworkAddresses({
+      Mihomo: [info('198.18.0.1')],
+      Public: [info('2001:db8::5', 'IPv6'), info('203.0.113.7')],
+      Ethernet: [info('192.168.5.4')],
+      Tailscale: [info('100.101.1.2')]
+    })
+    expect(addresses.map((entry) => entry.address)).toEqual([
+      '100.101.1.2',
+      '192.168.5.4',
+      '203.0.113.7',
+      '2001:db8::5',
+      '198.18.0.1'
+    ])
+    expect(addresses.map((entry) => entry.virtual)).toEqual([false, false, false, false, true])
   })
 })
