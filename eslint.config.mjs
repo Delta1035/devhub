@@ -15,7 +15,10 @@ export default defineConfig(
       '**/out',
       '**/coverage',
       '**/.pnpm-store',
-      '**/.vitepress/cache'
+      '**/.vitepress/cache',
+      '**/.expo',
+      'apps/mobile/android',
+      'apps/mobile/ios'
     ]
   },
   tseslint.configs.recommended,
@@ -130,6 +133,44 @@ export default defineConfig(
   {
     files: ['apps/desktop/src/renderer/src/api/**/*.ts'],
     rules: { 'no-restricted-properties': 'off' }
+  },
+  {
+    // Android app (ADR 0027): screens reach the desktop only through src/api.
+    files: ['apps/mobile/**/*.{ts,tsx}'],
+    ignores: ['apps/mobile/src/api/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['electron', '@electron-toolkit/*', ...nodeBuiltins],
+              message: 'The mobile app runs on React Native, not Node or Electron.'
+            },
+            {
+              group: ['expo/fetch', 'expo-secure-store'],
+              message: 'Talk to the desktop via @/api.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    files: ['apps/mobile/src/api/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['electron', '@electron-toolkit/*', ...nodeBuiltins],
+              message: 'The mobile app runs on React Native, not Node or Electron.'
+            }
+          ]
+        }
+      ]
+    }
   },
   eslintConfigPrettier
 )

@@ -19,6 +19,7 @@
 ### 进行中
 
 - M4-1 远程 API：#12（ADR 0022）、#13（HTTP 服务）、#14（SSE 事件推送）、#15（设置页「远程访问」与配置 API、连接二维码，ADR 0023 引入 uqr）、#16（远程 E2E）已完成，M4-1 全部完成。M4-2：#17 已完成——网页版复用桌面 renderer（用户选择），由远程服务托管，扫码即连接；远程不允许的操作已隐藏。#25 已完成——监听地址按 Tailscale → 局域网 → 其他 → 代理虚拟网卡（`198.18.0.0/15`，设置页标注）排序，二维码随之使用局域网地址。#18 代码已完成，待真机验收：窄屏侧栏改为抽屉、触屏「⋯」菜单、manifest 可安装（不加 service worker）、HTTPS 交给 `tailscale serve`（设置页与官网「手机访问」说明，二维码暂不生成 HTTPS 链接）、终端与设置页按需加载（首屏 gzip 330 → 185 KB）。真实手机经 Tailscale 安装与连接、经 `tailscale serve` 时 SSE 不被缓冲尚未验证（本机未装 Tailscale）；远程相关代码尚未在 Linux 真机上运行（CI 的 Ubuntu 会跑单元测试与 E2E）。
+- M4-3 Android：#19 已完成（ADR 0027：Expo SDK 57 + expo-router，只共享 `packages/shared`，不引入 Turborepo，CI 用 Gradle 构建 APK）。#20 客户端骨架：`apps/mobile` 连接页（地址 / Token，可粘贴连接地址，Token 存 secure-store）、项目 → 脚本 → 启动 / 停止 → 日志，已纳入 `pnpm check`。下一步 #21 构建与发布 CI。
 - 桌面修复：#22 已完成——启动的子进程不再直接继承 DevHub 的环境：Windows 从注册表修复并补全 PATH（更新后经 Explorer 重启时 `%NVM_HOME%` 未展开、找不到 pnpm），Linux 捕获交互登录 shell 的环境（从桌面启动时缺少 `.bashrc` 中的 nvm）（ADR 0024）。
 - 桌面 MVP 发布：#9 已完成——官网 Vite 经 pnpm overrides 提升到 6.4.3（ADR 0025），审计剩 2 high（electron-builder 链 http-cache-semantics、shadcn 链 braces，上游无修复）；VitePress 2 稳定后删除该 override。
 - 桌面 MVP 发布：#10 提交信息校验与 CHANGELOG 已完成（ADR 0026），Release 正文改为取自 `CHANGELOG.md`，待下次发布时验证；已发布版本的 Release 正文暂不修改。已同步到模板仓库 [electron-desktop-template](https://github.com/Delta1035/electron-desktop-template)（78e45ce，模板 ADR 0009）。
@@ -30,6 +31,7 @@
 - 安装包多带了 node-pty 的其他平台预编译文件与源码 / 测试（Linux 包约 2 MB 未压缩，`.pdb` 已被 electron-builder 默认排除）；已评估收益小（安装包 100+ MB），且排除规则写错只会在打包版中暴露，暂缓到下次修改打包配置时处理
 - 运行历史：异常中断的结束时间/退出码无法还原，日志检查点之后的最后一部分可能未保存；旧记录没有历史日志。
 - Maven / Gradle 多模块识别仅覆盖静态声明；Gradle 插件继承、版本目录别名和动态 include，Maven Profile / pluginManagement / 外部父 POM 未计算，可用 `.devhub.yaml` 显式补充；本机未实际构建 Java 应用。
+- Android 客户端：只在 Windows 上的模拟器（API 36）经 Expo Go 验证过，未在真机上运行；Windows 本地原生构建因 pnpm 路径过长失败（ADR 0027），APK 由 #21 在 Ubuntu CI 上构建；没有应用内扫码（需粘贴连接地址）；日志页只显示最近 128 KB 纯文本
 - Android 项目的 `assembleDebug`、`installDebug` 等任务暂不识别
 - Linux 上自己 `setsid` 脱离进程组的守护进程杀不到；崩溃后的遗留进程只有当记录的根进程本身存活时才能发现（子进程脱离后根进程已退出的情况发现不了）
 - Windows 上 node-pty 在进程自然退出后会在 stderr 打印 `AttachConsole failed`（释放资源时的辅助进程），不影响功能

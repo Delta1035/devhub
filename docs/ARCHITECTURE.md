@@ -43,6 +43,12 @@ devhub/                        pnpm monorepo
 │           ├── features/<x>/  按功能组织：组件 + hooks（projects、scripts、terminal）
 │           ├── components/ui/ shadcn 生成的组件（由 CLI 管理，不手改）
 │           └── lib/           工具函数
+├── apps/mobile/               Android 客户端（Expo SDK 57 + expo-router，ADR 0027），经远程 API 连接桌面端
+│   └── src/
+│       ├── app/               页面（基于文件的路由）：连接页、项目列表、脚本列表、日志
+│       ├── api/               ★ 页面访问桌面端的唯一入口：expo/fetch 适配 shared 远程客户端，Token 存 expo-secure-store
+│       ├── features/<x>/      TanStack Query hooks 与可测试的纯逻辑（日志文本、运行状态）
+│       └── lib/               主题颜色、列表占位
 ├── apps/website/              官网与使用文档（VitePress，中英双语，部署到 GitHub Pages，ADR 0020；构建后 `verify` 检查中文搜索与旧 /zh/ 跳转；Vite 经 overrides 提升到 6.x，ADR 0025）
 └── packages/shared/           平台无关：API 契约、领域模型（zod schema）、错误类型
 ```
@@ -70,6 +76,15 @@ React UI ──> @renderer/api ──> DevhubApi (packages/shared)
 - 预期内的失败在 core 中抛出 `DevhubError(code, message)`（`packages/shared/src/errors.ts`）；`message` 面向用户，直接显示在 UI。
 - IPC 上传输 `IpcResult` 信封 `{ ok, value | error }`，preload 解包后在 renderer 抛出干净的 `Error`（避免 Electron 给错误信息加前缀）。
 - 非预期异常在主进程记录日志，以 `INTERNAL` 返回。
+
+### Android 客户端（`apps/mobile`，ADR 0027）
+
+- 只共享 `packages/shared`（契约、`createRemoteClient`、`OutputCursor`、`stripAnsi`），UI 是独立的 React Native 页面，不复用 renderer。
+- `src/api/`：`remote.ts` 用 `expo/fetch`（可流式读取响应体，SSE 依赖它）实现 shared 的 `FetchFn`；原生 `TextDecoder` 不一定支持流式解码，`utf8-chunks.ts` 把跨分块的多字节字符留到下一块再解码。`connect-input.ts` 解析地址或整段连接地址（`remoteConnectUrl`，ADR 0023）。`connection-provider.tsx` 启动时读取 secure-store 中保存的连接并调用 `session()` 校验，Token 被拒（401）时清除并回到连接页；`events.onReady` 时让全部查询失效（断线期间的事件不会补发）。
+- 页面由 `Stack.Protected` 按连接状态切换（`connect` ↔ 其余页面）。事件同步（`run-updated` / `run-removed` / `projects-updated`）在根布局挂载一次；日志页先订阅再取快照，快照到达前暂存实时片段，用 `OutputCursor` 拼接，`LogText` 去掉 ANSI 并按 `\r` 改写当前行，最多保留 128 KB。
+- 手机端不提供交互式终端和本机专属操作（`local` / `terminal` 级别的方法）。
+- ESLint：`apps/mobile` 禁止 import Electron 和 Node 内置模块；`src/api` 之外禁止直接 import `expo/fetch`、`expo-secure-store`。可测试逻辑放在不依赖 React Native 的 `.ts` 文件中，用 Vitest 测试，纳入 `pnpm check`。
+- `android/` 由 `expo prebuild` 生成，不提交；明文 http 由 `expo-build-properties` 的 `usesCleartextTraffic` 开启。
 
 ### ShellApi：仅桌面端可用的能力
 
