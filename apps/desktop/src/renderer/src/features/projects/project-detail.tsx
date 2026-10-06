@@ -23,7 +23,7 @@ export function ProjectDetail({
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex items-center gap-3 border-b px-6 py-4">
+      <header className="flex items-center gap-3 border-b px-4 py-3 md:px-6 md:py-4">
         <div className="min-w-0 flex-1">
           <h2 className="truncate font-heading text-lg font-semibold">{project.name}</h2>
           <p className="truncate text-xs text-muted-foreground" title={project.path}>
@@ -51,7 +51,10 @@ export function ProjectDetail({
         </Button>
       </header>
       <div
-        className={cn('min-h-0 flex-1 overflow-y-auto px-6 py-4', terminalMaximized && 'hidden')}
+        className={cn(
+          'min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6',
+          terminalMaximized && 'hidden'
+        )}
       >
         {editorError && (
           <Alert variant="destructive" className="mb-4">

@@ -1,4 +1,3 @@
-import type { Page } from '@playwright/test'
 import type { RemoteState } from '@devhub/shared'
 import {
   addProjectViaApi,
@@ -6,35 +5,9 @@ import {
   packageJson,
   test,
   expect,
-  type DevhubApp,
   type DevhubWindow
 } from './fixtures'
-
-const enableRemote = (page: Page, port: number): Promise<RemoteState> =>
-  page.evaluate(
-    (listenPort) =>
-      (window as unknown as DevhubWindow).devhub.updateRemoteConfig({
-        enabled: true,
-        host: '127.0.0.1',
-        port: listenPort
-      }),
-    port
-  )
-
-/**
- * Opens the web app the way a phone's browser would: a window without DevHub's preload bridge,
- * so the renderer has to use the remote server.
- */
-async function openWebApp({ app }: DevhubApp, url: string): Promise<Page> {
-  const [web] = await Promise.all([
-    app.waitForEvent('window'),
-    app.evaluate(({ BrowserWindow }, target) => {
-      const window = new BrowserWindow({ width: 1000, height: 800 })
-      void window.loadURL(target)
-    }, url)
-  ])
-  return web
-}
+import { enableRemote, openWebApp } from './web-app'
 
 test('the web app connects with the QR link and drives scripts, without desktop-only actions', async ({
   launchDevhub,

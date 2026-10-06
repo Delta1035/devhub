@@ -34,13 +34,13 @@ export function SettingsPage({ onClose }: { onClose: () => void }): React.JSX.El
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex items-center gap-3 border-b px-6 py-4">
+      <header className="flex items-center gap-3 border-b px-4 py-3 md:px-6 md:py-4">
         <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="返回">
           <ArrowLeft />
         </Button>
         <h2 className="font-heading text-lg font-semibold">设置</h2>
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6">
         <div className="mx-auto flex max-w-3xl flex-col gap-6">
           {error && (
             <Alert variant="destructive">
@@ -78,7 +78,7 @@ function AppearanceSection(): React.JSX.Element {
   const theme = usePreference(appearance, appearance.preference)
   return (
     <SettingsSection title="外观">
-      <SettingRow label="主题" description="只影响这台电脑">
+      <SettingRow label="主题" description="只影响当前设备">
         <Segmented<ThemePreference>
           label="主题"
           value={theme}

@@ -1,4 +1,4 @@
-import { Copy, Minus, Settings as SettingsIcon, Square, X } from 'lucide-react'
+import { Copy, Menu, Minus, Settings as SettingsIcon, Square, X } from 'lucide-react'
 import { shell } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
 import { useAppInfo } from '@renderer/features/app-info/use-app-info'
@@ -9,13 +9,19 @@ import { useWindowState } from './use-window-state'
 interface TitleBarProps {
   showSettings: boolean
   onToggleSettings: () => void
+  /** Opens the sidebar drawer; only given on narrow screens, where the sidebar is hidden. */
+  onOpenNavigation?: () => void
 }
 
 /**
  * Replaces the system title bar (ADR 0010): drags the window, and on Windows / Linux carries
  * the minimize / maximize / close buttons. macOS keeps its own traffic lights on the left.
  */
-export function TitleBar({ showSettings, onToggleSettings }: TitleBarProps): React.JSX.Element {
+export function TitleBar({
+  showSettings,
+  onToggleSettings,
+  onOpenNavigation
+}: TitleBarProps): React.JSX.Element {
   const { data: appInfo } = useAppInfo()
   const windowState = useWindowState()
   const isMac = windowState?.platform === 'darwin'
@@ -30,6 +36,18 @@ export function TitleBar({ showSettings, onToggleSettings }: TitleBarProps): Rea
         (isMac || !windowState) && 'pr-3'
       )}
     >
+      {onOpenNavigation && (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onOpenNavigation}
+          aria-label="打开导航"
+          title="项目与批量任务"
+          className="app-no-drag -ml-1"
+        >
+          <Menu />
+        </Button>
+      )}
       <img src="./favicon.svg" alt="" className="size-5" draggable={false} />
       <h1 className="font-heading text-sm font-semibold">DevHub</h1>
       {appInfo && <span className="text-xs text-muted-foreground">v{appInfo.version}</span>}
