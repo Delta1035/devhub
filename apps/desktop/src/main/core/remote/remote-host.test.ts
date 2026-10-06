@@ -11,7 +11,8 @@ const lan: NetworkAddress = {
   address: '192.168.1.5',
   family: 'IPv4',
   interfaceName: 'eth0',
-  tailscale: false
+  tailscale: false,
+  virtual: false
 }
 
 /** A port that was free a moment ago. */
