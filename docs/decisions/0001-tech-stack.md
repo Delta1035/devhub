@@ -22,7 +22,7 @@
 | 测试          | Vitest；E2E 用 Playwright                                             |
 | 工程化        | pnpm workspace、ESLint、Prettier、husky + lint-staged、GitHub Actions |
 | 进程/终端     | node-pty（M1 引入）                                                   |
-| Android（M4） | 先 PWA，后 React Native + Expo                                        |
+| Android（M4） | 先 PWA，后 Capacitor（ADR 0027），之后再加 React Native + Expo        |
 
 版本约束：TypeScript 6.0（2026-10-02 由 dependabot 从 5.9 升级；typescript-eslint 8.71 支持 `<6.1`，7.x 尚不支持，升级前先确认）、ESLint 9、Vite 7（electron-vite 5 要求）。升级前先确认生态兼容。
 
@@ -38,6 +38,10 @@
 - shadcn/ui 使用 `radix-nova` 风格（Radix + Lucide 图标 + Geist 字体）。CLI 无法自动识别 electron-vite，已手动生成 `apps/desktop/components.json`；之后在 `apps/desktop` 下用 `pnpm dlx shadcn@latest add <组件>` 添加组件即可。
 - shadcn 新版用官方的 `cn` 包（shadcn 维护，替代 `clsx + tailwind-merge`），生成的组件直接从 `cn` 导入，因此跟随官方、移除了 clsx 与 tailwind-merge。该包仍是 0.x，升级时留意变更。
 - 被 Vite 打包进 renderer 的库一律放 `devDependencies`；`dependencies` 只放主进程运行时需要的包（electron-builder 会把它们打进安装包）。
+
+## 补充（2026-10-06）：Android
+
+- 网页版已复用桌面 renderer（ADR 0022 补充），Android 客户端改为先用 Capacitor 包装同一网页，Expo 原生客户端推迟（ADR 0027）。Capacitor 只消费构建产物，不引入 Turborepo。
 
 ## 补充（2026-10-02）：E2E 的做法
 

@@ -14,11 +14,12 @@
 | [桌面 MVP 发布](https://github.com/Delta1035/devhub/milestone/1) | 两平台升级验证、官网审计告警、提交校验与 CHANGELOG | #7～#11  |
 | [M4-1 远程 API](https://github.com/Delta1035/devhub/milestone/3) | ADR、HTTP 自动映射、SSE 事件推送、设置页、E2E      | #12～#16 |
 | [M4-2 PWA](https://github.com/Delta1035/devhub/milestone/2)      | HTTP / SSE 客户端、手机布局与托管                  | #17、18  |
-| [M4-3 Android](https://github.com/Delta1035/devhub/milestone/4)  | Expo ADR、客户端骨架、构建与发布 CI                | #19～21  |
+| [M4-3 Android](https://github.com/Delta1035/devhub/milestone/4)  | Capacitor ADR（0027）、客户端壳、构建与发布 CI     | #19～21  |
 
 ### 进行中
 
 - M4-1 远程 API：#12（ADR 0022）、#13（HTTP 服务）、#14（SSE 事件推送）、#15（设置页「远程访问」与配置 API、连接二维码，ADR 0023 引入 uqr）、#16（远程 E2E）已完成，M4-1 全部完成。M4-2：#17 已完成——网页版复用桌面 renderer（用户选择），由远程服务托管，扫码即连接；远程不允许的操作已隐藏。#25 已完成——监听地址按 Tailscale → 局域网 → 其他 → 代理虚拟网卡（`198.18.0.0/15`，设置页标注）排序，二维码随之使用局域网地址。下一步 #18 手机布局（侧栏抽屉等）、可安装 PWA 与 HTTPS（`tailscale serve`）。真实手机尚未实际连接验证；远程相关代码尚未在 Linux 真机上运行（CI 的 Ubuntu 会跑单元测试与 E2E）。
+- M4-3 Android：#19 已完成——先用 Capacitor 包装网页版，Expo 原生客户端推迟（ADR 0027）；#20 Capacitor 壳 + 连接页 + CORS，#21 Gradle 构建与发布。
 - 桌面修复：#22 已完成——启动的子进程不再直接继承 DevHub 的环境：Windows 从注册表修复并补全 PATH（更新后经 Explorer 重启时 `%NVM_HOME%` 未展开、找不到 pnpm），Linux 捕获交互登录 shell 的环境（从桌面启动时缺少 `.bashrc` 中的 nvm）（ADR 0024）。
 - 桌面 MVP 发布：#9 已完成——官网 Vite 经 pnpm overrides 提升到 6.4.3（ADR 0025），审计剩 2 high（electron-builder 链 http-cache-semantics、shadcn 链 braces，上游无修复）；VitePress 2 稳定后删除该 override。
 - 桌面 MVP 发布：#10 提交信息校验与 CHANGELOG 已完成（ADR 0026），Release 正文改为取自 `CHANGELOG.md`，待下次发布时验证；已发布版本的 Release 正文暂不修改。已同步到模板仓库 [electron-desktop-template](https://github.com/Delta1035/electron-desktop-template)（78e45ce，模板 ADR 0009）。

@@ -42,7 +42,7 @@
 ### M4 — 远程
 
 - 可选开启的 HTTP API + SSE 事件推送（Token 鉴权，默认关闭，推荐经 Tailscale 访问；ADR 0022）
-- 适配手机的 Web 界面 / PWA；之后 React Native (Expo) Android 客户端
+- 适配手机的 Web 界面 / PWA；之后用 Capacitor 打包同一网页为 Android 客户端（ADR 0027），以后再考虑 React Native (Expo) 原生客户端
 
 ## 非目标
 
@@ -51,5 +51,7 @@
 - 暂不支持 macOS
 
 ## 变更记录
+
+- 2026-10-06：Android 客户端改为先 Capacitor、后 Expo（ADR 0027）。
 
 - 2026-10-02：移除「Profile：一键切换对接的后端（环境变量、追加参数）」，不再规划。M3 的「分组」已提前完成（批量执行，ADR 0006）；另增加了内置交互式终端（ADR 0005）、用编辑器打开项目与设置页（ADR 0007）。

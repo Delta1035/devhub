@@ -25,7 +25,7 @@ M4 要让手机（先 PWA，后 Android）查看和控制桌面端的项目与�
 - 连接建立并完成订阅后，先发一条 `event: ready`（`data: {"protocol":1}`）。客户端收到它之后再取快照，保证快照与后续事件之间不漏数据。
 - 不实现 `Last-Event-ID` 重放。断线重连后客户端按现有方式补齐：等到 `ready`，再 `getRunOutput` 用 `OutputCursor` 拼接输出（ADR 0004），其余状态重新 `list*`。
 - 背压：某连接未发出的数据超过 4 MB 时断开该连接，客户端退避重连后补齐；不影响其他客户端与桌面 UI。
-- 客户端用 `fetch` 读取流（可带 `Authorization` 头），不用浏览器 `EventSource`（不能设置请求头，Token 只能放进 URL 而被日志记录）。React Native 的流式读取方案在 M4-3 的 ADR（#19）中决定（如 `expo/fetch` 或基于 XHR 的 SSE 库）。
+- 客户端用 `fetch` 读取流（可带 `Authorization` 头），不用浏览器 `EventSource`（不能设置请求头，Token 只能放进 URL 而被日志记录）。Android 客户端先用 Capacitor（ADR 0027），沿用 WebView 自带的 `fetch` 流式读取（不启用 `CapacitorHttp`）；将来的 Expo 客户端再选 `expo/fetch` 等方案。
 
 ### 鉴权
 
