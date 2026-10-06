@@ -10,7 +10,8 @@ function zhSidebar(): DefaultTheme.SidebarItem[] {
       items: [
         { text: '快速上手', link: '/guide/getting-started' },
         { text: '自定义脚本（.devhub.yaml）', link: '/guide/devhub-yaml' },
-        { text: '批量任务', link: '/guide/batch-tasks' }
+        { text: '批量任务', link: '/guide/batch-tasks' },
+        { text: '手机访问', link: '/guide/remote' }
       ]
     }
   ]
@@ -40,7 +41,8 @@ function enSidebar(): DefaultTheme.SidebarItem[] {
       items: [
         { text: 'Getting started', link: '/en/guide/getting-started' },
         { text: 'Custom scripts (.devhub.yaml)', link: '/en/guide/devhub-yaml' },
-        { text: 'Batch tasks', link: '/en/guide/batch-tasks' }
+        { text: 'Batch tasks', link: '/en/guide/batch-tasks' },
+        { text: 'Phone access', link: '/en/guide/remote' }
       ]
     }
   ]

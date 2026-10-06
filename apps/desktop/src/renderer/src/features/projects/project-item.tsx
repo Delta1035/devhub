@@ -6,7 +6,8 @@ import { Button } from '@renderer/components/ui/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@renderer/components/ui/hover-card'
 import { EditorButtons } from '@renderer/features/editors/editor-buttons'
 import { cn } from '@renderer/lib/utils'
-import { ProjectContextMenu } from './project-context-menu'
+import { ProjectContextMenu, ProjectMoreMenu } from './project-menu'
+import { useProjectMenuActions } from './use-project-menu-actions'
 import { ProjectSummary } from './project-summary'
 
 interface ProjectItemProps {
@@ -48,18 +49,18 @@ export function ProjectItem({
   // they were opened from: another item's card then popped up over the next menu or dialog.
   // The card is a hover preview (the context menu has 显示详情), so only the pointer opens it.
   const pointerOver = useRef(false)
+  const menu = {
+    project,
+    actions: useProjectMenuActions(project, { onShellStarted, onError }),
+    onShowDetails,
+    onRemove,
+    onOpenChange: (open: boolean) => {
+      setMenuOpen(open)
+      setHoverOpen(false)
+    }
+  }
   return (
-    <ProjectContextMenu
-      project={project}
-      onShowDetails={onShowDetails}
-      onRemove={onRemove}
-      onShellStarted={onShellStarted}
-      onError={onError}
-      onOpenChange={(open) => {
-        setMenuOpen(open)
-        setHoverOpen(false)
-      }}
-    >
+    <ProjectContextMenu {...menu}>
       <li
         className={cn(
           'group flex items-center gap-1 rounded-lg pr-1 hover:bg-muted',
@@ -106,6 +107,7 @@ export function ProjectItem({
           onError={onError}
           className="opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"
         />
+        <ProjectMoreMenu {...menu} />
         {access.manage && (
           <Button
             variant="ghost"

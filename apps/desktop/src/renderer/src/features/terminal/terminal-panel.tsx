@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Maximize2, Minimize2, SquareTerminal, X } from 'lucide-react'
 import type { Run } from '@devhub/shared'
 import { access } from '@renderer/api'
@@ -7,9 +7,14 @@ import { healthLabels, useHealthOf } from '@renderer/features/runs/use-run-healt
 import { useRuns } from '@renderer/features/runs/use-runs'
 import { cn } from '@renderer/lib/utils'
 import { NewTerminalButton } from './new-terminal-button'
-import { RunTerminal } from './run-terminal'
 import { useResizableHeight } from './use-resizable-height'
 import { useCloseRun } from './use-shells'
+
+// xterm is a third of the app's code; a project without runs (and the web app's first paint)
+// does without it.
+const RunTerminal = lazy(() =>
+  import('./run-terminal').then(({ RunTerminal }) => ({ default: RunTerminal }))
+)
 
 interface TerminalPanelProps {
   projectId: string
@@ -104,11 +109,13 @@ export function TerminalPanel({
       </header>
       <div className="min-h-0 flex-1 p-2">
         {active ? (
-          <RunTerminal
-            key={active.id}
-            runId={active.id}
-            acceptsInput={active.status !== 'exited'}
-          />
+          <Suspense>
+            <RunTerminal
+              key={active.id}
+              runId={active.id}
+              acceptsInput={active.status !== 'exited'}
+            />
+          </Suspense>
         ) : (
           <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
             运行脚本，或点击「+」新建终端

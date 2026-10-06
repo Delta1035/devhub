@@ -16,7 +16,7 @@ const styleOptions: { value: UiStyle; label: string; swatch: [string, string, st
 export function StylePicker(): React.JSX.Element {
   const current = usePreference(appearance, appearance.style)
   return (
-    <div role="radiogroup" aria-label="风格" className="flex flex-wrap justify-end gap-2">
+    <div role="radiogroup" aria-label="风格" className="flex flex-wrap gap-2 md:justify-end">
       {styleOptions.map((option) => (
         <button
           key={option.value}

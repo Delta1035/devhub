@@ -70,7 +70,7 @@ export function GroupDetail({
 
   return (
     <section aria-label={`任务运行 ${group.name}`} className="flex h-full flex-col">
-      <header className="flex flex-wrap items-center gap-3 border-b px-6 py-4">
+      <header className="flex flex-wrap items-center gap-3 border-b px-4 py-3 md:px-6 md:py-4">
         <div className="min-w-0 flex-1">
           <h2 className="truncate font-heading text-lg font-semibold">{group.name}</h2>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -105,7 +105,7 @@ export function GroupDetail({
           </Button>
         )}
       </header>
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 md:px-6">
         {error && (
           <p role="alert" className="text-sm text-destructive">
             {error}
