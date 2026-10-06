@@ -43,7 +43,7 @@ devhub/                        pnpm monorepo
 │           ├── features/<x>/  按功能组织：组件 + hooks（projects、scripts、terminal）
 │           ├── components/ui/ shadcn 生成的组件（由 CLI 管理，不手改）
 │           └── lib/           工具函数
-├── apps/mobile/               Android 客户端（Expo SDK 57 + expo-router，ADR 0027），经远程 API 连接桌面端
+├── apps/mobile/               Expo 原生客户端骨架（Expo SDK 57 + expo-router，ADR 0028），以后 Expo 客户端的基础；当前 Android 以 Capacitor 为准（ADR 0027）
 │   └── src/
 │       ├── app/               页面（基于文件的路由）：连接页、项目列表、脚本列表、日志
 │       ├── api/               ★ 页面访问桌面端的唯一入口：expo/fetch 适配 shared 远程客户端，Token 存 expo-secure-store
@@ -67,7 +67,7 @@ React UI ──> @renderer/api ──> DevhubApi (packages/shared)
 - `core/` 实现该契约，与传输方式无关，依赖通过参数注入，因此可直接单元测试。
 - IPC 层和 preload 根据 `devhubApiMethods` 自动生成，新增方法无需手写通道。
 - 网页版（手机）复用同一份 renderer（ADR 0022 补充）：`vite.web.config.ts` 构建到 `out/web`，由远程服务托管（`core/remote/static-files.ts`）；终端（xterm）与设置页用 `React.lazy` 按需加载，网页版另把 React 与其他常用库分包，`md` 以下侧栏为抽屉（ADR 0022 补充 #18）。`@renderer/api` 在没有 preload（`window.devhub`）时改用 shared 的 `createRemoteClient`（`api/remote-connection.ts`：令牌取自 `#token=` 并存 localStorage `devhub.remoteToken`），`features/remote/remote-gate.tsx` 在 `GET /api/v1/session` 接受令牌前显示连接页，并设置 `access.terminal`。界面按 `access.manage` / `access.terminal` 隐藏远程不允许的操作；新增会改变主机上运行内容的入口时，同样要按 `access` 判断。
-- Android 客户端（计划，ADR 0027）：`apps/mobile` 只放 Capacitor 配置与 `android/` 原生工程，`webDir` 使用 renderer 的网页构建，不另写 UI；WebView 从 `http://localhost` 跨域访问远程 API（远程服务需对该来源开放 CORS 与预检），不启用 `CapacitorHttp`（会破坏 SSE 流式读取）。之后的 Expo 原生客户端只复用 shared 的类型与 `createRemoteClient`。
+- Android 客户端（计划，ADR 0027）：`apps/mobile-capacitor` 只放 Capacitor 配置与 `android/` 原生工程，`webDir` 使用 renderer 的网页构建，不另写 UI；WebView 从 `http://localhost` 跨域访问远程 API（远程服务需对该来源开放 CORS 与预检），不启用 `CapacitorHttp`（会破坏 SSE 流式读取）。之后的 Expo 原生客户端（`apps/mobile`，骨架已完成，ADR 0028）只复用 shared 的类型与 `createRemoteClient`。
 - 远程 HTTP（`core/remote/`，ADR 0022）：`remote-server.ts` 用 `node:http` 把 `devhubApiMethods` 映射为 `POST /api/v1/<method>`（请求体 `{ args }`，上限 1 MB），依次检查失败次数限速、Bearer Token、shared 的 `remoteAccess` 分级与 JSON 类型，再调用与 IPC 相同的 `api` 对象，返回同一 `IpcResult` 信封（`api-result.ts`）。`GET /api/v1/events`（`event-stream.ts`）以 SSE 推送全部 core 事件：订阅后先发 `ready`，15 秒心跳，单连接积压超过 4 MB 即断开；服务关闭时主动结束所有事件流并取消订阅。`remote-host.ts` 由 `createDevhubCore` 创建，按 `remote.json`（`remote-config.ts`，首次读取时生成 Token）决定是否监听，启动失败只记录日志；`dispose` 时最先关闭。远程配置经 `getRemoteState` / `updateRemoteConfig` / `regenerateRemoteToken`（级别 `local`）读写：`remote-host.ts` 串行执行，每次修改校验后保存并重启服务（新 Token 因此断开旧连接），监听失败（端口占用、地址不可用）记为状态而不抛出；监听地址只能是本机网卡地址（`network-addresses.ts`，排序：Tailscale → 局域网私有地址 → 其他 → 代理虚拟网卡 `198.18.0.0/15`，各组内 IPv4 在前；虚拟网卡在设置页标注手机通常无法访问）、`127.0.0.1` 或 `0.0.0.0`。设置页「远程访问」（`features/settings/remote-section.tsx`）只在桌面端显示（`shell` 非空），二维码内容为 shared `remoteConnectUrl`（Token 在 `#` 片段中，ADR 0023），由 `uqr` 编码、React 绘制 SVG。
 
 这些边界由 ESLint 强制（见根目录 `eslint.config.mjs`）。
@@ -78,8 +78,9 @@ React UI ──> @renderer/api ──> DevhubApi (packages/shared)
 - IPC 上传输 `IpcResult` 信封 `{ ok, value | error }`，preload 解包后在 renderer 抛出干净的 `Error`（避免 Electron 给错误信息加前缀）。
 - 非预期异常在主进程记录日志，以 `INTERNAL` 返回。
 
-### Android 客户端（`apps/mobile`，ADR 0027）
+### Expo 原生客户端（`apps/mobile`，ADR 0028）
 
+- 后续方案的骨架：当前 Android 客户端是 Capacitor（`apps/mobile-capacitor`，ADR 0027）；Expo 客户端恢复开发时在此基础上继续。
 - 只共享 `packages/shared`（契约、`createRemoteClient`、`OutputCursor`、`stripAnsi`），UI 是独立的 React Native 页面，不复用 renderer。
 - `src/api/`：`remote.ts` 用 `expo/fetch`（可流式读取响应体，SSE 依赖它）实现 shared 的 `FetchFn`；原生 `TextDecoder` 不一定支持流式解码，`utf8-chunks.ts` 把跨分块的多字节字符留到下一块再解码。`connect-input.ts` 解析地址或整段连接地址（`remoteConnectUrl`，ADR 0023）。`connection-provider.tsx` 启动时读取 secure-store 中保存的连接并调用 `session()` 校验，Token 被拒（401）时清除并回到连接页；`events.onReady` 时让全部查询失效（断线期间的事件不会补发）。
 - 页面由 `Stack.Protected` 按连接状态切换（`connect` ↔ 其余页面）。事件同步（`run-updated` / `run-removed` / `projects-updated`）在根布局挂载一次；日志页先订阅再取快照，快照到达前暂存实时片段，用 `OutputCursor` 拼接，`LogText` 去掉 ANSI 并按 `\r` 改写当前行，最多保留 128 KB。

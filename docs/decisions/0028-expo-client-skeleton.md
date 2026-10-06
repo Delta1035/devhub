@@ -1,12 +1,14 @@
-# 0027 Android 客户端：apps/mobile（Expo）结构
+# 0028 Expo 原生客户端骨架：apps/mobile 结构
 
-- 状态：已采纳
-- 日期：2026-10-06
-- Issue：#19（实现 #20，构建 #21）
+- 状态：已采纳（作为以后 Expo 客户端的基础；当前 Android 客户端以 ADR 0027 的 Capacitor 为准）
+- 日期：2026-10-06（2026-10-07 由 0027-mobile-expo 改编号）
+- Issue：#30
 
 ## 背景
 
-ADR 0001 定下 Android 的路线是先 PWA、后 React Native + Expo。远程 API（ADR 0022）和网页版（#17）已经完成，shared 的 `createRemoteClient` 设计时就把 fetch、解码、计时器做成了注入项，供原生客户端复用。现在要确定 `apps/mobile` 的版本、目录结构、代码复用边界、构建方式，以及仓库层面是否需要任务编排。
+ADR 0001 原定 Android 的路线是先 PWA、后 React Native + Expo，本 ADR 按此做出了 `apps/mobile` 的骨架（PR #29）。之后 ADR 0027 改为先用 Capacitor 包装网页版（`apps/mobile-capacitor`，#20），Expo 原生客户端推迟。骨架保留下来作为以后 Expo 客户端的基础：它和 Capacitor 壳连接同一远程 API，互不依赖；Expo 客户端不受 CORS 限制，不需要远程服务额外开放来源。
+
+远程 API（ADR 0022）和网页版（#17）已经完成，shared 的 `createRemoteClient` 设计时就把 fetch、解码、计时器做成了注入项，供原生客户端复用。本 ADR 确定 `apps/mobile` 的版本、目录结构、代码复用边界、构建方式，以及仓库层面是否需要任务编排。
 
 ## 决策
 
@@ -21,7 +23,7 @@ ADR 0001 定下 Android 的路线是先 PWA、后 React Native + Expo。远程 A
 - **不引入 Turborepo**：三个应用（desktop、website、mobile）用 `pnpm -r` 仍然够用；mobile 的 lint、typecheck、vitest 照常纳入 `pnpm check`，耗时不明显时不加缓存层。
 - **ESLint 边界**：`apps/mobile` 禁止 import `electron` 和 Node 内置模块；`src/app/`、`src/features/` 只能经 `src/api` 访问远程（禁止直接 import `expo/fetch`、`expo-secure-store`）。
 - **测试**：可单独测的逻辑（连接地址解析、日志拼接、客户端适配）写成不依赖 React Native 的 TS 模块，用 Vitest 测试。暂不引入 jest-expo 或组件测试库。
-- **构建与分发（#21）**：在 GitHub Actions 中执行 `expo prebuild` + Gradle `assembleRelease`，不依赖 EAS 和 Expo 账号；签名密钥放在 GitHub Secrets；APK 附在 Release 中直接安装，不上架商店。`android/` 由 prebuild 生成，不提交。
+- **构建与分发（Expo 客户端恢复开发时另立 issue；#21 只构建 Capacitor）**：在 GitHub Actions 中执行 `expo prebuild` + Gradle `assembleRelease`，不依赖 EAS 和 Expo 账号；签名密钥放在 GitHub Secrets；APK 附在 Release 中直接安装，不上架商店。`android/` 由 prebuild 生成，不提交。
 - **明文 HTTP**：远程服务是 http（局域网或 Tailscale），Android 9 起默认禁止明文流量；通过 **expo-build-properties** 设置 `usesCleartextTraffic`。HTTPS（`tailscale serve`）可用时优先使用 HTTPS。
 
 ## 备选与理由

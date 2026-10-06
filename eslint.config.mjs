@@ -135,7 +135,7 @@ export default defineConfig(
     rules: { 'no-restricted-properties': 'off' }
   },
   {
-    // Android app (ADR 0027): screens reach the desktop only through src/api.
+    // Expo Android app (ADR 0028): screens reach the desktop only through src/api.
     files: ['apps/mobile/**/*.{ts,tsx}'],
     ignores: ['apps/mobile/src/api/**'],
     rules: {
