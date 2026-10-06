@@ -49,12 +49,24 @@ test('on a phone-sized screen the web app uses a drawer and still drives scripts
   await web.getByRole('button', { name: '打开导航' }).click()
   const drawer = web.getByRole('dialog', { name: '导航' })
   await expect(drawer).toBeVisible()
+  await drawer.evaluate((element) =>
+    Promise.all(element.getAnimations().map((animation) => animation.finished))
+  )
   await web.screenshot({ path: testInfo.outputPath('phone-drawer.png') })
-  await drawer.getByRole('button', { name: /^other/ }).click()
+  // Touch screens have no right click: the same actions sit behind a "more" button.
+  await drawer.getByRole('button', { name: 'app 的更多操作' }).click()
+  await expect(web.getByRole('menuitem', { name: '移除…' })).toHaveCount(0)
+  await web.getByRole('menuitem', { name: '显示详情' }).click()
+  const details = web.getByRole('dialog', { name: '项目详情' })
+  await expect(details).toContainText(dir)
+  await web.keyboard.press('Escape')
+  await expect(details).toBeHidden()
+
+  await drawer.getByRole('button', { name: /^other(?! 的)/ }).click()
   await expect(drawer).toBeHidden()
   await expect(web.locator('main li', { hasText: 'npm run dev' })).toBeVisible()
   await web.getByRole('button', { name: '打开导航' }).click()
-  await drawer.getByRole('button', { name: /^app/ }).click()
+  await drawer.getByRole('button', { name: /^app(?! 的)/ }).click()
 
   await web.getByRole('button', { name: '运行 tick' }).click()
   await expect(tickRow.getByText('运行中')).toBeVisible()

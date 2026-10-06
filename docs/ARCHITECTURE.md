@@ -119,7 +119,7 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 - `workspace-sync.ts`：纯函数，根据扫描结果规划增删。扫描不完整、根目录不可用、项目运行中、目录已删除时都不移除；已排除路径始终移除。
 - `workspace-service.ts`：工作区存储与 API 实现；所有操作排队串行，并发重扫合并；通过 `ProjectService.addDiscovered` / `removeMany` 一次写入，移除的项目经注入的 `forgetProject` 清理历史。`removeProject`（DevhubApi）也由它实现，以便把被移除的工作区内项目记入 `excluded`。
 - 路径比较统一用 `core/fs/path-compare.ts`（Windows 不区分大小写；`isWithin` 只把 `..` 段视为越界）。
-- renderer：`features/workspaces/` 提供查询（查询即重扫，挂载与窗口聚焦时触发）、`projects-updated` 事件同步、侧栏分组与设置对话框；项目条目在 `features/projects/project-item.tsx`（悬停详情 `project-summary.tsx`、右键菜单 `project-context-menu.tsx`、移除确认与详情对话框 `project-dialogs.tsx`，对话框状态由 `project-list.tsx` 统一持有）。侧栏宽度由 `features/sidebar/use-resizable-width.ts` 管理（拖动 / 方向键 / 双击复位，存 localStorage）。
+- renderer：`features/workspaces/` 提供查询（查询即重扫，挂载与窗口聚焦时触发）、`projects-updated` 事件同步、侧栏分组与设置对话框；项目条目在 `features/projects/project-item.tsx`（悬停详情 `project-summary.tsx`、右键菜单与触屏「⋯」菜单 `project-menu.tsx`（共用菜单项，动作在 `use-project-menu-actions.ts`）、移除确认与详情对话框 `project-dialogs.tsx`，对话框状态由 `project-list.tsx` 统一持有）。侧栏宽度由 `features/sidebar/use-resizable-width.ts` 管理（拖动 / 方向键 / 双击复位，存 localStorage）。
 
 ## 进程管理（`core/process/`，见 ADR 0003）
 
