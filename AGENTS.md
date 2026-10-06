@@ -12,6 +12,7 @@ DevHub 是一个桌面客户端：自动发现本地项目中的脚本（npm / m
 2. 完成标准：issue 的验收标准全部满足，且 `pnpm check` 全部通过（格式、lint、类型、测试）。不通过不算完成。改动 UI、IPC/preload 或进程管理时，还要跑 `pnpm e2e`（构建后用 Playwright 驱动真实应用，约 30 秒；CI 每次都跑）。
 3. 新增或修改核心逻辑（`apps/desktop/src/main/core/`、`packages/shared/`）必须同时写测试。
 4. 任务结束时在 issue 下评论验证结果（跑了哪些检查、结果、未验证的部分），由完成提交的 `Closes #n` 关闭。阶段、进行中的 issue 或已知问题变化时更新 `docs/PROGRESS.md`；改变了结构或约定则同步更新 `docs/ARCHITECTURE.md`。
+   - 这两份文档常被并行分支同时修改，为减少冲突：`PROGRESS.md`「进行中」每个 issue 单独一行，只改自己 issue 的那一行，新条目追加到所属分组末尾；`ARCHITECTURE.md` 新增内容写成独立条目，不要插在别人可能修改的条目中间；开 PR 前和有 PR 刚合并进 main 后，先 `git fetch origin main && git merge origin/main`，在本地解决冲突。
 5. 做出重要技术决策（新依赖、新模式、推翻旧决策）时，在 `docs/decisions/` 新增 ADR，并在 issue 中链接。
 6. 提交信息使用 Conventional Commits（`feat:` / `fix:` / `refactor:` / `docs:` / `test:` / `chore:`），说明「为什么」，并在末尾引用 issue（`Refs #n`；完成该 issue 的提交用 `Closes #n`）。
 7. 在 GitHub 上创建、关闭、评论 issue 或改看板属于对外操作：用户确认任务范围后可直接执行，但不要擅自关闭未完成的 issue。
