@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import type { Run } from '@devhub/shared'
 import { ProjectDetail } from '@renderer/features/projects/project-detail'
 import { GroupDetail } from '@renderer/features/groups/group-detail'
@@ -6,13 +6,19 @@ import { useGroups, useGroupEventsSync } from '@renderer/features/groups/use-gro
 import { useProjects } from '@renderer/features/projects/use-projects'
 import { OrphansBanner } from '@renderer/features/runs/orphans-banner'
 import { useRunEventsSync } from '@renderer/features/runs/use-runs'
-import { SettingsPage } from '@renderer/features/settings/settings-page'
 import { Sheet, SheetContent, SheetTitle } from '@renderer/components/ui/sheet'
 import { Sidebar } from '@renderer/features/sidebar/sidebar'
 import { useResizableWidth } from '@renderer/features/sidebar/use-resizable-width'
 import { TitleBar } from '@renderer/features/title-bar/title-bar'
 import { useWorkspaceEventsSync } from '@renderer/features/workspaces/use-workspaces'
 import { narrowQuery, useMediaQuery } from '@renderer/lib/use-media-query'
+
+// Opened now and then; also carries the QR code encoder.
+const SettingsPage = lazy(() =>
+  import('@renderer/features/settings/settings-page').then(({ SettingsPage }) => ({
+    default: SettingsPage
+  }))
+)
 
 function App(): React.JSX.Element {
   useRunEventsSync()
@@ -109,7 +115,9 @@ function App(): React.JSX.Element {
           <OrphansBanner />
           <div className="min-h-0 flex-1">
             {showSettings ? (
-              <SettingsPage onClose={() => setShowSettings(false)} />
+              <Suspense>
+                <SettingsPage onClose={() => setShowSettings(false)} />
+              </Suspense>
             ) : selectedGroup ? (
               <GroupDetail key={selectedGroup.id} group={selectedGroup} onOpenRun={openRun} />
             ) : selected ? (

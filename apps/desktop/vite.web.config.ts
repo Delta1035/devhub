@@ -19,6 +19,21 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
     outDir: resolve('out/web'),
-    emptyOutDir: true
+    emptyOutDir: true,
+    // xterm with its renderers (~510 kB) loads on demand as one chunk, not with the first page.
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        // Libraries change less often than the app: a new version only re-downloads the app chunk.
+        // Vite module ids use forward slashes on every platform.
+        manualChunks(id) {
+          if (/\/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'react'
+          if (/\/node_modules\/(@radix-ui|@floating-ui|@tanstack|zod)\//.test(id)) {
+            return 'vendor'
+          }
+          return undefined
+        }
+      }
+    }
   }
 })
