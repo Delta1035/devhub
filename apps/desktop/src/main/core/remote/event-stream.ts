@@ -22,7 +22,8 @@ export function openEventStream(
 ): { end(): void } {
   response.writeHead(200, {
     'content-type': 'text/event-stream; charset=utf-8',
-    'cache-control': 'no-cache, no-store',
+    // Proxies in front (`tailscale serve`, nginx) must pass each event on at once, unchanged.
+    'cache-control': 'no-cache, no-store, no-transform',
     'x-accel-buffering': 'no',
     'x-content-type-options': 'nosniff'
   })

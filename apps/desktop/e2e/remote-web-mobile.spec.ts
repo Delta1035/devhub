@@ -45,6 +45,13 @@ test('on a phone-sized screen the web app uses a drawer and still drives scripts
   await expect(tickRow).toBeVisible()
   await web.screenshot({ path: testInfo.outputPath('phone-project.png') })
 
+  // Installable: the manifest opens the app at the root, without the token in the address.
+  const manifest: unknown = await web.evaluate(async () => {
+    const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')
+    return link ? (await fetch(link.href)).json() : null
+  })
+  expect(manifest).toMatchObject({ start_url: './', scope: './', display: 'standalone' })
+
   // The sidebar is a drawer, closed once a project is chosen.
   await web.getByRole('button', { name: '打开导航' }).click()
   const drawer = web.getByRole('dialog', { name: '导航' })
