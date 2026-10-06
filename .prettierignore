@@ -7,3 +7,7 @@ tsconfig.*.json
 coverage
 **/.vitepress/cache
 .pnpm-store
+**/.expo
+apps/mobile/android
+apps/mobile/ios
+apps/mobile/expo-env.d.ts

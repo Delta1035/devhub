@@ -21,7 +21,7 @@ Android 客户端**先用 Capacitor**（方案 A）包装 renderer 的网页构�
 
 ### 形态
 
-新增 `apps/mobile`，只包含 `capacitor.config.ts`、`package.json` 与 Capacitor 生成的 `android/` 原生工程（按 Capacitor 惯例提交进仓库）。`webDir` 指向 renderer 的网页构建产物（`vite.web.config.ts`，必要时加一个 mobile 模式），**不另写 UI**。
+新增 `apps/mobile-capacitor`，只包含 `capacitor.config.ts`、`package.json` 与 Capacitor 生成的 `android/` 原生工程（按 Capacitor 惯例提交进仓库）。`webDir` 指向 renderer 的网页构建产物（`vite.web.config.ts`，必要时加一个 mobile 模式），**不另写 UI**。
 
 运行时 WebView 从 `http://localhost`（`androidScheme: 'http'`）加载打包进 APK 的网页，再跨域访问桌面端的远程 API。
 
@@ -61,7 +61,7 @@ CORS 的风险：API 用 Bearer Token 而不是 Cookie，浏览器不会自动�
 
 ## 方案 B：Expo（原计划，推迟）
 
-新增 `apps/mobile`（Expo + Expo Router），用 React Native 组件重写项目列表、脚本列表、运行状态、日志与设置；复用 `packages/shared` 的类型、zod schema 与 `createRemoteClient`（流式读取用 `expo/fetch`）；Token 用 `expo-secure-store`，扫码用 `expo-camera`。构建用 EAS Build，或 `expo prebuild` 后在 CI 跑 Gradle。
+在 `apps/mobile`（Expo + Expo Router，骨架已在 #30 完成，结构见 ADR 0028）上继续，用 React Native 组件重写项目列表、脚本列表、运行状态、日志与设置；复用 `packages/shared` 的类型、zod schema 与 `createRemoteClient`（流式读取用 `expo/fetch`）；Token 用 `expo-secure-store`，扫码用 `expo-camera`。构建用 `expo prebuild` 后在 CI 跑 Gradle（ADR 0028）。
 
 ## 对比
 
@@ -87,3 +87,5 @@ CORS 的风险：API 用 Bearer Token 而不是 Cookie，浏览器不会自动�
 - 两者不互斥：`createRemoteClient` 与远程 API 对两者都适用，先做 Capacitor，之后仍可以再做 Expo 原生版。
 
 已同步：ADR 0001 的 Android 一行、PRD M4；#20 改为 Capacitor 壳 + 连接页 + CORS，#21 改为 Gradle 构建。
+
+补充（2026-10-07，#30）：决定 Capacitor 之前按方案 B 做出的 Expo 骨架（PR #29）保留在 `apps/mobile`，作为以后 Expo 客户端的基础（ADR 0028）；Capacitor 壳因此放在 `apps/mobile-capacitor`。两者连接同一远程 API，互不依赖。

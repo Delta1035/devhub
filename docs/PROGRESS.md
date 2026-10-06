@@ -9,12 +9,12 @@
 
 桌面 MVP（项目/脚本管理、进程与终端、批量任务、工作区、设置、健康检查、运行历史）已完成，最新版本 v1.2.0。用户决定（2026-10-05）先不收尾 MVP 发布，直接开始 M4：远程 API → PWA → Android。CLI、Jira 与 Wayland 暂缓。
 
-| Milestone                                                        | 内容                                               | Issue    |
-| ---------------------------------------------------------------- | -------------------------------------------------- | -------- |
-| [桌面 MVP 发布](https://github.com/Delta1035/devhub/milestone/1) | 两平台升级验证、官网审计告警、提交校验与 CHANGELOG | #7～#11  |
-| [M4-1 远程 API](https://github.com/Delta1035/devhub/milestone/3) | ADR、HTTP 自动映射、SSE 事件推送、设置页、E2E      | #12～#16 |
-| [M4-2 PWA](https://github.com/Delta1035/devhub/milestone/2)      | HTTP / SSE 客户端、手机布局与托管                  | #17、18  |
-| [M4-3 Android](https://github.com/Delta1035/devhub/milestone/4)  | Capacitor ADR（0027）、客户端壳、构建与发布 CI     | #19～21  |
+| Milestone                                                        | 内容                                               | Issue       |
+| ---------------------------------------------------------------- | -------------------------------------------------- | ----------- |
+| [桌面 MVP 发布](https://github.com/Delta1035/devhub/milestone/1) | 两平台升级验证、官网审计告警、提交校验与 CHANGELOG | #7～#11     |
+| [M4-1 远程 API](https://github.com/Delta1035/devhub/milestone/3) | ADR、HTTP 自动映射、SSE 事件推送、设置页、E2E      | #12～#16    |
+| [M4-2 PWA](https://github.com/Delta1035/devhub/milestone/2)      | HTTP / SSE 客户端、手机布局与托管                  | #17、18     |
+| [M4-3 Android](https://github.com/Delta1035/devhub/milestone/4)  | Capacitor ADR（0027）、客户端壳、构建与发布 CI     | #19～21、30 |
 
 ### 进行中
 
@@ -40,6 +40,7 @@ M4-3 Android：
 - #19 已完成：先用 Capacitor 包装网页版，Expo 原生客户端推迟（ADR 0027）。
 - #20 待开始：Capacitor 壳 + 连接页 + CORS。
 - #21 待开始：Gradle 构建与发布。
+- #30 已完成：保留按 Expo 方案做的原生客户端骨架（`apps/mobile`，ADR 0028）作为以后 Expo 客户端的基础；Capacitor 目录改为 `apps/mobile-capacitor`。
 
 桌面修复：
 
@@ -57,6 +58,7 @@ M4-3 Android：
 - 安装包多带了 node-pty 的其他平台预编译文件与源码 / 测试（Linux 包约 2 MB 未压缩，`.pdb` 已被 electron-builder 默认排除）；已评估收益小（安装包 100+ MB），且排除规则写错只会在打包版中暴露，暂缓到下次修改打包配置时处理
 - 运行历史：异常中断的结束时间/退出码无法还原，日志检查点之后的最后一部分可能未保存；旧记录没有历史日志。
 - Maven / Gradle 多模块识别仅覆盖静态声明；Gradle 插件继承、版本目录别名和动态 include，Maven Profile / pluginManagement / 外部父 POM 未计算，可用 `.devhub.yaml` 显式补充；本机未实际构建 Java 应用。
+- Expo 客户端骨架（`apps/mobile`）：只在 Windows 上的模拟器（API 36）经 Expo Go 验证过，未在真机上运行；Windows 本地原生构建因 pnpm 路径过长失败（ADR 0028），尚无 APK 构建（#21 只构建 Capacitor）；没有应用内扫码（需粘贴连接地址）；日志页只显示最近 128 KB 纯文本
 - Android 项目的 `assembleDebug`、`installDebug` 等任务暂不识别
 - Linux 上自己 `setsid` 脱离进程组的守护进程杀不到；崩溃后的遗留进程只有当记录的根进程本身存活时才能发现（子进程脱离后根进程已退出的情况发现不了）
 - Windows 上 node-pty 在进程自然退出后会在 stderr 打印 `AttachConsole failed`（释放资源时的辅助进程），不影响功能
