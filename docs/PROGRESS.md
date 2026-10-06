@@ -40,7 +40,7 @@ M4-3 Android：
 - #19 已完成：先用 Capacitor 包装网页版，Expo 原生客户端推迟（ADR 0027）。
 - #20 待开始：Capacitor 壳 + 连接页 + CORS。
 - #21 待开始：Gradle 构建与发布。
-- #30 进行中：保留按 Expo 方案做的原生客户端骨架（`apps/mobile`，ADR 0028）作为以后 Expo 客户端的基础；Capacitor 目录改为 `apps/mobile-capacitor`。
+- #30 已完成：保留按 Expo 方案做的原生客户端骨架（`apps/mobile`，ADR 0028）作为以后 Expo 客户端的基础；Capacitor 目录改为 `apps/mobile-capacitor`。
 
 桌面修复：
 
