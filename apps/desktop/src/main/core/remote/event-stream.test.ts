@@ -88,6 +88,9 @@ describe('remote event stream', () => {
     const response = await open(await start(bus))
     expect(response.status).toBe(200)
     expect(response.headers.get('content-type')).toBe('text/event-stream; charset=utf-8')
+    // Keeps proxies such as `tailscale serve` or nginx from buffering or rewriting events.
+    expect(response.headers.get('cache-control')).toContain('no-transform')
+    expect(response.headers.get('x-accel-buffering')).toBe('no')
 
     const ready = await readUntil(response, (text) => text.includes('\n\n'))
     expect(ready).toBe('event: ready\ndata: {"protocol":1}\n\n')

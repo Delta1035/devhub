@@ -160,31 +160,37 @@ function ScriptGroup({
       </h3>
       <ul className="divide-y rounded-lg border bg-card">
         {scripts.map((script) => (
-          <li key={script.id} className="flex items-center gap-4 px-4 py-2.5">
-            <span className="w-40 shrink-0 truncate font-medium" title={script.name}>
-              {script.name}
-            </span>
-            <div className="min-w-0 flex-1">
-              <span className="flex min-w-0 items-center gap-2">
-                <code className="truncate font-mono text-xs" title={script.command}>
-                  {script.command}
-                </code>
-                {script.ports?.map((port) => (
-                  <Badge
-                    key={port}
-                    variant="outline"
-                    className="h-4 shrink-0 px-1.5 text-[10px]"
-                    title="启动前会检查这个端口是否已被占用"
-                  >
-                    端口 {port}
-                  </Badge>
-                ))}
+          <li
+            key={script.id}
+            className="flex items-center gap-4 px-4 py-2.5 max-md:gap-2 max-md:px-3"
+          >
+            {/* On phones the name goes above the command, leaving the row's width to the controls. */}
+            <div className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-4">
+              <span className="truncate font-medium md:w-40 md:shrink-0" title={script.name}>
+                {script.name}
               </span>
-              {script.description && (
-                <p className="truncate text-xs text-muted-foreground" title={script.description}>
-                  {script.description}
-                </p>
-              )}
+              <div className="min-w-0 flex-1">
+                <span className="flex min-w-0 items-center gap-2">
+                  <code className="truncate font-mono text-xs" title={script.command}>
+                    {script.command}
+                  </code>
+                  {script.ports?.map((port) => (
+                    <Badge
+                      key={port}
+                      variant="outline"
+                      className="h-4 shrink-0 px-1.5 text-[10px]"
+                      title="启动前会检查这个端口是否已被占用"
+                    >
+                      端口 {port}
+                    </Badge>
+                  ))}
+                </span>
+                {script.description && (
+                  <p className="truncate text-xs text-muted-foreground" title={script.description}>
+                    {script.description}
+                  </p>
+                )}
+              </div>
             </div>
             <RunHistoryButton projectId={projectId} scriptId={script.id} scriptName={script.name} />
             <RunControls

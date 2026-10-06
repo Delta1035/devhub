@@ -16,6 +16,7 @@ const selectClass =
 
 const loopback = '127.0.0.1'
 const everyInterface = '0.0.0.0'
+const remoteGuideUrl = 'https://delta1035.github.io/devhub/guide/remote'
 
 /** Remote access for the phone (ADR 0022). Only on the desktop itself: it shows the token. */
 export function RemoteSection({
@@ -108,6 +109,24 @@ function RemoteSettings({
           ]}
         />
       </SettingRow>
+      <SettingRow
+        label="安装到手机主屏幕"
+        description={
+          <>
+            需要 HTTPS：监听地址选 {loopback}，在这台电脑上运行{' '}
+            <code className="font-mono">tailscale serve --bg {state.port}</code>
+            ，再用手机打开 https://本机名.你的-tailnet.ts.net/ 并粘贴访问令牌
+          </>
+        }
+      >
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => shell?.openExternal(remoteGuideUrl).catch(fail)}
+        >
+          查看说明
+        </Button>
+      </SettingRow>
     </SettingsSection>
   )
 }
@@ -137,7 +156,7 @@ function hostOptions(state: RemoteState): { value: string; label: string }[] {
     label: `${entry.address}（${entry.interfaceName}${addressNote(entry)}）`
   }))
   options.push(
-    { value: loopback, label: `${loopback}（仅本机，用于测试）` },
+    { value: loopback, label: `${loopback}（仅本机，测试或配合 tailscale serve）` },
     { value: everyInterface, label: '所有地址' }
   )
   // A saved address that is gone for now, e.g. Tailscale disconnected.
@@ -154,7 +173,9 @@ function addressNote(entry: NetworkAddress): string {
 }
 
 function hostAdvice(state: RemoteState): string {
-  if (state.host === loopback) return '只有这台电脑能访问，手机无法连接'
+  if (state.host === loopback) {
+    return '手机不能直接连接；配合 tailscale serve 可经 HTTPS 访问，见「安装到手机主屏幕」'
+  }
   if (state.addresses.find((entry) => entry.address === state.host)?.tailscale) {
     return '经 Tailscale 加密传输'
   }

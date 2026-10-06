@@ -30,14 +30,15 @@ export function SettingRow({
   children: React.ReactNode
 }): React.JSX.Element {
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-      <div className="min-w-48 flex-1">
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 max-md:px-3">
+      <div className="min-w-48 flex-1 max-md:min-w-full">
         <label htmlFor={htmlFor} className="text-sm font-medium">
           {label}
         </label>
         {description && <div className="text-xs text-muted-foreground">{description}</div>}
       </div>
-      <div className="flex shrink-0 items-center gap-2">{children}</div>
+      {/* Wraps under the label on phones instead of pushing past the screen edge. */}
+      <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">{children}</div>
     </div>
   )
 }

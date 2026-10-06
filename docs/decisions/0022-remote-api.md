@@ -79,3 +79,11 @@ M4 要让手机（先 PWA，后 Android）查看和控制桌面端的项目与�
 - 新增需要 Token 的 `GET /api/v1/session`（`{ protocol, allowTerminal }`）：网页连接时校验令牌，并决定是否显示终端入口。
 - `@renderer/api` 在没有 preload 时改用远程客户端，并导出 `access`（`manage`：仅桌面；`terminal`：桌面或远程允许终端时）。远程不允许的操作（`local` 方法、未开启时的 `terminal` 方法）在界面上隐藏，而不是点击后报 403；只观看的手机不调整 PTY 尺寸，避免把桌面终端改成手机宽度。
 - 布局仍是桌面布局，手机屏幕上的适配在 #18。
+
+## 补充（2026-10-06，#18）：手机布局、安装与 HTTPS
+
+- 手机布局沿用同一份组件：`md`（768px）以下侧栏改为抽屉（shadcn Sheet，基于已有的 Radix Dialog），触屏与窄屏上项目条目显示「⋯」菜单代替右键菜单，两者共用菜单项。不另做手机专用的逐级导航。
+- 可安装：manifest 设置 `id` / `start_url` / `scope` 为 `./`（令牌在 localStorage 中，从主屏幕打开时地址不带令牌）。**不加 service worker**：Chrome 安装已不要求它；离线时应用本就不可用，缓存反而可能让手机一直停在旧版本。真机若不出现安装入口，再补一个只转发、不缓存的最小 service worker。
+- HTTPS 不由 DevHub 提供，仍由 Tailscale 负责：DevHub 监听 `127.0.0.1`，`tailscale serve --bg <端口>` 在 `https://<机器名>.<tailnet>.ts.net` 上转发。说明写在设置页与官网「手机访问」；二维码暂时仍只编码所选监听地址（用户决定先只写说明），经 HTTPS 访问时需在手机上粘贴令牌。
+- 事件流响应带 `Cache-Control: no-transform` 与 `X-Accel-Buffering: no`，代理不应缓冲或改写事件。
+- 已知限制：经 `tailscale serve` 转发时所有请求的来源地址都是 `127.0.0.1`，令牌失败次数限速对它们合并计算——一台用旧令牌反复重试的设备可能让其他设备暂时被拒（429），直到 1 分钟的窗口过去。
