@@ -94,6 +94,8 @@ export interface NetworkAddress {
   interfaceName: string
   /** In Tailscale's ranges (100.64.0.0/10, fd7a:115c:a1e0::/48): encrypted, recommended. */
   tailscale: boolean
+  /** In 198.18.0.0/15, used by proxy TUN adapters (Clash, Mihomo, Surge): phones usually cannot reach it. */
+  virtual: boolean
 }
 
 export type RemoteStatus =
@@ -108,7 +110,7 @@ export interface RemoteState {
   allowTerminal: boolean
   token: string
   status: RemoteStatus
-  /** Current addresses of this machine, Tailscale first; loopback and link-local excluded. */
+  /** Current addresses of this machine, Tailscale, then LAN, proxy adapters last; loopback and link-local excluded. */
   addresses: NetworkAddress[]
 }
 
