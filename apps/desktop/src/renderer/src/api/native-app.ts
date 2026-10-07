@@ -1,9 +1,11 @@
+import { CapacitorHttp } from '@capacitor/core'
 import { App } from '@capacitor/app'
 import {
   CapacitorBarcodeScanner,
   CapacitorBarcodeScannerTypeHint
 } from '@capacitor/barcode-scanner'
 import { SecureStorage } from '@aparajita/capacitor-secure-storage'
+import { remoteApiPrefix } from '@devhub/shared'
 import type { SavedConnection } from './remote-connection'
 
 /*
@@ -79,5 +81,23 @@ export async function scanQrCode(): Promise<ScanResult> {
       ok: false,
       message: `无法扫码：${error instanceof Error ? error.message : String(error)}`
     }
+  }
+}
+
+/**
+ * `GET /api/v1/info` over native HTTP, which CORS does not apply to; null when that fails too.
+ * Tells an old desktop (no CORS for the app) from an unreachable one (`explainConnectFailure`).
+ */
+export async function probeDesktop(baseUrl: string): Promise<unknown> {
+  try {
+    const response = await CapacitorHttp.get({
+      url: `${baseUrl}${remoteApiPrefix}/info`,
+      responseType: 'json',
+      connectTimeout: 5000,
+      readTimeout: 5000
+    })
+    return response.status === 200 ? response.data : null
+  } catch {
+    return null
   }
 }

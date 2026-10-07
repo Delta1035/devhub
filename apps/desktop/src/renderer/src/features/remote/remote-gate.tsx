@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { RemoteError, protocolMismatch } from '@devhub/shared'
-import { access, appUpdates, remote, scanQrCode } from '@renderer/api'
+import { RemoteError, explainConnectFailure, protocolMismatch } from '@devhub/shared'
+import { access, appUpdates, probeDesktop, remote, scanQrCode } from '@renderer/api'
 import type { RemoteConnection, SavedConnection } from '@renderer/api/remote-connection'
 import { AppUpdateBanner } from './app-update-banner'
 import { ConnectPage } from './connect-page'
 
 const rejectedMessage = (choosesAddress: boolean): string =>
   `访问令牌无效或已重新生成，请重新${choosesAddress ? '粘贴连接地址' : '扫码连接'}`
+
+const outdatedDesktopMessage =
+  '桌面端版本过旧，无法从 App 连接：请把电脑上的 DevHub 更新到 1.4.0 或以上'
 
 /**
  * In the web app and the Android app, renders the app only once the desktop accepted the token,
@@ -54,6 +57,13 @@ function Gate({
         if (error instanceof RemoteError && error.code === 'UNAUTHORIZED') {
           connection.clearToken()
           return { accepted: false as const }
+        }
+        // The app's requests are cross-origin: a desktop before 1.4 answers but blocks them.
+        if (error instanceof RemoteError && error.code === 'NETWORK' && probeDesktop) {
+          const info = await probeDesktop(connection.current().baseUrl)
+          if (explainConnectFailure(info) === 'outdated-desktop') {
+            throw new RemoteError('OUTDATED_DESKTOP', outdatedDesktopMessage, 0)
+          }
         }
         throw error
       }

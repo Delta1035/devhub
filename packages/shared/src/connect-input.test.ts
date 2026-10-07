@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { remoteConnectUrl } from './remote'
-import { parseAddress, readConnectForm } from './connect-input'
+import { explainConnectFailure, parseAddress, readConnectForm } from './connect-input'
 
 describe('parseAddress', () => {
   it('reads the connect link from the desktop QR code', () => {
@@ -61,5 +61,17 @@ describe('readConnectForm', () => {
       ok: false,
       message: '请填写 Token，或粘贴桌面端的连接地址'
     })
+  })
+})
+
+describe('explainConnectFailure', () => {
+  it('blames an old desktop when it answers native requests', () => {
+    expect(explainConnectFailure({ protocol: 1 })).toBe('outdated-desktop')
+  })
+
+  it('blames the network when nothing answers, or something else does', () => {
+    expect(explainConnectFailure(null)).toBe('unreachable')
+    expect(explainConnectFailure('<html>router login</html>')).toBe('unreachable')
+    expect(explainConnectFailure({ ok: false })).toBe('unreachable')
   })
 })

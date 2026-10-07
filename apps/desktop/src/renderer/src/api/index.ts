@@ -43,6 +43,11 @@ export const scanQrCode: (() => Promise<ScanResult>) | null = nativeApp
   ? async () => (await import('./native-app')).scanQrCode()
   : null
 
+/** The Android app's native check of an unreachable desktop (`explainConnectFailure`). */
+export const probeDesktop: ((baseUrl: string) => Promise<unknown>) | null = nativeApp
+  ? async (baseUrl) => (await import('./native-app')).probeDesktop(baseUrl)
+  : null
+
 /** Live updates of the Android app's web bundle (ADR 0030); null elsewhere. */
 export const appUpdates: AppUpdates | null = nativeApp
   ? createAppUpdates(() => import('./native-live-update'))
