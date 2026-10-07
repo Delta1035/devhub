@@ -66,6 +66,9 @@ importers:
       '@capacitor/core':
         specifier: 8.5.2
         version: 8.5.2
+      '@capawesome/capacitor-live-update':
+        specifier: 8.6.0
+        version: 8.6.0(@capacitor/core@8.5.2)(electron@44.5.1)
       '@devhub/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -256,6 +259,9 @@ importers:
       '@capacitor/core':
         specifier: 8.5.2
         version: 8.5.2
+      '@capawesome/capacitor-live-update':
+        specifier: 8.6.0
+        version: 8.6.0(@capacitor/core@8.5.2)(electron@44.5.1)
     devDependencies:
       '@capacitor/cli':
         specifier: 8.5.2
@@ -780,6 +786,24 @@ packages:
     resolution: {integrity: sha512-Bbe+9V0qaT6dzEFJEK7BUWR01l2+vZE8FM5ITF/WgKtx+G6eGZ6d5+YiSMRJBAK0VGjdO59v8yiQ10Doa5KyvQ==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
+
+  '@capawesome/capacitor-live-update@8.6.0':
+    resolution: {integrity: sha512-g7rGLhRGmrhAeEHeWAXNwBeJoWOpHqn/FZqqlBlKI/VQLX6XiwKvnhwD5agxvX3AMPsyB7hcJxLOSQ/wpLaeAA==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+      '@capawesome/capacitor-electron': '>=0.2.0'
+    peerDependenciesMeta:
+      '@capawesome/capacitor-electron':
+        optional: true
+
+  '@capawesome/electron-live-update@0.1.0':
+    resolution: {integrity: sha512-1qTEO8SzNplSfj53PkvrmV+5s+t86dZeYzjbsswCqSEhXIzg0TUsrBmWCueRgjGcOXb0Iu3AYi6pKekKQi9XTw==}
+    engines: {node: '>=20.0.0'}
+    peerDependencies:
+      electron: '>=28.0.0'
+    peerDependenciesMeta:
+      electron:
+        optional: true
 
   '@docsearch/css@3.8.2':
     resolution: {integrity: sha512-y05ayQFyUmCXze79+56v/4HpycYF3uFqB78pLPrSV5ZKAlDuIAAJNhaRi8tTdRNXh05yxX/TyNnzD6LwSM89vQ==}
@@ -7324,6 +7348,10 @@ packages:
   yauzl@2.10.0:
     resolution: {integrity: sha512-p4a9I6X6nu6IhoGmBqAcbJy1mlC4j27vEPZX9F4L4/vZT3Lyq1VkFHw/V/PUcB9Buo+DG3iHkT0x3Qya58zc3g==}
 
+  yauzl@3.4.0:
+    resolution: {integrity: sha512-jIH9yLR9wqr0wOS0TpBvo/g/2UgZH5qePVbjgRliiF0BYvOZyaBknKsF+x9Iht0O6sqgnB93rCICdOZFecJuDw==}
+    engines: {node: '>=12'}
+
   yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
@@ -8004,6 +8032,19 @@ snapshots:
   '@capacitor/keyboard@8.0.6(@capacitor/core@8.5.2)':
     dependencies:
       '@capacitor/core': 8.5.2
+
+  '@capawesome/capacitor-live-update@8.6.0(@capacitor/core@8.5.2)(electron@44.5.1)':
+    dependencies:
+      '@capacitor/core': 8.5.2
+      '@capawesome/electron-live-update': 0.1.0(electron@44.5.1)
+    transitivePeerDependencies:
+      - electron
+
+  '@capawesome/electron-live-update@0.1.0(electron@44.5.1)':
+    dependencies:
+      yauzl: 3.4.0
+    optionalDependencies:
+      electron: 44.5.1
 
   '@docsearch/css@3.8.2': {}
 
@@ -15720,6 +15761,10 @@ snapshots:
     dependencies:
       buffer-crc32: 0.2.13
       fd-slicer: 1.1.0
+
+  yauzl@3.4.0:
+    dependencies:
+      pend: 1.2.0
 
   yocto-queue@0.1.0: {}
 
