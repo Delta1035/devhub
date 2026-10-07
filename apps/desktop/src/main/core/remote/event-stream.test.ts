@@ -59,6 +59,7 @@ describe('remote event stream', () => {
   ): Promise<string> => {
     server = await startRemoteServer({
       api: {} as DevhubApi,
+      appVersion: '1.2.3',
       subscribe: (listener) => {
         bus.listeners.add(listener)
         return () => bus.listeners.delete(listener)

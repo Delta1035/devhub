@@ -309,6 +309,7 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     subscribe: (listener) => events.subscribe(listener),
     addresses: () => listNetworkAddresses(networkInterfaces()),
     webRoot: env.webRoot,
+    appVersion: env.version,
     config: createRemoteConfigStore({
       store: createJsonStore({
         filePath: join(env.dataDir, 'remote.json'),

@@ -43,6 +43,7 @@ describe('static web app', () => {
   const start = async (root: string | null = webRoot): Promise<number> => {
     server = await startRemoteServer({
       api: {} as DevhubApi,
+      appVersion: '1.2.3',
       subscribe: () => () => undefined,
       host: '127.0.0.1',
       port: 0,

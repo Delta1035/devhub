@@ -26,6 +26,8 @@ export interface RemoteServerOptions extends EventStreamOptions {
   port: number
   token: string
   allowTerminal: boolean
+  /** The desktop's version, told to clients in the session. */
+  appVersion: string
   limiter?: FailureLimiter
   maxBodyBytes?: number
   /** Built web app served outside `/api`; absent in dev builds that did not build it. */
@@ -56,6 +58,7 @@ export function startRemoteServer({
   port,
   token,
   allowTerminal,
+  appVersion,
   limiter = createFailureLimiter(),
   maxBodyBytes = 1024 * 1024,
   subscribe,
@@ -101,7 +104,7 @@ export function startRemoteServer({
       if (request.method !== 'GET')
         return reject(response, 405, 'METHOD_NOT_ALLOWED', { allow: 'GET' })
       if (!authorized(request, response)) return
-      const session: RemoteSession = { protocol: remoteProtocolVersion, allowTerminal }
+      const session: RemoteSession = { protocol: remoteProtocolVersion, allowTerminal, appVersion }
       return send(response, 200, session)
     }
 
