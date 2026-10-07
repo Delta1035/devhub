@@ -13,9 +13,11 @@ const root = join(dirname(scriptPath), '..')
 const build = join(root, 'build')
 const resources = join(root, 'resources')
 const web = join(root, 'src', 'renderer', 'public')
+const androidRes = join(root, '..', 'mobile-capacitor', 'android', 'app', 'src', 'main', 'res')
 
 // Sources: icon.svg (rounded, full size), icon-mac.svg (Apple 824/1024 grid),
-// icon-square.svg (full-bleed, for platforms that apply their own mask), tray-template.svg.
+// icon-square.svg (full-bleed, for platforms that apply their own mask), tray-template.svg,
+// icon-android-round.svg and icon-android-foreground.svg (Android launcher icons).
 const pngs = [
   { src: 'icon.svg', size: 512, out: join(build, 'icon.png') },
   { src: 'icon.svg', size: 512, out: join(resources, 'icon.png') },
@@ -26,8 +28,29 @@ const pngs = [
   { src: 'icon.svg', size: 192, out: join(web, 'icon-192.png') },
   { src: 'icon.svg', size: 512, out: join(web, 'icon-512.png') },
   { src: 'icon-square.svg', size: 512, out: join(web, 'icon-maskable-512.png') },
-  { src: 'icon-square.svg', size: 180, out: join(web, 'apple-touch-icon.png') }
+  { src: 'icon-square.svg', size: 180, out: join(web, 'apple-touch-icon.png') },
+  ...androidIcons()
 ]
+
+/**
+ * Android launcher icons per density: 48dp legacy and round icons, and the 108dp foreground of
+ * the adaptive icon (mipmap-anydpi-v26), whose background is a color resource.
+ */
+function androidIcons() {
+  const densities = { mdpi: 1, hdpi: 1.5, xhdpi: 2, xxhdpi: 3, xxxhdpi: 4 }
+  return Object.entries(densities).flatMap(([name, scale]) => {
+    const dir = join(androidRes, `mipmap-${name}`)
+    return [
+      { src: 'icon.svg', size: 48 * scale, out: join(dir, 'ic_launcher.png') },
+      { src: 'icon-android-round.svg', size: 48 * scale, out: join(dir, 'ic_launcher_round.png') },
+      {
+        src: 'icon-android-foreground.svg',
+        size: 108 * scale,
+        out: join(dir, 'ic_launcher_foreground.png')
+      }
+    ]
+  })
+}
 const icos = [
   { src: 'icon.svg', sizes: [16, 24, 32, 48, 64, 128, 256], out: join(build, 'icon.ico') },
   { src: 'icon.svg', sizes: [16, 32, 48], out: join(web, 'favicon.ico') }
