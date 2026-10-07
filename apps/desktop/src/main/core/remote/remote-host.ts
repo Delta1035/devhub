@@ -34,6 +34,7 @@ export function createRemoteHost({
   addresses,
   webRoot,
   appVersion,
+  busyPortRetryDelaysMs = [500, 1000, 1500, 2000, 3000, 3000, 4000],
   log = console
 }: {
   api: DevhubApi
@@ -45,11 +46,17 @@ export function createRemoteHost({
   webRoot?: string
   /** The desktop's version, told to remote clients. */
   appVersion: string
+  /**
+   * Waits between listen attempts when the port is taken at startup (about 15 s in all). Right
+   * after an update the previous DevHub may still be stopping its runs and holding the port.
+   */
+  busyPortRetryDelaysMs?: readonly number[]
   log?: Pick<Console, 'info' | 'error'>
 }): RemoteHost {
   let server: RemoteServer | null = null
   let status: RemoteStatus = { state: 'off' }
   let disposed = false
+  let retryTimer: ReturnType<typeof setTimeout> | null = null
   let queue: Promise<unknown> = Promise.resolve()
   // Restarts must not overlap: two servers would race for the same port.
   const serial = <T>(step: () => Promise<T>): Promise<T> => {
@@ -58,7 +65,17 @@ export function createRemoteHost({
     return next
   }
 
-  const restart = async (current: RemoteConfig): Promise<void> => {
+  /**
+   * `retryDelays`: when the port is taken, try again after each of these. A retry goes back
+   * through `serial` instead of waiting inside it, so settings stay responsive meanwhile; any
+   * later restart (a settings change, a new token, dispose) cancels it.
+   */
+  const restart = async (
+    current: RemoteConfig,
+    retryDelays: readonly number[] = []
+  ): Promise<void> => {
+    if (retryTimer) clearTimeout(retryTimer)
+    retryTimer = null
     await server?.close()
     server = null
     status = { state: 'off' }
@@ -78,6 +95,13 @@ export function createRemoteHost({
       status = { state: 'listening', port: server.port }
       log.info(`[remote] listening on ${host}:${server.port}`)
     } catch (error) {
+      const [delay, ...later] = retryDelays
+      if ((error as NodeJS.ErrnoException).code === 'EADDRINUSE' && delay !== undefined) {
+        status = { state: 'error', message: `端口 ${port} 已被占用，正在重试…` }
+        log.info(`[remote] port ${port} is taken, retrying in ${delay} ms`)
+        retryTimer = setTimeout(() => void serial(() => restart(current, later)), delay)
+        return
+      }
       status = { state: 'error', message: listenFailure(error, host, port) }
       log.error('[remote] failed to start', error)
     }
@@ -94,7 +118,9 @@ export function createRemoteHost({
       serial(async () => {
         try {
           // Disabled: nothing to do, and no token is generated (nor remote.json written).
-          if (await config.isEnabled()) await restart(await config.get())
+          if (await config.isEnabled()) {
+            await restart(await config.get(), busyPortRetryDelaysMs)
+          }
         } catch (error) {
           status = { state: 'error', message: '无法读取远程访问设置' }
           log.error('[remote] failed to start', error)
@@ -130,6 +156,8 @@ export function createRemoteHost({
     dispose: () =>
       serial(async () => {
         disposed = true
+        if (retryTimer) clearTimeout(retryTimer)
+        retryTimer = null
         await server?.close()
         server = null
         status = { state: 'off' }
