@@ -131,6 +131,13 @@ test('remote access is set up in settings and serves the API with its token', as
   await expect(section.getByRole('img', { name: '连接二维码' })).toBeVisible()
   await expect(section.getByText(`http://127.0.0.1:${port}/#token=…`)).toBeVisible()
 
+  // The Android app accepts the whole connect link, the same as the QR code.
+  await section.getByRole('button', { name: '复制连接地址' }).click()
+  await expect(section.getByRole('button', { name: '已复制' })).toBeVisible()
+  expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toBe(
+    `http://127.0.0.1:${port}/#token=${token}`
+  )
+
   // A new token locks out the old one immediately.
   await section.getByRole('button', { name: '重新生成…' }).click()
   await section.getByRole('button', { name: '确认重新生成' }).click()

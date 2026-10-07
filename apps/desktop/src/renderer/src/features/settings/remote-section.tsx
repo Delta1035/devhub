@@ -198,13 +198,13 @@ function TokenRow({
   const [revealed, setRevealed] = useState(false)
   const [showQr, setShowQr] = useState(false)
   const [confirming, setConfirming] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState<'token' | 'link' | null>(null)
   const connectUrl = remoteConnectUrl(displayHost(state), state.port, state.token)
 
-  const copy = (): void => {
-    void navigator.clipboard.writeText(state.token).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+  const copy = (what: 'token' | 'link'): void => {
+    void navigator.clipboard.writeText(what === 'token' ? state.token : connectUrl).then(() => {
+      setCopied(what)
+      setTimeout(() => setCopied(null), 1500)
     })
   }
 
@@ -221,8 +221,8 @@ function TokenRow({
         <Button variant="outline" size="sm" onClick={() => setRevealed(!revealed)}>
           {revealed ? '隐藏' : '显示'}
         </Button>
-        <Button variant="outline" size="sm" onClick={copy}>
-          {copied ? '已复制' : '复制'}
+        <Button variant="outline" size="sm" onClick={() => copy('token')}>
+          {copied === 'token' ? '已复制' : '复制'}
         </Button>
         {confirming ? (
           <>
@@ -253,8 +253,11 @@ function TokenRow({
       )}
       <SettingRow
         label="连接二维码"
-        description="用手机扫码打开并连接；二维码包含令牌，不要截图或给他人看"
+        description="用手机扫码打开并连接，Android App 也可以扫码或粘贴连接地址；二者都包含令牌，不要截图或给他人看"
       >
+        <Button variant="outline" size="sm" onClick={() => copy('link')}>
+          {copied === 'link' ? '已复制' : '复制连接地址'}
+        </Button>
         <Button variant="outline" size="sm" onClick={() => setShowQr(!showQr)}>
           {showQr ? '隐藏二维码' : '显示二维码'}
         </Button>
