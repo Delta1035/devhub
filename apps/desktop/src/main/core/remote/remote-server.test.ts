@@ -19,6 +19,7 @@ describe('remote server', () => {
   const start = async (options: Partial<RemoteServerOptions> = {}): Promise<string> => {
     server = await startRemoteServer({
       api: fakeApi({}),
+      appVersion: '1.2.3',
       subscribe: () => () => undefined,
       host: '127.0.0.1',
       port: 0,
@@ -61,7 +62,7 @@ describe('remote server', () => {
     const response = await fetch(`${base}/api/v1/session`, {
       headers: { authorization: `Bearer ${token}` }
     })
-    expect(await response.json()).toEqual({ protocol: 1, allowTerminal: true })
+    expect(await response.json()).toEqual({ protocol: 1, allowTerminal: true, appVersion: '1.2.3' })
   })
 
   it('calls the method with the given arguments and returns the IPC envelope', async () => {
@@ -197,6 +198,7 @@ describe('remote server', () => {
     await expect(
       startRemoteServer({
         api: fakeApi({}),
+        appVersion: '1.2.3',
         subscribe: () => () => undefined,
         host: '127.0.0.1',
         port: server!.port,

@@ -44,3 +44,4 @@ DevHub 是一个桌面客户端：自动发现本地项目中的脚本（npm / m
 
 - 所有路径处理用 `path` 模块，不要拼接 `/` 或 `\`。
 - 进程管理必须同时考虑 Windows 与 Linux：杀进程必须杀整棵进程树，并为两个平台写测试。
+- Android App 的原生部分（Capacitor 或插件版本、`apps/mobile-capacitor/android/`、`capacitor.config.ts`）有变化时，把 `apps/mobile-capacitor/live-update.json` 的 `minVersionCode` 调到即将发布版本的 versionCode（ADR 0030），否则旧 APK 会下载到它运行不了的网页包。

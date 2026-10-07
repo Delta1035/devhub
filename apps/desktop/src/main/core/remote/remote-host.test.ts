@@ -69,7 +69,14 @@ describe('remote host', () => {
   })
 
   const create = (config: RemoteConfigStore): RemoteHost =>
-    (host = createRemoteHost({ api, subscribe, config, addresses: () => [lan], log: silent }))
+    (host = createRemoteHost({
+      api,
+      subscribe,
+      config,
+      addresses: () => [lan],
+      appVersion: '1.2.3',
+      log: silent
+    }))
 
   it('serves the api while enabled and reports where it listens', async () => {
     const port = await freePort()

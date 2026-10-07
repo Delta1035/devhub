@@ -17,6 +17,7 @@ describe('remote server CORS', () => {
   const start = async (api: Partial<DevhubApi> = {}): Promise<string> => {
     server = await startRemoteServer({
       api: api as DevhubApi,
+      appVersion: '1.2.3',
       subscribe: () => () => undefined,
       host: '127.0.0.1',
       port: 0,

@@ -244,7 +244,8 @@ function isSession(value: unknown): value is RemoteSession {
     typeof value === 'object' &&
     value !== null &&
     typeof (value as RemoteSession).protocol === 'number' &&
-    typeof (value as RemoteSession).allowTerminal === 'boolean'
+    typeof (value as RemoteSession).allowTerminal === 'boolean' &&
+    ['string', 'undefined'].includes(typeof (value as RemoteSession).appVersion)
   )
 }
 

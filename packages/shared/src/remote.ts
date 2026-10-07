@@ -84,6 +84,11 @@ export interface RemoteSession {
   protocol: number
   /** Whether `terminal` methods (new shells, terminal input) are allowed. */
   allowTerminal: boolean
+  /**
+   * The desktop's version. The Android app loads the web bundle of the same version (ADR 0030).
+   * Absent from desktops before 1.4.
+   */
+  appVersion?: string
 }
 
 /** An address of this machine the remote server can listen on. */

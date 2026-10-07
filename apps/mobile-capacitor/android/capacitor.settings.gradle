@@ -7,3 +7,6 @@ project(':aparajita-capacitor-secure-storage').projectDir = new File('../../../n
 
 include ':capacitor-app'
 project(':capacitor-app').projectDir = new File('../../../node_modules/.pnpm/@capacitor+app@8.1.2_@capacitor+core@8.5.2/node_modules/@capacitor/app/android')
+
+include ':capawesome-capacitor-live-update'
+project(':capawesome-capacitor-live-update').projectDir = new File('../../../node_modules/.pnpm/@capawesome+capacitor-live-_0727f6e718787ccecd83c02e74c1eb23/node_modules/@capawesome/capacitor-live-update/android')

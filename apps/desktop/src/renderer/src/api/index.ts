@@ -1,6 +1,7 @@
 import type { DevhubApi, DevhubEvents, ShellApi } from '@devhub/shared'
 import { createRemoteConnection, type RemoteConnection } from './remote-connection'
 import { webStorage } from './web-storage'
+import { createAppUpdates, type AppUpdates } from './app-update'
 
 declare global {
   interface Window {
@@ -35,6 +36,11 @@ export const remote: RemoteConnection | null = window.devhub
     )
 
 if (nativeApp) void import('./native-app').then((app) => app.handleBackButton())
+
+/** Live updates of the Android app's web bundle (ADR 0030); null elsewhere. */
+export const appUpdates: AppUpdates | null = nativeApp
+  ? createAppUpdates(() => import('./native-live-update'))
+  : null
 
 /**
  * The only entry point for UI code to reach the DevHub core: the Electron preload bridge on the

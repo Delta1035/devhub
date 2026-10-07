@@ -6,7 +6,7 @@ import eslintPluginReactHooks from 'eslint-plugin-react-hooks'
 import eslintPluginReactRefresh from 'eslint-plugin-react-refresh'
 
 const nodeBuiltins = ['fs', 'path', 'child_process', 'os', 'net', 'node:*']
-const capacitorPlugins = ['@capacitor/*', '@aparajita/capacitor-*']
+const capacitorPlugins = ['@capacitor/*', '@aparajita/capacitor-*', '@capawesome/*']
 
 export default defineConfig(
   {

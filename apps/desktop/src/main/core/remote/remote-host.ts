@@ -33,6 +33,7 @@ export function createRemoteHost({
   config,
   addresses,
   webRoot,
+  appVersion,
   log = console
 }: {
   api: DevhubApi
@@ -42,6 +43,8 @@ export function createRemoteHost({
   addresses: () => NetworkAddress[]
   /** The built web app to serve at `/`. */
   webRoot?: string
+  /** The desktop's version, told to remote clients. */
+  appVersion: string
   log?: Pick<Console, 'info' | 'error'>
 }): RemoteHost {
   let server: RemoteServer | null = null
@@ -69,6 +72,7 @@ export function createRemoteHost({
         port,
         token,
         allowTerminal,
+        appVersion,
         webRoot
       })
       status = { state: 'listening', port: server.port }

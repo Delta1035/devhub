@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { RemoteError } from '@devhub/shared'
-import { access, remote } from '@renderer/api'
+import { RemoteError, protocolMismatch } from '@devhub/shared'
+import { access, appUpdates, remote } from '@renderer/api'
 import type { RemoteConnection, SavedConnection } from '@renderer/api/remote-connection'
+import { AppUpdateBanner } from './app-update-banner'
 import { ConnectPage } from './connect-page'
 
 const rejectedMessage = (choosesAddress: boolean): string =>
@@ -35,6 +36,9 @@ function Gate({
     void connection.restore().then(setSaved)
   }, [connection])
 
+  // This web bundle rendered: a live update that got this far is not rolled back.
+  useEffect(() => appUpdates?.confirm(), [])
+
   const token = saved?.token ?? null
   const session = useQuery({
     queryKey: ['remote-session', saved?.baseUrl, token],
@@ -44,7 +48,8 @@ function Gate({
       try {
         const value = await connection.client.session()
         access.terminal = value.allowTerminal
-        return { accepted: true as const }
+        appUpdates?.sync(value.appVersion)
+        return { accepted: true as const, behind: protocolMismatch(value.protocol) }
       } catch (error) {
         if (error instanceof RemoteError && error.code === 'UNAUTHORIZED') {
           connection.clearToken()
@@ -79,7 +84,14 @@ function Gate({
   }
 
   if (saved === undefined) return <></>
-  if (token !== null && !rejected && !changing && session.data?.accepted) return <>{children}</>
+  if (token !== null && !rejected && !changing && session.data?.accepted) {
+    return (
+      <>
+        <AppUpdateBanner behind={session.data.behind} />
+        {children}
+      </>
+    )
+  }
 
   const refused = rejected || session.data?.accepted === false
   return (

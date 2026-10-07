@@ -114,6 +114,20 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew assembleRelease --no-daemon
+      # The web bundle the app downloads to match a desktop of this version (ADR 0030).
+      - name: Pack the live update bundle
+        env:
+          LIVE_UPDATE_PRIVATE_KEY: ${{ secrets.LIVE_UPDATE_PRIVATE_KEY }}
+        run: |
+          if [ -z "$LIVE_UPDATE_PRIVATE_KEY" ]; then
+            if [ "$GITHUB_REF_TYPE" = tag ]; then
+              echo "::error::LIVE_UPDATE_PRIVATE_KEY is not set; the release needs a signed web bundle"
+              exit 1
+            fi
+            echo "::warning::No live update key: skipping the web bundle"
+            exit 0
+          fi
+          node scripts/live-update-bundle.mjs apk
       - name: Name APK after the release
         run: |
           version=$(node -p "require('./apps/desktop/package.json').version")
@@ -128,7 +142,9 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: installers-android
-          path: apk/*.apk
+          path: |
+            apk/*.apk
+            apk/devhub-web-*
           if-no-files-found: error
 
   release:
@@ -172,6 +188,7 @@ jobs:
             installers/*.AppImage
             installers/*.deb
             installers/*.apk
+            installers/devhub-web-*.zip
       # Created as a draft: check the installers, then publish it on GitHub. Installed apps only
       # see published releases, so publishing is what rolls the update out.
       - name: Create draft release
