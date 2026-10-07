@@ -16,7 +16,12 @@
     </style>
 
 
+    <!-- Launch theme. Android 12+ draws its own splash from the windowSplashScreen* items; older
+         versions show @drawable/splash. Capacitor switches to AppTheme.NoActionBar on start. -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
         <item name="android:background">@drawable/splash</item>
     </style>
 </resources>

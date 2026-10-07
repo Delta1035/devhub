@@ -1,4 +1,8 @@
 import { App } from '@capacitor/app'
+import {
+  CapacitorBarcodeScanner,
+  CapacitorBarcodeScannerTypeHint
+} from '@capacitor/barcode-scanner'
 import { SecureStorage } from '@aparajita/capacitor-secure-storage'
 import type { SavedConnection } from './remote-connection'
 
@@ -43,4 +47,37 @@ export function handleBackButton(): void {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     } else void App.minimizeApp()
   })
+}
+
+export type ScanResult = { ok: true; text: string } | { ok: false; message: string | null }
+
+/** The scanner plugin's error codes (its messages are English). */
+const scanCancelled = 'OS-PLUG-BARC-0006'
+const scanCameraDenied = 'OS-PLUG-BARC-0007'
+
+/**
+ * Scans the connect QR code from the desktop's settings with the plugin's full-screen scanner
+ * (bundled ML Kit: no Google Play services needed). `message` is null when the user cancelled.
+ */
+export async function scanQrCode(): Promise<ScanResult> {
+  try {
+    const { ScanResult: text } = await CapacitorBarcodeScanner.scanBarcode({
+      hint: CapacitorBarcodeScannerTypeHint.QR_CODE,
+      scanInstructions: '扫描电脑上的连接二维码'
+    })
+    return { ok: true, text }
+  } catch (error) {
+    const code = (error as { code?: unknown } | null)?.code
+    if (code === scanCancelled) return { ok: false, message: null }
+    if (code === scanCameraDenied) {
+      return {
+        ok: false,
+        message: '没有相机权限：请在系统设置中允许 DevHub 使用相机，或粘贴连接地址'
+      }
+    }
+    return {
+      ok: false,
+      message: `无法扫码：${error instanceof Error ? error.message : String(error)}`
+    }
+  }
 }

@@ -43,6 +43,9 @@ android {
     buildTypes {
         release {
             if (releaseKeystore) signingConfig signingConfigs.release
+            // Phones are ARM: leaving out the x86 copies of ML Kit's native scanner library
+            // (~12 MB) keeps the APK small. Debug builds keep them for the emulator.
+            ndk { abiFilters 'arm64-v8a', 'armeabi-v7a' }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

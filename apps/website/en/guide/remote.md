@@ -39,7 +39,7 @@ If you prefer not to use the browser, install the Android app. It has the same i
 
 1. Download `DevHub-<version>.apk` from [Releases](https://github.com/Delta1035/devhub/releases) and open it on the phone to install it (allow "Install unknown apps"). The app shares the desktop's version number; install the same version.
 2. Turn on remote access on the computer (as above) and note the **监听地址** (listen address) and port.
-3. In the app, enter `address:port` (such as `100.64.1.2:7420`) as **桌面端地址** (desktop address), paste the token copied on the computer as **访问令牌** (access token), and tap **连接** (connect). You can also scan the QR code with the phone's camera and paste the link it shows into the address field; the token is read from it.
+3. In the app, tap **扫码连接** (scan to connect) and scan the connect QR code on the computer. Or enter `address:port` (such as `100.64.1.2:7420`) as **桌面端地址** (desktop address), paste the token copied on the computer as **访问令牌** (access token), and tap **连接** (connect). Or click **复制连接地址** (copy connect link) on the computer and paste it as the desktop address; the token is read from it.
 
 The app reconnects by itself from then on. When the desktop is upgraded, the app downloads the matching interface and asks to restart; when a newer app is needed, it says so. After the token is regenerated, it returns to the connect page: enter the new token. To connect to another computer, tap **更换桌面端** (change desktop) on the page shown when the connection fails.
 

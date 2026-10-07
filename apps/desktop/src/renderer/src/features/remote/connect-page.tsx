@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { TriangleAlert } from 'lucide-react'
-import { readConnectForm } from '@devhub/shared'
+import { ScanLine, TriangleAlert } from 'lucide-react'
+import { parseAddress, readConnectForm } from '@devhub/shared'
+import type { ScanResult } from '@renderer/api/native-app'
 import type { SavedConnection } from '@renderer/api/remote-connection'
 import { Alert, AlertDescription } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
@@ -15,6 +16,7 @@ export function ConnectPage({
   offline,
   onRetry,
   onChange,
+  onScan,
   onSubmit
 }: {
   /** The Android app asks for the desktop's address too; the web app is served by it. */
@@ -25,6 +27,8 @@ export function ConnectPage({
   offline: boolean
   onRetry: () => void
   onChange: () => void
+  /** The Android app's QR scanner; absent elsewhere. */
+  onScan?: () => Promise<ScanResult>
   onSubmit: (connection: SavedConnection) => void
 }): React.JSX.Element {
   const [address, setAddress] = useState(savedAddress)
@@ -41,6 +45,20 @@ export function ConnectPage({
       setInvalid(null)
       onSubmit(form.settings)
     } else setInvalid(form.message)
+  }
+
+  // The desktop's connect QR code holds the whole connect link, token included (ADR 0023).
+  const scan = async (): Promise<void> => {
+    if (!onScan) return
+    const result = await onScan()
+    if (!result.ok) {
+      if (result.message) setInvalid(result.message)
+      return
+    }
+    const parsed = parseAddress(result.text)
+    if (!parsed?.token) return setInvalid('这不是 DevHub 的连接二维码')
+    setInvalid(null)
+    onSubmit({ baseUrl: parsed.baseUrl, token: parsed.token })
   }
 
   const alert = invalid ?? message
@@ -76,9 +94,15 @@ export function ConnectPage({
               <>
                 <p className="text-sm text-muted-foreground">
                   {choosesAddress
-                    ? '在电脑上打开 DevHub 的「设置 → 远程访问」，复制连接地址粘贴到下面（已包含访问令牌）；也可以分别填写地址和访问令牌。'
+                    ? '在电脑上打开 DevHub 的「设置 → 远程访问」，扫描连接二维码；或复制连接地址粘贴到下面（已包含访问令牌），也可以分别填写地址和访问令牌。'
                     : '在电脑上打开 DevHub 的「设置 → 远程访问」，用手机扫描连接二维码；也可以复制访问令牌粘贴到下面。'}
                 </p>
+                {onScan && (
+                  <Button onClick={() => void scan()}>
+                    <ScanLine />
+                    扫码连接
+                  </Button>
+                )}
                 <form
                   className="flex flex-col gap-2"
                   onSubmit={(event) => {

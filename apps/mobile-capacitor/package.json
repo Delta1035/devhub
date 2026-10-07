@@ -13,6 +13,7 @@
     "@aparajita/capacitor-secure-storage": "8.0.1",
     "@capacitor/android": "8.5.2",
     "@capacitor/app": "8.1.2",
+    "@capacitor/barcode-scanner": "3.1.2",
     "@capacitor/core": "8.5.2",
     "@capawesome/capacitor-live-update": "8.6.0"
   },

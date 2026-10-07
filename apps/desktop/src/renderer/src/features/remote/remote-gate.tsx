@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { RemoteError, protocolMismatch } from '@devhub/shared'
-import { access, appUpdates, remote } from '@renderer/api'
+import { access, appUpdates, remote, scanQrCode } from '@renderer/api'
 import type { RemoteConnection, SavedConnection } from '@renderer/api/remote-connection'
 import { AppUpdateBanner } from './app-update-banner'
 import { ConnectPage } from './connect-page'
@@ -111,6 +111,7 @@ function Gate({
       offline={!refused && !changing && session.isError}
       onRetry={() => void session.refetch()}
       onChange={() => setChanging(true)}
+      onScan={scanQrCode ?? undefined}
       onSubmit={submit}
     />
   )

@@ -42,6 +42,9 @@ M4-3 Android：
 - #21 代码已完成，待合并（PR #33）：CI 每个 PR 构建未签名 APK，推 tag 时签名并把 `DevHub-<版本>.apk` 附到草稿 Release；版本号随桌面端（ADR 0029）。签名 Secrets 已配置，手动运行 Release 工作流已产出正式签名的 APK 并在模拟器上验证；推 tag 生成草稿 Release 待下次发布时验证。
 - #30 已完成：保留按 Expo 方案做的原生客户端骨架（`apps/mobile`，ADR 0028）作为以后 Expo 客户端的基础；Capacitor 目录改为 `apps/mobile-capacitor`。
 - #32 代码已完成，待合并：App 跟随所连桌面端的版本在线更新网页包（Capawesome Live Update，签名校验，10 秒回滚，ADR 0030）；协议版本不一致时提示。模拟器实测下载 / 重启 / 改回自带版本 / 篡改被拒 / 启动失败回滚 / 需要新 APK；真实 Release 上的更新待下次发布后验证。
+- #35 已完成，待合并：设置页「复制连接地址」。
+- #36 已完成，待合并：Android 图标与启动画面由桌面端 SVG 生成。
+- #37 已完成，待合并：App 内扫码连接（`@capacitor/barcode-scanner`，不依赖 Google Play 服务，minSdk 26）；模拟器只验证了扫码界面、拒绝权限与取消，实际识别待真机验证。
 
 桌面修复：
 
@@ -60,7 +63,7 @@ M4-3 Android：
 - 运行历史：异常中断的结束时间/退出码无法还原，日志检查点之后的最后一部分可能未保存；旧记录没有历史日志。
 - Maven / Gradle 多模块识别仅覆盖静态声明；Gradle 插件继承、版本目录别名和动态 include，Maven Profile / pluginManagement / 外部父 POM 未计算，可用 `.devhub.yaml` 显式补充；本机未实际构建 Java 应用。
 - Expo 客户端骨架（`apps/mobile`）：只在 Windows 上的模拟器（API 36）经 Expo Go 验证过，未在真机上运行；Windows 本地原生构建因 pnpm 路径过长失败（ADR 0028），尚无 APK 构建（#21 只构建 Capacitor）；没有应用内扫码（需粘贴连接地址）；日志页只显示最近 128 KB 纯文本
-- Capacitor 客户端（`apps/mobile-capacitor`）：只在模拟器上验证过，未在真机上运行；应用图标仍是 Capacitor 默认图标；没有应用内扫码（需粘贴连接地址）；本地构建需 JDK 21（`D:\projects\_envs\jdk-21`）且 Gradle 要走代理
+- Capacitor 客户端（`apps/mobile-capacitor`）：只在模拟器上验证过，未在真机上运行；扫码的实际识别未验证（模拟器虚拟场景不显示自定义二维码图片）；本地构建需 JDK 21（`D:\projects\_envs\jdk-21`）且 Gradle 要走代理
 - Android 项目的 `assembleDebug`、`installDebug` 等任务暂不识别
 - Linux 上自己 `setsid` 脱离进程组的守护进程杀不到；崩溃后的遗留进程只有当记录的根进程本身存活时才能发现（子进程脱离后根进程已退出的情况发现不了）
 - Windows 上 node-pty 在进程自然退出后会在 stderr 打印 `AttachConsole failed`（释放资源时的辅助进程），不影响功能

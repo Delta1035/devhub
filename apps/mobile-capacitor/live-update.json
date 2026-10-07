@@ -1,4 +1,4 @@
 {
   "$comment": "ADR 0030: the oldest app build (versionCode) whose native side runs this release's web bundle. Raise it to the release's versionCode when native code changes: Capacitor or plugin versions, android/, capacitor.config.ts.",
-  "minVersionCode": 10300
+  "minVersionCode": 10400
 }

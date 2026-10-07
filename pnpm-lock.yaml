@@ -63,6 +63,9 @@ importers:
       '@capacitor/app':
         specifier: 8.1.2
         version: 8.1.2(@capacitor/core@8.5.2)
+      '@capacitor/barcode-scanner':
+        specifier: 3.1.2
+        version: 3.1.2(@capacitor/core@8.5.2)
       '@capacitor/core':
         specifier: 8.5.2
         version: 8.5.2
@@ -256,6 +259,9 @@ importers:
       '@capacitor/app':
         specifier: 8.1.2
         version: 8.1.2(@capacitor/core@8.5.2)
+      '@capacitor/barcode-scanner':
+        specifier: 3.1.2
+        version: 3.1.2(@capacitor/core@8.5.2)
       '@capacitor/core':
         specifier: 8.5.2
         version: 8.5.2
@@ -766,6 +772,11 @@ packages:
 
   '@capacitor/app@8.1.2':
     resolution: {integrity: sha512-uKBlsrXH0IdvUn69e/KKYbZ32A06pcrUdG8LWuZ/6y33YMXZXLEEdNSwl+jKS/SrsTWqnePs8EqSWaiQM3mUGA==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capacitor/barcode-scanner@3.1.2':
+    resolution: {integrity: sha512-8OdOFfHgxo22TQAGghk+BuSu66RROWPxkHChQpbIttzdomvgKkwJUi8tfNUYqlG2RT9HEy40yyAzxFhxN22lLg==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
@@ -4691,6 +4702,9 @@ packages:
   html-void-elements@3.0.0:
     resolution: {integrity: sha512-bEqo66MRXsUGxWHV5IP0PUiAWwoEjba4VCzg0LjFJBpchPaTfyfCKTG6bc5F8ucKec3q5y6qOdGyYTSBEvhCrg==}
 
+  html5-qrcode@2.3.8:
+    resolution: {integrity: sha512-jsr4vafJhwoLVEDW3n1KvPnCCXWaQfRng0/EEYk1vNcQGcG/htAdhJX0be8YyqMoSz7+hZvOZSTAepsabiuhiQ==}
+
   http-cache-semantics@4.2.0:
     resolution: {integrity: sha512-dTxcvPXqPvXBQpq5dUr6mEMJX4oIEFv6bwom3FDwKRDsuIjjJGANqhBuoAn9c1RQJIdAKav33ED65E2ys+87QQ==}
 
@@ -7997,6 +8011,11 @@ snapshots:
   '@capacitor/app@8.1.2(@capacitor/core@8.5.2)':
     dependencies:
       '@capacitor/core': 8.5.2
+
+  '@capacitor/barcode-scanner@3.1.2(@capacitor/core@8.5.2)':
+    dependencies:
+      '@capacitor/core': 8.5.2
+      html5-qrcode: 2.3.8
 
   '@capacitor/cli@8.5.2':
     dependencies:
@@ -12758,6 +12777,8 @@ snapshots:
       lru-cache: 10.4.3
 
   html-void-elements@3.0.0: {}
+
+  html5-qrcode@2.3.8: {}
 
   http-cache-semantics@4.2.0: {}
 

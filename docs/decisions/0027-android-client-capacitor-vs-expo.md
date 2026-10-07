@@ -98,3 +98,8 @@ CORS 的风险：API 用 Bearer Token 而不是 Cookie，浏览器不会自动�
 - **明文 HTTP**：`domain-config` 不能按 IP 段匹配，局域网与 Tailscale 地址又都是 IP，因此 `network_security_config` 对所有主机允许明文；保护 API 的是 Token 而不是 TLS。同时关闭备份（`allowBackup="false"` 与 `data_extraction_rules`）：Token 由留在本机的 Keystore 密钥加密，恢复到其他设备也无法解密。
 - **CORS**：响应 `Access-Control-Request-Private-Network` 预检（Chromium 的私有网络访问检查），其他来源的预检返回 403。
 - **CSP**：renderer 的 `index.html` 限制 `connect-src 'self'`，App 的页面来源是 `http://localhost`，连不到桌面端。网页版保持该限制；`vite.web.config.ts` 增加 `capacitor` 模式（输出 `out/capacitor`，即 `webDir`），只把 `connect-src` 放宽为 `'self' http: https:`。CI（#21）应构建此模式。
+
+补充（2026-10-07，#36、#37）：
+
+- **扫码**：`@capacitor/barcode-scanner` 3.1.2（Capacitor 官方，MIT）。使用打包在 APK 内的 ML Kit 模型与自带的全屏扫码界面，不依赖 Google Play 服务（国内很多手机没有）；`@capacitor-mlkit/barcode-scanning` 的一键扫码依赖 Play 服务的 code scanner，不采用。代价：`minSdkVersion` 24 → 26（Android 8.0）；ML Kit 原生库每种 CPU 架构约 5 MB，正式版只打包 `arm64-v8a`、`armeabi-v7a`（APK 约 21 MB），调试版保留 x86 供模拟器使用。扫到的内容须是带 Token 的连接地址（`parseAddress`），否则提示「不是 DevHub 的连接二维码」；取消（`OS-PLUG-BARC-0006`）不提示，拒绝相机权限（`0007`）提示去系统设置开启。
+- **图标与启动画面**：由 `apps/desktop/build` 的 SVG 生成（`pnpm --filter @devhub/desktop icons`）：传统与圆形图标、自适应图标前景（图案缩放到 66dp 安全区，背景色 `#000000`）；启动画面用同一前景，Android 12+ 经 `windowSplashScreen*`，更早版本经 `drawable/splash.xml`。删除了 Capacitor 默认的图标与启动图。
