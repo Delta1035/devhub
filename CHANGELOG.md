@@ -4,6 +4,27 @@ User-facing changes in each DevHub release. `pnpm release` generates each sectio
 Conventional Commits since the previous tag (`scripts/changelog.mjs`), and the Release workflow
 uses it as the GitHub Release notes.
 
+## v1.4.0 - 2026-10-07
+
+### Features
+
+- **mobile:** connect the Android app by scanning the desktop QR code (9888095)
+- **mobile:** give the Android app the DevHub icon and launch screen (59b7bb2)
+- **settings:** copy the whole connect link for the Android app (a1ba843)
+- **mobile:** live-update the app's web bundle to match the desktop (d917e7a)
+- **remote:** report the desktop's version in the remote session (343265a)
+- **mobile:** package the web app as an Android app with Capacitor (e7fdfa6)
+- **remote:** allow the Android app's origin through CORS (748e620)
+- **mobile:** add the Expo Android client skeleton (0523043)
+- make the web app installable and document HTTPS via tailscale serve (20d09d9)
+- **renderer:** offer project actions behind a "more" button on touch screens (14b4928)
+- **renderer:** fit the web app to phone-sized screens (4b0c507)
+- **remote:** prefer LAN addresses and rank proxy TUN adapters last (8c3cc04)
+
+### Performance
+
+- **renderer:** load the terminal and settings on demand (983bab6)
+
 ## v1.3.0 - 2026-10-05
 
 ### Features
