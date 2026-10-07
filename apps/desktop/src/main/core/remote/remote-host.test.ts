@@ -68,15 +68,29 @@ describe('remote host', () => {
     blocker = undefined
   })
 
-  const create = (config: RemoteConfigStore): RemoteHost =>
+  const create = (config: RemoteConfigStore, busyPortRetryDelaysMs: number[] = []): RemoteHost =>
     (host = createRemoteHost({
       api,
       subscribe,
       config,
       addresses: () => [lan],
       appVersion: '1.2.3',
+      busyPortRetryDelaysMs,
       log: silent
     }))
+
+  /** Holds a port, as the previous DevHub does while it stops its runs after an update. */
+  const occupy = async (): Promise<number> => {
+    const port = await freePort()
+    blocker = createServer()
+    await new Promise<void>((resolve) => blocker!.listen(port, '127.0.0.1', resolve))
+    return port
+  }
+  const release = (): Promise<void> =>
+    new Promise((resolve) => {
+      blocker!.close(() => resolve())
+      blocker = undefined
+    })
 
   it('serves the api while enabled and reports where it listens', async () => {
     const port = await freePort()
@@ -116,6 +130,47 @@ describe('remote host', () => {
       state: 'error',
       message: `端口 ${port} 已被占用`
     })
+  })
+
+  it('waits at startup for a port the previous DevHub still holds', async () => {
+    const port = await occupy()
+    await create(memoryConfig({ port }), [20, 20, 20, 20, 20]).start()
+    expect((await host!.state()).status).toEqual({
+      state: 'error',
+      message: `端口 ${port} 已被占用，正在重试…`
+    })
+    await release()
+    await vi.waitFor(async () =>
+      expect((await host!.state()).status).toEqual({ state: 'listening', port })
+    )
+    expect((await listRuns(port, 'token-0'.padEnd(43, 'x'))).status).toBe(200)
+  })
+
+  it('reports a port that stays taken once the retries run out', async () => {
+    const port = await occupy()
+    await create(memoryConfig({ port }), [10, 10]).start()
+    await vi.waitFor(async () =>
+      expect((await host!.state()).status).toEqual({
+        state: 'error',
+        message: `端口 ${port} 已被占用`
+      })
+    )
+  })
+
+  it('drops a pending retry when the settings change', async () => {
+    const port = await occupy()
+    const config = memoryConfig({ port })
+    await create(config, [30]).start()
+    const other = await freePort()
+    expect((await host!.update({ port: other })).status).toEqual({
+      state: 'listening',
+      port: other
+    })
+    await release()
+    await new Promise((resolve) => setTimeout(resolve, 80))
+    // The old retry did not move the server back to the first port.
+    expect((await host!.state()).status).toEqual({ state: 'listening', port: other })
+    await expect(fetch(`http://127.0.0.1:${port}/api/v1/info`)).rejects.toThrow()
   })
 
   it('a new token replaces the old one at once', async () => {
