@@ -1,3 +1,6 @@
 * text=auto eol=lf
 *.png binary
 *.ico binary
+# cmd.exe misparses batch files with LF line endings (Gradle wrapper).
+*.bat text eol=crlf
+*.jar binary
