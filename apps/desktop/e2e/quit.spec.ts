@@ -48,3 +48,40 @@ test('quitting DevHub stops the whole process tree of running scripts', async ({
   await app.close()
   await expect.poll(() => tree.filter(isAlive), { timeout: 15_000 }).toEqual([])
 })
+
+// Logout, shutdown and `systemctl --user stop` send SIGTERM first; Windows has no equivalent.
+test.describe('SIGTERM', () => {
+  test.skip(process.platform === 'win32', 'POSIX signals only')
+
+  test('quits DevHub gracefully when nothing is running', async ({ launchDevhub }) => {
+    const { app } = await launchDevhub()
+    const child = app.process()
+    const exited = new Promise((resolve) => child.once('exit', resolve))
+
+    child.kill('SIGTERM')
+    await exited
+    // A graceful quit exits normally; the default handler would report the signal instead.
+    expect({ code: child.exitCode, signal: child.signalCode }).toEqual({ code: 0, signal: null })
+  })
+
+  test('stops the process tree of running scripts', async ({ launchDevhub, createProject }) => {
+    const dir = await createProject('server', {
+      'package.json': packageJson({ serve: 'node server.js' }),
+      'server.js': serverScript
+    })
+    const { app, page } = await launchDevhub()
+    await addProjectViaApi(page, dir)
+    await page.getByRole('button', { name: '运行 serve' }).click()
+    await expect(page.locator('.xterm-rows')).toContainText('serving')
+    const pids = pidsSchema.parse(JSON.parse(await readFile(join(dir, 'pids.json'), 'utf8')))
+    const tree = [pids.parent, pids.child]
+    expect(tree.every(isAlive)).toBe(true)
+
+    const child = app.process()
+    const exited = new Promise((resolve) => child.once('exit', resolve))
+    child.kill('SIGTERM')
+    await exited
+    expect(child.exitCode).toBe(0)
+    await expect.poll(() => tree.filter(isAlive), { timeout: 15_000 }).toEqual([])
+  })
+})
