@@ -84,7 +84,11 @@ if (!app.requestSingleInstanceLock()) {
     const timeout = new Promise((resolve) => setTimeout(resolve, disposeTimeoutMs))
     void Promise.race([core.dispose(), timeout])
       .catch((error: unknown) => console.error('[quit] failed to stop runs', error))
-      .finally(() => app.quit())
+      // Not directly: with nothing to stop, dispose settles in the microtasks Node drains as
+      // this handler returns. On SIGTERM Electron calls Quit() with no JS on the stack, so a
+      // nested quit would run inside it and be overwritten by this prevented one, leaving
+      // DevHub running with every window closed (#39).
+      .finally(() => setImmediate(() => app.quit()))
   })
 
   // With "keep in tray" the window only hides, so this fires only for "quit on close".
