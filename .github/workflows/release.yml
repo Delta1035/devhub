@@ -70,8 +70,69 @@ jobs:
             apps/desktop/dist/*.blockmap
           if-no-files-found: error
 
+  # The Android app (ADR 0027, ADR 0029): the renderer's capacitor build in a signed APK.
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      # Capacitor 8 needs JDK 21; the runner image already has the Android SDK.
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @devhub/mobile-capacitor sync
+      # The keystore lives only in GitHub Secrets. A release must be signed with it: Android
+      # refuses to update an installed app signed with a different key.
+      - name: Restore signing keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            if [ "$GITHUB_REF_TYPE" = tag ]; then
+              echo "::error::ANDROID_KEYSTORE_BASE64 is not set; a release APK must be signed"
+              exit 1
+            fi
+            echo "::warning::No signing keystore: building an unsigned APK"
+            exit 0
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+      - name: Build APK
+        working-directory: apps/mobile-capacitor/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon
+      - name: Name APK after the release
+        run: |
+          version=$(node -p "require('./apps/desktop/package.json').version")
+          mkdir -p apk
+          for file in apps/mobile-capacitor/android/app/build/outputs/apk/release/*.apk; do
+            case "$file" in
+              *-unsigned.apk) cp "$file" "apk/DevHub-$version-unsigned.apk" ;;
+              *) cp "$file" "apk/DevHub-$version.apk" ;;
+            esac
+          done
+          ls -l apk
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: installers-android
+          path: apk/*.apk
+          if-no-files-found: error
+
   release:
-    needs: build
+    needs: [build, android]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -110,6 +171,7 @@ jobs:
             installers/*.exe
             installers/*.AppImage
             installers/*.deb
+            installers/*.apk
       # Created as a draft: check the installers, then publish it on GitHub. Installed apps only
       # see published releases, so publishing is what rolls the update out.
       - name: Create draft release

@@ -39,8 +39,9 @@ M4-3 Android：
 
 - #19 已完成：先用 Capacitor 包装网页版，Expo 原生客户端推迟（ADR 0027）。
 - #20 代码已完成，待合并：`apps/mobile-capacitor`（Capacitor 8，`io.github.delta1035.devhub`），App 连接页可填地址或粘贴整段连接地址，地址与 Token 存 Keystore，返回键先关浮层再退到后台；远程服务只对 `http://localhost` 开放 CORS；App 用单独的构建模式放宽 CSP 的 `connect-src`。模拟器（API 36）实测通过，真机未测。
-- #21 待开始：Gradle 构建与发布。
+- #21 代码已完成，待合并（PR #33）：CI 每个 PR 构建未签名 APK，推 tag 时签名并把 `DevHub-<版本>.apk` 附到草稿 Release；版本号随桌面端（ADR 0029）。签名 Secrets 已配置，手动运行 Release 工作流已产出正式签名的 APK 并在模拟器上验证；推 tag 生成草稿 Release 待下次发布时验证。
 - #30 已完成：保留按 Expo 方案做的原生客户端骨架（`apps/mobile`，ADR 0028）作为以后 Expo 客户端的基础；Capacitor 目录改为 `apps/mobile-capacitor`。
+- #32 待开始：App 在线更新网页包（用户选择方案 A），在 #21 之后做。
 
 桌面修复：
 

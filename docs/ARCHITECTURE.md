@@ -104,6 +104,7 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 - E2E 从启动起捕获 Electron stdout / stderr；失败或关闭超过 10 秒时保存退出状态与系统进程快照至 `test-results`，随 CI 失败产物上传。诊断不扩大测试超时，也不吞掉活应用的关闭错误。
 - CI 的独立依赖审计任务展示全部依赖告警并保存原始 JSON；目前为报告模式，网络或格式错误仍失败（ADR 0012）。
 - 提交信息由 husky `commit-msg` 钩子与 CI `commit-messages` 任务校验（`scripts/commit-msg.mjs`）；`pnpm release` 经 `apps/desktop` 的 `version` 生命周期调用 `scripts/changelog.mjs` 生成 `CHANGELOG.md` 段落，Release 工作流以其作为 Release 正文（ADR 0026）。仓库根的 `scripts/*.mjs` 是零依赖 Node 脚本，测试为同名 `*.test.mjs`（`node --test`，包含在 `pnpm test` 中）。
+- Android APK（ADR 0029）：`ci.yml` 与 `release.yml` 的 `android` 任务在 Ubuntu 上用 JDK 21 执行 `mobile-capacitor sync` 与 `assembleRelease`；版本号由 `android/app/build.gradle` 从 `apps/desktop/package.json` 计算，签名 keystore 只来自 GitHub Secrets（`ANDROID_KEYSTORE_BASE64` 等），推 tag 时缺少即失败；APK 以 `DevHub-<版本>.apk` 随安装包进入校验和、构建来源证明与草稿 Release。该任务是 DevHub 专有的，不同步到桌面模板仓库。
 
 ## 领域模型（`packages/shared/src/domain.ts`）
 

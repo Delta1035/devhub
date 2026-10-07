@@ -1,5 +1,19 @@
 apply plugin: 'com.android.application'
 
+import groovy.json.JsonSlurper
+
+// The app ships with the desktop release it belongs to (ADR 0029): same version, and a
+// versionCode that grows with it (1.3.0 -> 10300).
+def desktopVersion = new JsonSlurper().parse(file('../../../desktop/package.json')).version
+def versionParts = (desktopVersion =~ /^(\d+)\.(\d+)\.(\d+)/)
+if (!versionParts.find()) throw new GradleException("Unexpected desktop version: ${desktopVersion}")
+def desktopVersionCode = versionParts.group(1).toInteger() * 10000 +
+        versionParts.group(2).toInteger() * 100 + versionParts.group(3).toInteger()
+
+// Release signing comes from the environment (GitHub Secrets in CI, ADR 0029); the keystore is
+// never in the repository. Without it the release APK is built unsigned.
+def releaseKeystore = System.getenv('ANDROID_KEYSTORE_PATH')
+
 android {
     namespace = "io.github.delta1035.devhub"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +21,8 @@ android {
         applicationId "io.github.delta1035.devhub"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode desktopVersionCode
+        versionName desktopVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +30,19 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (releaseKeystore) {
+            release {
+                storeFile file(releaseKeystore)
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
     buildTypes {
         release {
+            if (releaseKeystore) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
