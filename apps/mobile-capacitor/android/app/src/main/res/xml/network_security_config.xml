@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The desktop's remote server speaks plain HTTP on the LAN or over Tailscale (ADR 0022), reached
+  by IP address. domain-config cannot match IP ranges, so cleartext is allowed for every host;
+  the access token, not TLS, is what guards the API. HTTPS (`tailscale serve`) works as well.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

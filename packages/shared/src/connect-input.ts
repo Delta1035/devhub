@@ -1,4 +1,4 @@
-import { defaultRemotePort } from '@devhub/shared'
+import { defaultRemotePort } from './remote'
 
 /** Where to reach a desktop's remote server, and the token it accepts. */
 export interface ConnectionSettings {

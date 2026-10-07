@@ -1,6 +1,5 @@
 import { fetch } from 'expo/fetch'
-import { createRemoteClient, type RemoteClient } from '@devhub/shared'
-import type { ConnectionSettings } from './connect-input'
+import { createRemoteClient, type ConnectionSettings, type RemoteClient } from '@devhub/shared'
 import { createChunkDecoder } from './utf8-chunks'
 
 /**

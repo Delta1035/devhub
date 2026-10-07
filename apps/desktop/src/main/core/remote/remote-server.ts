@@ -14,6 +14,7 @@ import {
 } from '@devhub/shared'
 import { toIpcResult } from '../api-result'
 import { bearerToken, createFailureLimiter, tokensEqual, type FailureLimiter } from './auth'
+import { applyCors } from './cors'
 import { openEventStream, type EventStreamOptions } from './event-stream'
 import { serveStaticFile } from './static-files'
 
@@ -87,6 +88,7 @@ export function startRemoteServer({
     if (path !== '/api' && !path.startsWith('/api/')) {
       return serveStaticFile(request, response, webRoot)
     }
+    if (applyCors(request, response)) return
 
     if (path === `${remoteApiPrefix}/info`) {
       if (request.method !== 'GET')

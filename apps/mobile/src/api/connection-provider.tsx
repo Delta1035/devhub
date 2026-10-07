@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { RemoteError, type RemoteClient } from '@devhub/shared'
-import type { ConnectionSettings } from './connect-input'
+import { RemoteError, type ConnectionSettings, type RemoteClient } from '@devhub/shared'
 import { ConnectionContext, type Connection, type ConnectionState } from './connection-state'
 import { createMobileClient } from './remote'
 import { clearConnection, loadConnection, saveConnection } from './saved-connection'

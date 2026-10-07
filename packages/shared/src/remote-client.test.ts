@@ -93,6 +93,19 @@ describe('remote api', () => {
     })
   })
 
+  it('reads a base URL function on every request', async () => {
+    const fetch = vi.fn<FetchFn>(async () => json(200, { ok: true, value: [] }))
+    let base = 'http://a:7420'
+    const api = client(fetch, { baseUrl: () => base }).api
+    await api.listProjects()
+    base = 'http://b:7420'
+    await api.listProjects()
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual([
+      'http://a:7420/api/v1/listProjects',
+      'http://b:7420/api/v1/listProjects'
+    ])
+  })
+
   it('leaves out trailing undefined arguments, as JSON would turn them into null', async () => {
     const fetch = vi.fn<FetchFn>(async () => json(200, { ok: true, value: {} }))
     await client(fetch).api.startScript('p', 's', undefined)

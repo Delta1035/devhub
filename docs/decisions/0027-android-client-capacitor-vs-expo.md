@@ -89,3 +89,12 @@ CORS 的风险：API 用 Bearer Token 而不是 Cookie，浏览器不会自动�
 已同步：ADR 0001 的 Android 一行、PRD M4；#20 改为 Capacitor 壳 + 连接页 + CORS，#21 改为 Gradle 构建。
 
 补充（2026-10-07，#30）：决定 Capacitor 之前按方案 B 做出的 Expo 骨架（PR #29）保留在 `apps/mobile`，作为以后 Expo 客户端的基础（ADR 0028）；Capacitor 壳因此放在 `apps/mobile-capacitor`。两者连接同一远程 API，互不依赖。
+
+补充（2026-10-07，#20 实施）：
+
+- **依赖版本**：`@capacitor/core`、`@capacitor/cli`、`@capacitor/android` 8.5.2，`@capacitor/app` 8.1.2，`@aparajita/capacitor-secure-storage` 8.0.1（官方 `@capacitor/preferences` 是明文存储，不用于 Token）。插件的 JS 部分由 renderer 打包，所以 `apps/desktop` 也以 devDependency 固定同一版本；`apps/mobile-capacitor` 的 dependencies 决定 `cap sync` 生成哪些原生插件。扫码插件暂不引入。
+- **构建环境**：Capacitor 8 需要 JDK 21 与 Android SDK 36。Capacitor 不编译 C++，Windows 本地 Gradle 构建不受 ADR 0028 中路径过长问题影响。
+- **平台识别**：以原生桥注入的 `window.Capacitor` 判断；插件代码在单独的 chunk 中，只在 App 里动态加载，网页版与桌面端不下载。
+- **明文 HTTP**：`domain-config` 不能按 IP 段匹配，局域网与 Tailscale 地址又都是 IP，因此 `network_security_config` 对所有主机允许明文；保护 API 的是 Token 而不是 TLS。同时关闭备份（`allowBackup="false"` 与 `data_extraction_rules`）：Token 由留在本机的 Keystore 密钥加密，恢复到其他设备也无法解密。
+- **CORS**：响应 `Access-Control-Request-Private-Network` 预检（Chromium 的私有网络访问检查），其他来源的预检返回 403。
+- **CSP**：renderer 的 `index.html` 限制 `connect-src 'self'`，App 的页面来源是 `http://localhost`，连不到桌面端。网页版保持该限制；`vite.web.config.ts` 增加 `capacitor` 模式（输出 `out/capacitor`，即 `webDir`），只把 `connect-src` 放宽为 `'self' http: https:`。CI（#21）应构建此模式。

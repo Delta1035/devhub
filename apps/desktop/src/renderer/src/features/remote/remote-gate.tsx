@@ -2,14 +2,16 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { RemoteError } from '@devhub/shared'
 import { access, remote } from '@renderer/api'
-import type { RemoteConnection } from '@renderer/api/remote-connection'
+import type { RemoteConnection, SavedConnection } from '@renderer/api/remote-connection'
 import { ConnectPage } from './connect-page'
 
-const rejectedMessage = '访问令牌无效或已重新生成，请重新扫码连接'
+const rejectedMessage = (choosesAddress: boolean): string =>
+  `访问令牌无效或已重新生成，请重新${choosesAddress ? '粘贴连接地址' : '扫码连接'}`
 
 /**
- * In the web app, renders the app only once the desktop accepted the token, and returns to the
- * connect page when it stops accepting it. Inside Electron it renders the app directly.
+ * In the web app and the Android app, renders the app only once the desktop accepted the token,
+ * and returns to the connect page when it stops accepting it. Inside Electron it renders the app
+ * directly.
  */
 export function RemoteGate({ children }: { children: React.ReactNode }): React.JSX.Element {
   return remote ? <Gate connection={remote}>{children}</Gate> : <>{children}</>
@@ -23,11 +25,19 @@ function Gate({
   children: React.ReactNode
 }): React.JSX.Element {
   const queryClient = useQueryClient()
-  const [token, setToken] = useState(connection.token())
+  // Undefined until the saved connection is read (the app's storage is asynchronous).
+  const [saved, setSaved] = useState<SavedConnection>()
   const [rejected, setRejected] = useState(false)
+  // The app user asked to enter another desktop instead of retrying this one.
+  const [changing, setChanging] = useState(false)
 
+  useEffect(() => {
+    void connection.restore().then(setSaved)
+  }, [connection])
+
+  const token = saved?.token ?? null
   const session = useQuery({
-    queryKey: ['remote-session', token],
+    queryKey: ['remote-session', saved?.baseUrl, token],
     enabled: token !== null,
     retry: false,
     queryFn: async () => {
@@ -61,21 +71,34 @@ function Gate({
     [connection, queryClient]
   )
 
-  const submit = (value: string): void => {
-    connection.setToken(value)
+  const submit = (next: SavedConnection): void => {
+    connection.connect(next)
     setRejected(false)
-    setToken(value)
+    setChanging(false)
+    setSaved(next)
   }
 
-  if (token !== null && !rejected && session.data?.accepted) return <>{children}</>
+  if (saved === undefined) return <></>
+  if (token !== null && !rejected && !changing && session.data?.accepted) return <>{children}</>
 
   const refused = rejected || session.data?.accepted === false
   return (
     <ConnectPage
-      checking={token !== null && !refused && session.isFetching}
-      message={refused ? rejectedMessage : session.error ? session.error.message : null}
-      offline={!refused && session.isError}
+      choosesAddress={connection.choosesAddress}
+      address={saved.baseUrl}
+      checking={token !== null && !refused && !changing && session.isFetching}
+      message={
+        changing
+          ? null
+          : refused
+            ? rejectedMessage(connection.choosesAddress)
+            : session.error
+              ? session.error.message
+              : null
+      }
+      offline={!refused && !changing && session.isError}
       onRetry={() => void session.refetch()}
+      onChange={() => setChanging(true)}
       onSubmit={submit}
     />
   )

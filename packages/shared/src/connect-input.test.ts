@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { remoteConnectUrl } from '@devhub/shared'
+import { remoteConnectUrl } from './remote'
 import { parseAddress, readConnectForm } from './connect-input'
 
 describe('parseAddress', () => {
