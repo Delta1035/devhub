@@ -2,6 +2,7 @@ import type { DevhubApi, DevhubEvents, ShellApi } from '@devhub/shared'
 import { createRemoteConnection, type RemoteConnection } from './remote-connection'
 import { webStorage } from './web-storage'
 import { createAppUpdates, type AppUpdates } from './app-update'
+import type { ScanResult } from './native-app'
 
 declare global {
   interface Window {
@@ -36,6 +37,11 @@ export const remote: RemoteConnection | null = window.devhub
     )
 
 if (nativeApp) void import('./native-app').then((app) => app.handleBackButton())
+
+/** The Android app's QR scanner for the connect code; null elsewhere. */
+export const scanQrCode: (() => Promise<ScanResult>) | null = nativeApp
+  ? async () => (await import('./native-app')).scanQrCode()
+  : null
 
 /** Live updates of the Android app's web bundle (ADR 0030); null elsewhere. */
 export const appUpdates: AppUpdates | null = nativeApp
