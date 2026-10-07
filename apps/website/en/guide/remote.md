@@ -33,6 +33,16 @@ To stop serving: `tailscale serve --https=443 off`. To see the current setup: `t
 
 `tailscale serve` is only reachable from devices in your tailnet, not from the internet (that is `tailscale funnel`; do not use it).
 
+## Android app
+
+If you prefer not to use the browser, install the Android app. It has the same interface as the web app, but needs no HTTPS, and keeps the access token encrypted in the Android Keystore.
+
+1. Download `DevHub-<version>.apk` from [Releases](https://github.com/Delta1035/devhub/releases) and open it on the phone to install it (allow "Install unknown apps"). The app shares the desktop's version number; install the same version.
+2. Turn on remote access on the computer (as above) and note the **监听地址** (listen address) and port.
+3. In the app, enter `address:port` (such as `100.64.1.2:7420`) as **桌面端地址** (desktop address), paste the token copied on the computer as **访问令牌** (access token), and tap **连接** (connect). You can also scan the QR code with the phone's camera and paste the link it shows into the address field; the token is read from it.
+
+The app reconnects by itself from then on. After the token is regenerated, it returns to the connect page: enter the new token. To connect to another computer, tap **更换桌面端** (change desktop) on the page shown when the connection fails.
+
 ## What the phone can do
 
 - Browse projects, scripts, batch tasks and run history; start / stop / restart scripts and run batch tasks.
