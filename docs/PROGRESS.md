@@ -7,7 +7,7 @@
 
 ## 当前阶段：桌面 MVP 发布 → M4 远程管理
 
-桌面 MVP（项目/脚本管理、进程与终端、批量任务、工作区、设置、健康检查、运行历史）已完成，最新版本 v1.2.0。用户决定（2026-10-05）先不收尾 MVP 发布，直接开始 M4：远程 API → PWA → Android。CLI、Jira 与 Wayland 暂缓。
+桌面 MVP（项目/脚本管理、进程与终端、批量任务、工作区、设置、健康检查、运行历史）已完成，最新版本 v1.4.0。用户决定（2026-10-05）先不收尾 MVP 发布，直接开始 M4：远程 API → PWA → Android。CLI、Jira 与 Wayland 暂缓。
 
 | Milestone                                                        | 内容                                               | Issue       |
 | ---------------------------------------------------------------- | -------------------------------------------------- | ----------- |
@@ -38,22 +38,24 @@ M4-2 PWA：
 M4-3 Android：
 
 - #19 已完成：先用 Capacitor 包装网页版，Expo 原生客户端推迟（ADR 0027）。
-- #20 代码已完成，待合并：`apps/mobile-capacitor`（Capacitor 8，`io.github.delta1035.devhub`），App 连接页可填地址或粘贴整段连接地址，地址与 Token 存 Keystore，返回键先关浮层再退到后台；远程服务只对 `http://localhost` 开放 CORS；App 用单独的构建模式放宽 CSP 的 `connect-src`。模拟器（API 36）实测通过，真机未测。
-- #21 代码已完成，待合并（PR #33）：CI 每个 PR 构建未签名 APK，推 tag 时签名并把 `DevHub-<版本>.apk` 附到草稿 Release；版本号随桌面端（ADR 0029）。签名 Secrets 已配置，手动运行 Release 工作流已产出正式签名的 APK 并在模拟器上验证；推 tag 生成草稿 Release 待下次发布时验证。
+- #20 已完成（v1.4.0）：`apps/mobile-capacitor`（Capacitor 8，`io.github.delta1035.devhub`）：连接页可填地址、粘贴或扫描连接地址，地址与 Token 存 Keystore，返回键先关浮层再退到后台；远程服务只对 `http://localhost` 开放 CORS；App 用单独的构建模式放宽 CSP 的 `connect-src`。
+- #21 已完成（v1.4.0）：CI 每个 PR 构建未签名 APK；推 tag 后草稿 Release 含签名的 `DevHub-<版本>.apk` 与网页包（已验证）；版本号随桌面端（ADR 0029）。
 - #30 已完成：保留按 Expo 方案做的原生客户端骨架（`apps/mobile`，ADR 0028）作为以后 Expo 客户端的基础；Capacitor 目录改为 `apps/mobile-capacitor`。
-- #32 代码已完成，待合并：App 跟随所连桌面端的版本在线更新网页包（Capawesome Live Update，签名校验，10 秒回滚，ADR 0030）；协议版本不一致时提示。模拟器实测下载 / 重启 / 改回自带版本 / 篡改被拒 / 启动失败回滚 / 需要新 APK；真实 Release 上的更新待下次发布后验证。
-- #35 已完成，待合并：设置页「复制连接地址」。
-- #36 已完成，待合并：Android 图标与启动画面由桌面端 SVG 生成。
-- #37 已完成，待合并：App 内扫码连接（`@capacitor/barcode-scanner`，不依赖 Google Play 服务，minSdk 26）；模拟器只验证了扫码界面、拒绝权限与取消，实际识别待真机验证。
+- #32 已完成（v1.4.0）：App 跟随所连桌面端的版本在线更新网页包（ADR 0030）；已用真实 GitHub Release（v1.4.0）验证下载、签名校验与切换。
+- #35 已完成（v1.4.0）：设置页「复制连接地址」。
+- #36 已完成（v1.4.0）：Android 图标与启动画面由桌面端 SVG 生成。
+- #37 已完成（v1.4.0）：App 内扫码连接（`@capacitor/barcode-scanner`，不依赖 Google Play 服务，minSdk 26）；实际识别待真机验证。
 
 桌面修复：
 
 - #22 已完成：启动的子进程不再直接继承 DevHub 的环境：Windows 从注册表修复并补全 PATH（更新后经 Explorer 重启时 `%NVM_HOME%` 未展开、找不到 pnpm），Linux 捕获交互登录 shell 的环境（从桌面启动时缺少 `.bashrc` 中的 nvm）（ADR 0024）。
+- #39 待开始：Linux 上收到 SIGTERM 不退出（#8 中发现），关机或注销时可能留下孤儿进程。
 
 桌面 MVP 发布：
 
 - #9 已完成：官网 Vite 经 pnpm overrides 提升到 6.4.3（ADR 0025），审计剩 2 high（electron-builder 链 http-cache-semantics、shadcn 链 braces，上游无修复）；VitePress 2 稳定后删除该 override。
 - #10 已完成：提交信息校验与 CHANGELOG（ADR 0026），Release 正文改为取自 `CHANGELOG.md`，待下次发布时验证；已发布版本的 Release 正文暂不修改。已同步到模板仓库 [electron-desktop-template](https://github.com/Delta1035/electron-desktop-template)（78e45ce，模板 ADR 0009）。
+- #8 已完成：Linux Mint（X11）上 AppImage 自动更新 1.3.0 → 1.4.0 实测通过（增量下载、替换文件、自动重启、数据保留）。
 
 ## 已知问题 / 待定
 
