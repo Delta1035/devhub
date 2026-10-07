@@ -56,3 +56,17 @@ export function readConnectForm(
   if (!finalToken) return { ok: false, message: '请填写 Token，或粘贴桌面端的连接地址' }
   return { ok: true, settings: { baseUrl: parsed.baseUrl, token: finalToken } }
 }
+
+/**
+ * Why a cross-origin client (the Android app) could not reach a desktop, given what a native
+ * request to `/api/v1/info` returned (null when it failed too). Native requests are not subject
+ * to CORS: if the desktop answers one, the page's request was blocked by CORS, which desktops
+ * before 1.4 do not grant to the app's origin.
+ */
+export function explainConnectFailure(info: unknown): 'outdated-desktop' | 'unreachable' {
+  const answered =
+    typeof info === 'object' &&
+    info !== null &&
+    typeof (info as { protocol?: unknown }).protocol === 'number'
+  return answered ? 'outdated-desktop' : 'unreachable'
+}
