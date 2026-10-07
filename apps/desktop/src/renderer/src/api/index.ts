@@ -1,5 +1,6 @@
 import type { DevhubApi, DevhubEvents, ShellApi } from '@devhub/shared'
 import { createRemoteConnection, type RemoteConnection } from './remote-connection'
+import { webStorage } from './web-storage'
 
 declare global {
   interface Window {
@@ -7,14 +8,33 @@ declare global {
     devhub?: DevhubApi
     devhubEvents?: DevhubEvents
     devhubShell?: ShellApi
+    /** Injected by the Android app's native bridge (Capacitor, ADR 0027) before the page runs. */
+    Capacitor?: { isNativePlatform(): boolean }
   }
 }
 
+/** The Android app: the web app packaged with Capacitor, talking to a desktop the user names. */
+const nativeApp = window.Capacitor?.isNativePlatform() === true
+
 /**
- * The web app (phone) when there is no preload bridge: it reaches the core through the
- * desktop's remote server over HTTP + SSE (ADR 0022). Null inside the Electron app.
+ * The web app (phone) and the Android app, which have no preload bridge: they reach the core
+ * through a desktop's remote server over HTTP + SSE (ADR 0022). Null inside the Electron app.
  */
-export const remote: RemoteConnection | null = window.devhub ? null : createRemoteConnection()
+export const remote: RemoteConnection | null = window.devhub
+  ? null
+  : createRemoteConnection(
+      nativeApp
+        ? {
+            storage: {
+              load: async () => (await import('./native-app')).loadConnection(),
+              save: async (connection) => (await import('./native-app')).saveConnection(connection)
+            },
+            choosesAddress: true
+          }
+        : { storage: webStorage, choosesAddress: false }
+    )
+
+if (nativeApp) void import('./native-app').then((app) => app.handleBackButton())
 
 /**
  * The only entry point for UI code to reach the DevHub core: the Electron preload bridge on the

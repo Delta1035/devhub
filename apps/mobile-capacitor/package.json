@@ -1,0 +1,22 @@
+{
+  "name": "@devhub/mobile-capacitor",
+  "version": "0.0.0",
+  "private": true,
+  "description": "DevHub Android app: the web app packaged with Capacitor (ADR 0027)",
+  "scripts": {
+    "build:web": "pnpm --filter @devhub/desktop build:capacitor",
+    "sync": "pnpm build:web && cap sync android",
+    "open": "cap open android",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aparajita/capacitor-secure-storage": "8.0.1",
+    "@capacitor/android": "8.5.2",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.2",
+    "typescript": "^6.0.3"
+  }
+}

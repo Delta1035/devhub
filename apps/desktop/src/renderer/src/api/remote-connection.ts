@@ -1,26 +1,55 @@
 import { createRemoteClient, type RemoteClient } from '@devhub/shared'
 
-const tokenKey = 'devhub.remoteToken'
+/** Which desktop to reach (`''`: the one serving this page) and the token it accepts. */
+export interface SavedConnection {
+  baseUrl: string
+  token: string | null
+}
 
-/** The web app's link to the desktop that serves it (ADR 0022). */
+/** Keeps the connection across restarts: localStorage in the web app, the Keystore in the app. */
+export interface ConnectionStorage {
+  load(): Promise<SavedConnection>
+  save(connection: SavedConnection): Promise<void>
+}
+
+/** The web app's and the Android app's link to a desktop (ADR 0022, ADR 0027). */
 export interface RemoteConnection {
   client: RemoteClient
-  token(): string | null
-  /** Saves a token entered by hand. */
-  setToken(token: string): void
+  /** The Android app connects to a desktop the user names; the web app to the one serving it. */
+  choosesAddress: boolean
+  /** Reads the saved connection. Called once, before the first request. */
+  restore(): Promise<SavedConnection>
+  current(): SavedConnection
+  /** Switches to this desktop and token, and saves them. */
+  connect(connection: SavedConnection): void
+  /** Forgets the token; the address stays, so only the token needs entering again. */
   clearToken(): void
   /** Called when the desktop rejects the token (regenerated, or never valid). */
   onUnauthorized(listener: () => void): () => void
 }
 
-export function createRemoteConnection(): RemoteConnection {
-  let token = takeTokenFromUrl() ?? readStoredToken()
+export function createRemoteConnection({
+  storage,
+  choosesAddress
+}: {
+  storage: ConnectionStorage
+  choosesAddress: boolean
+}): RemoteConnection {
+  let state: SavedConnection = { baseUrl: '', token: null }
+  let restored: Promise<SavedConnection> | undefined
   const unauthorized = new Set<() => void>()
 
+  const update = (next: SavedConnection): void => {
+    state = next
+    storage.save(next).catch((error: unknown) => {
+      // The connection then lasts until the app is closed.
+      console.warn('[remote] could not save the connection', error)
+    })
+  }
+
   const client = createRemoteClient({
-    // The web app is served by the remote server itself, so the API is on the same origin.
-    baseUrl: '',
-    token: () => token ?? '',
+    baseUrl: () => state.baseUrl,
+    token: () => state.token ?? '',
     fetch: (url, init) => window.fetch(url, init),
     createDecoder: () => {
       const decoder = new TextDecoder()
@@ -32,47 +61,17 @@ export function createRemoteConnection(): RemoteConnection {
 
   return {
     client,
-    token: () => token,
-    setToken(value) {
-      token = value
-      storeToken(value)
+    choosesAddress,
+    restore() {
+      restored ??= storage.load().then((saved) => (state = saved))
+      return restored
     },
-    clearToken() {
-      token = null
-      storeToken(null)
-    },
+    current: () => state,
+    connect: update,
+    clearToken: () => update({ ...state, token: null }),
     onUnauthorized(listener) {
       unauthorized.add(listener)
       return () => unauthorized.delete(listener)
     }
-  }
-}
-
-/**
- * The connection QR code opens `/#token=…` (ADR 0023). The token is saved and removed from the
- * address bar, so it is not left in history or shared along with the link.
- */
-function takeTokenFromUrl(): string | null {
-  const token = new URLSearchParams(window.location.hash.slice(1)).get('token')
-  if (!token) return null
-  storeToken(token)
-  window.history.replaceState(null, '', window.location.pathname + window.location.search)
-  return token
-}
-
-function readStoredToken(): string | null {
-  try {
-    return window.localStorage.getItem(tokenKey)
-  } catch {
-    return null
-  }
-}
-
-function storeToken(token: string | null): void {
-  try {
-    if (token === null) window.localStorage.removeItem(tokenKey)
-    else window.localStorage.setItem(tokenKey, token)
-  } catch {
-    // Private browsing: the token then lasts for this page only.
   }
 }

@@ -6,6 +6,7 @@ import eslintPluginReactHooks from 'eslint-plugin-react-hooks'
 import eslintPluginReactRefresh from 'eslint-plugin-react-refresh'
 
 const nodeBuiltins = ['fs', 'path', 'child_process', 'os', 'net', 'node:*']
+const capacitorPlugins = ['@capacitor/*', '@aparajita/capacitor-*']
 
 export default defineConfig(
   {
@@ -18,7 +19,8 @@ export default defineConfig(
       '**/.vitepress/cache',
       '**/.expo',
       'apps/mobile/android',
-      'apps/mobile/ios'
+      'apps/mobile/ios',
+      'apps/mobile-capacitor/android'
     ]
   },
   tseslint.configs.recommended,
@@ -106,6 +108,10 @@ export default defineConfig(
             {
               group: ['electron', '@electron-toolkit/*', ...nodeBuiltins],
               message: 'The UI talks to the core only via @renderer/api.'
+            },
+            {
+              group: capacitorPlugins,
+              message: 'Android app plugins are used only in @renderer/api (ADR 0027).'
             }
           ]
         }
@@ -132,7 +138,20 @@ export default defineConfig(
   },
   {
     files: ['apps/desktop/src/renderer/src/api/**/*.ts'],
-    rules: { 'no-restricted-properties': 'off' }
+    rules: {
+      'no-restricted-properties': 'off',
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['electron', '@electron-toolkit/*', ...nodeBuiltins],
+              message: 'The renderer runs in a browser or WebView, not Node or Electron.'
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     // Expo Android app (ADR 0028): screens reach the desktop only through src/api.
