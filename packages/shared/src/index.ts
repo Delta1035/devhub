@@ -1,5 +1,6 @@
 export * from './api'
 export * from './args'
+export * from './connect-input'
 export * from './domain'
 export * from './errors'
 export * from './events'

@@ -25,8 +25,11 @@ export type FetchFn = (
 ) => Promise<FetchResponse>
 
 export interface RemoteClientOptions {
-  /** Origin of the desktop's remote server; `''` for the same origin (the hosted PWA). */
-  baseUrl: string
+  /**
+   * Origin of the desktop's remote server; `''` for the same origin (the hosted PWA). A function
+   * is read on every request, so a client that lets the user pick the desktop keeps one client.
+   */
+  baseUrl: string | (() => string)
   /** Read on every request, so a new token applies without recreating the client. */
   token: () => string
   fetch: FetchFn
@@ -67,7 +70,10 @@ export interface RemoteClient {
 }
 
 export function createRemoteClient(options: RemoteClientOptions): RemoteClient {
-  const url = (path: string): string => `${options.baseUrl}${remoteApiPrefix}${path}`
+  const url = (path: string): string => {
+    const base = typeof options.baseUrl === 'function' ? options.baseUrl() : options.baseUrl
+    return `${base}${remoteApiPrefix}${path}`
+  }
   const auth = (): Record<string, string> => ({ authorization: `Bearer ${options.token()}` })
 
   const request = async (
@@ -104,7 +110,7 @@ export function createRemoteClient(options: RemoteClientOptions): RemoteClient {
 
   return {
     api,
-    events: createEventStream(options, url('/events'), auth),
+    events: createEventStream(options, () => url('/events'), auth),
     async session() {
       const { status, body } = await request('/session', { method: 'GET' })
       if (status === 200 && isSession(body)) return body
@@ -118,7 +124,7 @@ export function createRemoteClient(options: RemoteClientOptions): RemoteClient {
 
 function createEventStream(
   options: RemoteClientOptions,
-  streamUrl: string,
+  streamUrl: () => string,
   auth: () => Record<string, string>
 ): RemoteEvents {
   const retryDelays = options.retryDelaysMs ?? [1000, 2000, 5000, 10_000]
@@ -132,7 +138,7 @@ function createEventStream(
     let attempt = 0
     while (listeners.size > 0) {
       try {
-        const response = await options.fetch(streamUrl, { method: 'GET', headers: auth() })
+        const response = await options.fetch(streamUrl(), { method: 'GET', headers: auth() })
         if (response.status === 401) {
           options.onUnauthorized?.()
           break

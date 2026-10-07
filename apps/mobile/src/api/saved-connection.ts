@@ -1,5 +1,5 @@
 import * as SecureStore from 'expo-secure-store'
-import type { ConnectionSettings } from './connect-input'
+import type { ConnectionSettings } from '@devhub/shared'
 
 // The token grants control over the desktop's processes: keep it in the Android Keystore.
 const key = 'devhub.connection'

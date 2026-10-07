@@ -1,6 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { DevhubApi, RemoteClient, RemoteEvents } from '@devhub/shared'
-import type { ConnectionSettings } from './connect-input'
+import type { ConnectionSettings, DevhubApi, RemoteClient, RemoteEvents } from '@devhub/shared'
 
 export type ConnectionState =
   | { status: 'loading' }
