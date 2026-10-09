@@ -63,11 +63,18 @@ test('a serial group across projects waits for each step, then stops everything'
   const detail = page.getByRole('region', { name: '任务运行 front1' })
   await expect(detail).toContainText('输出出现文字「API ready」')
   await item.getByRole('button', { name: '执行 front1' }).click()
-  // The tab signals a running group even while the projects tab is shown.
+  // The tab, a bar above the tabs and the title bar name the group while it starts...
   const running = page.getByRole('tab', { name: /批量/ }).getByRole('status')
-  await expect(running).toBeVisible()
+  const bar = page.getByRole('region', { name: '正在运行的批量任务' })
+  const titleBar = page.getByRole('banner').getByRole('button', { name: /^正在运行：/ })
+  await expect(running).toHaveAttribute('aria-label', /front1（启动中 \d\/2）/)
+  await expect(bar).toContainText(/front1启动中 \d\/2/)
+  await expect(titleBar).toContainText('front1')
   await expect(item).toContainText('已完成', { timeout: 30_000 })
-  await expect(running).toBeHidden()
+  // ...and while the servers it started keep running after the execution ended.
+  await expect(running).toHaveAttribute('aria-label', '正在运行：front1（运行中 2/2）')
+  await expect(bar).toContainText('front1运行中 2/2')
+  await expect(titleBar).toContainText('front1运行中 2/2')
   await expect(detail).toContainText('2/2 个步骤完成')
   await expect(detail).toContainText('服务进程可能仍在运行')
   await expect(detail.getByRole('button', { name: '停止全部' })).toBeEnabled()
@@ -80,6 +87,8 @@ test('a serial group across projects waits for each step, then stops everything'
   await expect(
     page.locator('main').getByRole('button', { name: 'serve', exact: true })
   ).toHaveAttribute('aria-current', 'true')
+  // The script row tells which batch run started it.
+  await expect(page.locator('main').getByText('批量：front1')).toBeVisible()
 
   const runs = await listRuns(page)
   expect(runs.filter((run) => run.status === 'running')).toHaveLength(2)
@@ -100,6 +109,9 @@ test('a serial group across projects waits for each step, then stops everything'
       timeout: 20_000
     })
     .toBe(0)
+  await expect(bar).toBeHidden()
+  await expect(running).toBeHidden()
+  await expect(titleBar).toBeHidden()
 })
 
 test('a failing serial step stops the sequence and explains why', async ({

@@ -176,6 +176,7 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 
 - `features/groups/group-detail.tsx` 展示任务运行详情，App 管理项目与任务选择；日志入口携带具体 `runId` 切换到项目终端。
 - `GroupRunState` 可选保存执行配置快照与每步 `reused` 标志，随最近结果持久化。流程状态与实时 Run / RunHealth 独立，停止使用最近执行配置，兼容旧历史（ADR 0006 补充）。
+- 「正在运行的批量任务」由 shared 的 `activeGroups(states, runs)` 从最近执行状态与实时 Run 推导（执行中，或执行结束但步骤的 `runId` 仍未退出），不新增 API；renderer 经 `features/groups/use-active-groups.ts` 用于侧栏常驻条、「批量」标签、标题栏与脚本行徽标。
 - Windows 使用 NSIS 安装向导，`build/installer.nsh` 的 nsDialogs 目录页在浏览选择时更新输入框、手动输入时预览最终路径，统一规范新选目录为 `devhub` 尾目录，并保留原安装位置及静默升级路径（ADR 0014）。
 
 ## 安全

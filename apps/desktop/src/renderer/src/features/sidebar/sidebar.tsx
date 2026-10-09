@@ -2,8 +2,10 @@ import { useState } from 'react'
 import type { Run } from '@devhub/shared'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { GroupList } from '@renderer/features/groups/group-list'
-import { useGroupStates } from '@renderer/features/groups/use-groups'
+import { RunningGroupsBar } from '@renderer/features/groups/running-groups-bar'
+import { describeActiveGroups, useActiveGroups } from '@renderer/features/groups/use-active-groups'
 import { ProjectList } from '@renderer/features/projects/project-list'
+import { cn } from '@renderer/lib/utils'
 
 type SidebarTab = 'projects' | 'groups'
 
@@ -33,8 +35,7 @@ export function Sidebar({
   const [tab, setTab] = useState<SidebarTab>(() =>
     localStorage.getItem(tabKey) === 'groups' ? 'groups' : 'projects'
   )
-  // Hidden behind the projects tab, a running group would otherwise go unnoticed.
-  const groupRunning = (useGroupStates().data ?? []).some((state) => state.status === 'running')
+  const activeGroups = useActiveGroups()
 
   const changeTab = (value: string): void => {
     const next: SidebarTab = value === 'groups' ? 'groups' : 'projects'
@@ -43,35 +44,51 @@ export function Sidebar({
   }
 
   return (
-    <Tabs value={tab} onValueChange={changeTab} className="min-h-0 flex-1 gap-3">
-      <TabsList className="w-full shrink-0">
-        <TabsTrigger value="projects">项目</TabsTrigger>
-        <TabsTrigger value="groups">
-          批量
-          {groupRunning && (
-            <span
-              role="status"
-              aria-label="有批量任务执行中"
-              className="size-1.5 animate-pulse rounded-full bg-info"
-            />
-          )}
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="projects" className="min-h-0 overflow-y-auto">
-        <ProjectList
-          selectedId={selectedProjectId}
-          onSelect={onSelectProject}
-          onOpenRun={onOpenRun}
-        />
-      </TabsContent>
-      <TabsContent value="groups" className="min-h-0 overflow-y-auto">
-        <GroupList
-          selectedGroupId={selectedGroupId}
-          onSelectGroup={onSelectGroup}
-          selectedProjectId={currentProjectId}
-          onSelectProject={onSelectProject}
-        />
-      </TabsContent>
-    </Tabs>
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      {/* Above the tabs, so active groups stay visible while browsing projects. */}
+      <RunningGroupsBar
+        groups={activeGroups}
+        onSelectGroup={(groupId) => {
+          changeTab('groups')
+          onSelectGroup(groupId)
+        }}
+      />
+      <Tabs value={tab} onValueChange={changeTab} className="min-h-0 flex-1 gap-3">
+        <TabsList className="w-full shrink-0">
+          <TabsTrigger value="projects">项目</TabsTrigger>
+          <TabsTrigger value="groups">
+            批量
+            {activeGroups.length > 0 && (
+              <span
+                role="status"
+                aria-label={`正在运行：${describeActiveGroups(activeGroups)}`}
+                title={`正在运行：${describeActiveGroups(activeGroups)}`}
+                className={cn(
+                  'size-1.5 rounded-full',
+                  activeGroups.some((group) => group.phase === 'starting')
+                    ? 'animate-pulse bg-info'
+                    : 'bg-success'
+                )}
+              />
+            )}
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="projects" className="min-h-0 overflow-y-auto">
+          <ProjectList
+            selectedId={selectedProjectId}
+            onSelect={onSelectProject}
+            onOpenRun={onOpenRun}
+          />
+        </TabsContent>
+        <TabsContent value="groups" className="min-h-0 overflow-y-auto">
+          <GroupList
+            selectedGroupId={selectedGroupId}
+            onSelectGroup={onSelectGroup}
+            selectedProjectId={currentProjectId}
+            onSelectProject={onSelectProject}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
   )
 }
