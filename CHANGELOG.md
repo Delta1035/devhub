@@ -4,6 +4,18 @@ User-facing changes in each DevHub release. `pnpm release` generates each sectio
 Conventional Commits since the previous tag (`scripts/changelog.mjs`), and the Release workflow
 uses it as the GitHub Release notes.
 
+## v1.5.0 - 2026-10-09
+
+### Features
+
+- **groups:** show which batch run is running (362b576)
+
+### Fixes
+
+- **desktop:** quit on SIGTERM when no scripts are running (#45) (28fb111)
+- **remote:** retry a taken port at startup instead of giving up (#44) (eeb40e6)
+- **mobile:** tell the user to upgrade an old desktop instead of blaming the network (#43) (2eb482f)
+
 ## v1.4.0 - 2026-10-07
 
 ### Features
