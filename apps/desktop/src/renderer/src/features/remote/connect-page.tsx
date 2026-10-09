@@ -70,9 +70,16 @@ export function ConnectPage({
           <h1 className="font-heading text-lg font-semibold">连接 DevHub</h1>
         </div>
         {checking ? (
-          <p className="text-sm text-muted-foreground" role="status">
-            正在连接…
-          </p>
+          <>
+            <p className="text-sm text-muted-foreground" role="status">
+              正在连接…
+            </p>
+            {choosesAddress && (
+              <Button variant="outline" onClick={onChange}>
+                更换桌面端
+              </Button>
+            )}
+          </>
         ) : (
           <>
             {alert && (
