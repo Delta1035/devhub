@@ -1,7 +1,12 @@
-import { Copy, Menu, Minus, Settings as SettingsIcon, Square, X } from 'lucide-react'
+import { Copy, Layers, Menu, Minus, Settings as SettingsIcon, Square, X } from 'lucide-react'
 import { shell } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
 import { useAppInfo } from '@renderer/features/app-info/use-app-info'
+import {
+  describeActiveGroup,
+  describeActiveGroups,
+  useActiveGroups
+} from '@renderer/features/groups/use-active-groups'
 import { UpdateBadge } from '@renderer/features/updates/update-badge'
 import { cn } from '@renderer/lib/utils'
 import { useWindowState } from './use-window-state'
@@ -11,6 +16,8 @@ interface TitleBarProps {
   onToggleSettings: () => void
   /** Opens the sidebar drawer; only given on narrow screens, where the sidebar is hidden. */
   onOpenNavigation?: () => void
+  /** Shows a batch run named in the title bar. */
+  onSelectGroup: (groupId: string) => void
 }
 
 /**
@@ -20,7 +27,8 @@ interface TitleBarProps {
 export function TitleBar({
   showSettings,
   onToggleSettings,
-  onOpenNavigation
+  onOpenNavigation,
+  onSelectGroup
 }: TitleBarProps): React.JSX.Element {
   const { data: appInfo } = useAppInfo()
   const windowState = useWindowState()
@@ -51,6 +59,8 @@ export function TitleBar({
       <img src="./favicon.svg" alt="" className="size-5" draggable={false} />
       <h1 className="font-heading text-sm font-semibold">DevHub</h1>
       {appInfo && <span className="text-xs text-muted-foreground">v{appInfo.version}</span>}
+      {/* Phones show the drawer's list instead; there is no room here. */}
+      {!onOpenNavigation && <ActiveGroupsIndicator onSelectGroup={onSelectGroup} />}
       <div className="app-no-drag ml-auto flex items-center gap-1">
         <UpdateBadge />
         <Button
@@ -66,6 +76,40 @@ export function TitleBar({
       </div>
       {windowState && !isMac && <WindowButtons maximized={windowState.maximized} />}
     </header>
+  )
+}
+
+/** "前后端联调 · 运行中 2/3", or "前后端联调 等 2 个" with the full list on hover. */
+function ActiveGroupsIndicator({
+  onSelectGroup
+}: {
+  onSelectGroup: (groupId: string) => void
+}): React.JSX.Element | null {
+  const groups = useActiveGroups()
+  const [first] = groups
+  if (!first) return null
+  const summary = `正在运行：${describeActiveGroups(groups)}`
+  return (
+    <button
+      type="button"
+      onClick={() => onSelectGroup(first.groupId)}
+      title={summary}
+      aria-label={summary}
+      className="app-no-drag ml-2 flex min-w-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs hover:bg-accent"
+    >
+      <Layers
+        className={cn(
+          'size-3.5 shrink-0',
+          groups.some((group) => group.phase === 'starting')
+            ? 'animate-pulse text-info'
+            : 'text-success'
+        )}
+      />
+      <span className="truncate font-medium">{first.name}</span>
+      <span className="shrink-0 text-muted-foreground tabular-nums">
+        {groups.length > 1 ? `等 ${groups.length} 个` : describeActiveGroup(first)}
+      </span>
+    </button>
   )
 }
 
