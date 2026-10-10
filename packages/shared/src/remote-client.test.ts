@@ -152,6 +152,26 @@ describe('remote api', () => {
       headers: { authorization: 'Bearer secret' }
     })
   })
+
+  it('gives up on a session check the desktop never answers', async () => {
+    const delay = vi.fn(async () => undefined)
+    const hanging = client(() => new Promise<FetchResponse>(() => undefined), {
+      delay,
+      sessionTimeoutMs: 10_000
+    })
+    await expect(hanging.session()).rejects.toMatchObject({ code: 'TIMEOUT', status: 0 })
+    expect(delay).toHaveBeenCalledWith(10_000)
+  })
+
+  it('returns a session answered before the timeout', async () => {
+    let elapse: (() => void) | undefined
+    const answered = client(async () => json(200, { protocol: 1, allowTerminal: true }), {
+      delay: () => new Promise<void>((resolve) => (elapse = resolve)),
+      sessionTimeoutMs: 10_000
+    })
+    await expect(answered.session()).resolves.toEqual({ protocol: 1, allowTerminal: true })
+    elapse?.()
+  })
 })
 
 describe('remote events', () => {
