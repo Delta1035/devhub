@@ -56,7 +56,9 @@ export function createRemoteConnection({
       return (chunk) => decoder.decode(chunk, { stream: true })
     },
     delay: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-    onUnauthorized: () => unauthorized.forEach((listener) => listener())
+    onUnauthorized: () => unauthorized.forEach((listener) => listener()),
+    // An unreachable desktop otherwise keeps the connect page on "connecting" for minutes.
+    sessionTimeoutMs: 10_000
   })
 
   return {

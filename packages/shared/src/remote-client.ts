@@ -40,6 +40,11 @@ export interface RemoteClientOptions {
   onUnauthorized?: () => void
   /** Waits between event stream reconnects; the last value repeats. */
   retryDelaysMs?: readonly number[]
+  /**
+   * Gives up on `session()` after this long (`TIMEOUT`). Without it the check waits as long as
+   * the platform does: minutes on a phone whose packets to the desktop are dropped.
+   */
+  sessionTimeoutMs?: number
 }
 
 /** A failed remote call. `code` is the core's `DevhubError` code or a transport code. */
@@ -112,7 +117,17 @@ export function createRemoteClient(options: RemoteClientOptions): RemoteClient {
     api,
     events: createEventStream(options, () => url('/events'), auth),
     async session() {
-      const { status, body } = await request('/session', { method: 'GET' })
+      const pending = request('/session', { method: 'GET' })
+      const { sessionTimeoutMs } = options
+      const { status, body } =
+        sessionTimeoutMs === undefined
+          ? await pending
+          : await Promise.race([
+              pending,
+              options.delay(sessionTimeoutMs).then((): never => {
+                throw new RemoteError('TIMEOUT', 'DevHub 没有响应，请检查网络和远程访问设置', 0)
+              })
+            ])
       if (status === 200 && isSession(body)) return body
       if (isIpcResult(body) && !body.ok) {
         throw new RemoteError(body.error.code, body.error.message, status)
