@@ -1,11 +1,11 @@
 import { lazy, Suspense, useState } from 'react'
-import type { Run } from '@devhub/shared'
+import { sortProjects, type Run } from '@devhub/shared'
 import { ProjectDetail } from '@renderer/features/projects/project-detail'
 import { GroupDetail } from '@renderer/features/groups/group-detail'
 import { useGroups, useGroupEventsSync } from '@renderer/features/groups/use-groups'
 import { useProjects } from '@renderer/features/projects/use-projects'
 import { OrphansBanner } from '@renderer/features/runs/orphans-banner'
-import { useRunEventsSync } from '@renderer/features/runs/use-runs'
+import { useRunEventsSync, useRuns } from '@renderer/features/runs/use-runs'
 import { Sheet, SheetContent, SheetTitle } from '@renderer/components/ui/sheet'
 import { Sidebar } from '@renderer/features/sidebar/sidebar'
 import { useResizableWidth } from '@renderer/features/sidebar/use-resizable-width'
@@ -25,6 +25,7 @@ function App(): React.JSX.Element {
   useGroupEventsSync()
   useWorkspaceEventsSync()
   const { data: projects } = useProjects()
+  const { data: runs } = useRuns()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   // Long project names stay readable when the sidebar is widened (default = Tailwind w-64).
@@ -50,9 +51,11 @@ function App(): React.JSX.Element {
     setRequestedRunId(run.id)
   }
 
-  // Derived rather than synced: falls back to the first project when nothing is selected
-  // or the selected one was removed.
-  const selected = projects?.find((project) => project.id === selectedId) ?? projects?.[0]
+  // Derived rather than synced: falls back to the first active project or the first project
+  // in the list when nothing is selected or the selected one was removed.
+  const fallbackProject =
+    runs && projects ? (sortProjects(projects, runs)[0] ?? projects[0]) : projects?.[0]
+  const selected = projects?.find((project) => project.id === selectedId) ?? fallbackProject
 
   const sidebarContent = (
     <Sidebar

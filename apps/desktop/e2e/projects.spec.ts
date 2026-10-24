@@ -83,3 +83,47 @@ setInterval(() => console.log('tick ' + ++n), 200)
   await expect(items.first()).toContainText('alpha-app')
   await expect(items.nth(1)).toContainText('beta-app')
 })
+
+test('falls back to active project when the selected project is removed', async ({
+  launchDevhub,
+  createProject
+}) => {
+  const tickScript = `
+let n = 0
+setInterval(() => console.log('tick ' + ++n), 200)
+`
+  const dirA = await createProject('alpha-app', {
+    'package.json': packageJson({ dev: 'node -v' })
+  })
+  const dirB = await createProject('beta-app', {
+    'package.json': packageJson({ dev: 'node -v' })
+  })
+  const dirC = await createProject('charlie-app', {
+    'package.json': packageJson({ tick: 'node tick.js' }),
+    'tick.js': tickScript
+  })
+
+  const { page } = await launchDevhub()
+  await addProjectViaApi(page, dirA)
+  await addProjectViaApi(page, dirB)
+  await addProjectViaApi(page, dirC)
+
+  // Start tick on charlie-app so it is active
+  await page
+    .locator('aside')
+    .getByRole('button', { name: /^charlie-app/ })
+    .click()
+  await page.getByRole('button', { name: '运行 tick' }).click()
+
+  // Select alpha-app
+  await page
+    .locator('aside')
+    .getByRole('button', { name: /^alpha-app/ })
+    .click()
+  await expect(page.getByRole('heading', { name: 'alpha-app' })).toBeVisible()
+
+  // Remove alpha-app: should fall back to charlie-app (active) rather than beta-app (first inactive)
+  await page.getByRole('button', { name: '移除 alpha-app' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: '确认移除' }).click()
+  await expect(page.getByRole('heading', { name: 'charlie-app' })).toBeVisible()
+})
