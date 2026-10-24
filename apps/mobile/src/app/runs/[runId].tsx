@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import type { ScrollViewInstance } from 'react-native'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { describeRun, isActive } from '@/features/runs/run-status'
 import { useRestartRun, useRuns, useStopRun } from '@/features/runs/use-runs'
@@ -13,7 +14,7 @@ export default function RunScreen(): React.JSX.Element {
   const { text, error } = useRunLog(runId)
   const stop = useStopRun()
   const restart = useRestartRun()
-  const scroll = useRef<ScrollView>(null)
+  const scroll = useRef<ScrollViewInstance>(null)
   // Follow new output until the user scrolls up; scrolling back to the end follows again.
   const [follow, setFollow] = useState(true)
 
