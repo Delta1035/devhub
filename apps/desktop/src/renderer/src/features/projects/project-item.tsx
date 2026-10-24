@@ -125,8 +125,8 @@ export function ProjectItem({
   )
 }
 
-/** Shows that a project still has live terminals (scripts or shells), and which ones. */
-function ActiveRunsIndicator({ runs }: { runs: Run[] }): React.JSX.Element | null {
+/** Shows that a project or workspace still has live terminals (scripts or shells), and which ones. */
+export function ActiveRunsIndicator({ runs }: { runs: Run[] }): React.JSX.Element | null {
   if (runs.length === 0) return null
   const stopping = runs.some((run) => run.status === 'stopping')
   return (

@@ -178,11 +178,13 @@ export function ProjectList({
 
       {workspaceList.map((workspace) => {
         const members = projectsOf(workspace)
+        const workspaceRuns = members.flatMap((project) => runsOf(project.id))
         return (
           <WorkspaceSection
             key={workspace.id}
             workspace={workspace}
             projectCount={members.length}
+            activeRuns={workspaceRuns}
             collapsed={collapsed.has(workspace.id)}
             rescanning={rescan.isPending}
             onToggle={() => toggleCollapsed(workspace.id)}
