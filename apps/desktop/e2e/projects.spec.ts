@@ -1,4 +1,11 @@
-import { addFromMenu, packageJson, stubFolderPicker, test, expect } from './fixtures'
+import {
+  addFromMenu,
+  addProjectViaApi,
+  packageJson,
+  stubFolderPicker,
+  test,
+  expect
+} from './fixtures'
 
 test('adds a project with the folder picker, rejects duplicates, survives a restart, removes it', async ({
   launchDevhub,
@@ -34,4 +41,45 @@ test('adds a project with the folder picker, rejects duplicates, survives a rest
   await page.getByRole('button', { name: '移除 web-app' }).click()
   await confirm.getByRole('button', { name: '确认移除' }).click()
   await expect(page.getByText('还没有项目')).toBeVisible()
+})
+
+test('moves active project to the top and restores order when stopped', async ({
+  launchDevhub,
+  createProject
+}) => {
+  const tickScript = `
+let n = 0
+setInterval(() => console.log('tick ' + ++n), 200)
+`
+  const dirA = await createProject('alpha-app', {
+    'package.json': packageJson({ dev: 'node -v' })
+  })
+  const dirB = await createProject('beta-app', {
+    'package.json': packageJson({ tick: 'node tick.js' }),
+    'tick.js': tickScript
+  })
+
+  const { page } = await launchDevhub()
+  await addProjectViaApi(page, dirA)
+  await addProjectViaApi(page, dirB)
+
+  const items = page.locator('aside section[aria-label="独立项目"] li')
+  await expect(items.first()).toContainText('alpha-app')
+  await expect(items.nth(1)).toContainText('beta-app')
+
+  // Select beta-app and run its script to make it active
+  await page
+    .locator('aside')
+    .getByRole('button', { name: /^beta-app/ })
+    .click()
+  await page.getByRole('button', { name: '运行 tick' }).click()
+
+  // beta-app becomes active and jumps to the top
+  await expect(items.first()).toContainText('beta-app')
+  await expect(items.nth(1)).toContainText('alpha-app')
+
+  // Stop the script; beta-app exits and drops back
+  await page.getByRole('button', { name: '停止 tick' }).click()
+  await expect(items.first()).toContainText('alpha-app')
+  await expect(items.nth(1)).toContainText('beta-app')
 })
