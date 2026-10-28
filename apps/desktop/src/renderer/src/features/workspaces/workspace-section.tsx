@@ -1,11 +1,14 @@
 import { ChevronRight, FolderTree, RefreshCw, Settings2, TriangleAlert } from 'lucide-react'
-import type { WorkspaceView } from '@devhub/shared'
+import type { Run, WorkspaceView } from '@devhub/shared'
 import { Button } from '@renderer/components/ui/button'
+import { ActiveRunsIndicator } from '@renderer/features/projects/project-item'
 import { cn } from '@renderer/lib/utils'
 
 interface WorkspaceSectionProps {
   workspace: WorkspaceView
   projectCount: number
+  /** Live terminals across any project in this workspace; indicated when collapsed. */
+  activeRuns?: Run[]
   collapsed: boolean
   rescanning: boolean
   onToggle: () => void
@@ -19,6 +22,7 @@ interface WorkspaceSectionProps {
 export function WorkspaceSection({
   workspace,
   projectCount,
+  activeRuns,
   collapsed,
   rescanning,
   onToggle,
@@ -43,6 +47,7 @@ export function WorkspaceSection({
           <FolderTree className="size-3.5 shrink-0" />
           <span className="truncate">{workspace.name}</span>
           <span className="tabular-nums">{projectCount}</span>
+          {collapsed && activeRuns && <ActiveRunsIndicator runs={activeRuns} />}
         </button>
         {warnings.length > 0 && (
           <span

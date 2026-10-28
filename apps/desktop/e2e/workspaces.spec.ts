@@ -78,3 +78,52 @@ test('a workspace discovers projects, follows changes on disk, excludes, restore
   await page.getByRole('dialog').getByRole('button', { name: '确认移除' }).click()
   await expect(page.getByText('还没有项目')).toBeVisible()
 })
+
+test('shows active run indicator on collapsed workspace and hides when expanded', async ({
+  launchDevhub,
+  createProject
+}) => {
+  const tickScript = `
+let n = 0
+setInterval(() => console.log('tick ' + ++n), 200)
+`
+  const code = await createProject('code', {
+    'web/package.json': packageJson({ tick: 'node tick.js' }),
+    'web/tick.js': tickScript
+  })
+
+  const { app, page } = await launchDevhub()
+  await stubFolderPicker(app, code)
+  await addFromMenu(page, '添加工作区')
+
+  const section = page.getByRole('region', { name: '工作区 code' })
+  const toggle = section.locator('> div button[aria-expanded]')
+  await expect(toggle).toBeVisible()
+
+  // Start script in web project
+  await projectButton(page, 'web').click()
+  await page.getByRole('button', { name: '运行 tick' }).click()
+
+  // Web project shows 1 active run indicator while expanded
+  await expect(
+    projectButton(page, 'web').getByRole('status', { name: '1 个活动终端' })
+  ).toBeVisible()
+  // Workspace header does NOT show indicator while expanded
+  await expect(toggle.getByRole('status', { name: '1 个活动终端' })).toBeHidden()
+
+  // Collapse workspace: web is hidden, workspace header shows indicator
+  await toggle.click()
+  await expect(projectButton(page, 'web')).toBeHidden()
+  await expect(toggle.getByRole('status', { name: '1 个活动终端' })).toBeVisible()
+
+  // Expand again: workspace header hides indicator
+  await toggle.click()
+  await expect(projectButton(page, 'web')).toBeVisible()
+  await expect(toggle.getByRole('status', { name: '1 个活动终端' })).toBeHidden()
+
+  // Collapse workspace again and stop script via terminal or detail
+  await toggle.click()
+  await expect(toggle.getByRole('status', { name: '1 个活动终端' })).toBeVisible()
+  await page.getByRole('button', { name: '停止 tick' }).click()
+  await expect(toggle.getByRole('status', { name: '1 个活动终端' })).toBeHidden()
+})

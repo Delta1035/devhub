@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ChevronDown, FolderPlus, FolderTree } from 'lucide-react'
-import type { Project, Run, WorkspaceView } from '@devhub/shared'
+import { sortProjects, type Project, type Run, type WorkspaceView } from '@devhub/shared'
 import { access, shell } from '@renderer/api'
 import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
@@ -70,16 +70,23 @@ export function ProjectList({
   const allProjects = projects.data ?? []
   const workspaceList = workspaces.data ?? []
   const known = new Set(workspaceList.map((workspace) => workspace.id))
-  // Sorted like a file tree: projects found by a later scan would otherwise trail at the end.
+  // Active projects sort to the top; inactive projects sort like a file tree by relative path.
   const projectsOf = (workspace: WorkspaceView): Project[] =>
-    allProjects
-      .filter((project) => project.workspaceId === workspace.id)
-      .sort((a, b) =>
-        relativeToWorkspace(a.path, workspace).localeCompare(relativeToWorkspace(b.path, workspace))
-      )
+    sortProjects(
+      allProjects.filter((project) => project.workspaceId === workspace.id),
+      activeRuns,
+      {
+        secondary: (a, b) =>
+          relativeToWorkspace(a.path, workspace).localeCompare(
+            relativeToWorkspace(b.path, workspace)
+          )
+      }
+    )
   // Added by hand, or discovered by a workspace this list has not loaded yet.
-  const standalone = allProjects.filter(
-    (project) => !project.workspaceId || !known.has(project.workspaceId)
+  // Active projects sort to the top; inactive projects sort alphabetically.
+  const standalone = sortProjects(
+    allProjects.filter((project) => !project.workspaceId || !known.has(project.workspaceId)),
+    activeRuns
   )
   const settingsWorkspace = workspaceList.find((workspace) => workspace.id === settingsId)
 
@@ -171,11 +178,13 @@ export function ProjectList({
 
       {workspaceList.map((workspace) => {
         const members = projectsOf(workspace)
+        const workspaceRuns = members.flatMap((project) => runsOf(project.id))
         return (
           <WorkspaceSection
             key={workspace.id}
             workspace={workspace}
             projectCount={members.length}
+            activeRuns={workspaceRuns}
             collapsed={collapsed.has(workspace.id)}
             rescanning={rescan.isPending}
             onToggle={() => toggleCollapsed(workspace.id)}
