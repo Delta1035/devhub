@@ -4,6 +4,17 @@ User-facing changes in each DevHub release. `pnpm release` generates each sectio
 Conventional Commits since the previous tag (`scripts/changelog.mjs`), and the Release workflow
 uses it as the GitHub Release notes.
 
+## v1.6.0 - 2026-10-29
+
+### Features
+
+- **projects:** surface active projects in the sidebar and as the default selection (#61) (1b90473)
+
+### Fixes
+
+- **mobile:** resolve broken lockfile and align ScrollView ref type (985d087)
+- **mobile:** give up on an unanswered connection check after 10 s (#49) (ce1ff55)
+
 ## v1.5.0 - 2026-10-09
 
 ### Features
