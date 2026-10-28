@@ -51,11 +51,15 @@ function App(): React.JSX.Element {
     setRequestedRunId(run.id)
   }
 
-  // Derived rather than synced: falls back to the first active project or the first project
-  // in the list when nothing is selected or the selected one was removed.
+  // Falls back to the first active project or the first project in the list when nothing is
+  // selected or the selected one was removed.
   const fallbackProject =
     runs && projects ? (sortProjects(projects, runs)[0] ?? projects[0]) : projects?.[0]
-  const selected = projects?.find((project) => project.id === selectedId) ?? fallbackProject
+  const chosen = projects?.find((project) => project.id === selectedId)
+  // Once runs are known the fallback is kept as the selection, so starting another script
+  // does not move the detail view (and remount its terminals) to the newest active project.
+  if (!chosen && runs && fallbackProject) setSelectedId(fallbackProject.id)
+  const selected = chosen ?? fallbackProject
 
   const sidebarContent = (
     <Sidebar

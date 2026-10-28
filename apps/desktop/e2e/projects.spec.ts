@@ -1,6 +1,7 @@
 import {
   addFromMenu,
   addProjectViaApi,
+  type DevhubWindow,
   packageJson,
   stubFolderPicker,
   test,
@@ -126,4 +127,37 @@ setInterval(() => console.log('tick ' + ++n), 200)
   await page.getByRole('button', { name: '移除 alpha-app' }).click()
   await page.getByRole('dialog').getByRole('button', { name: '确认移除' }).click()
   await expect(page.getByRole('heading', { name: 'charlie-app' })).toBeVisible()
+})
+
+test('keeps the fallback selection when another project starts running', async ({
+  launchDevhub,
+  createProject
+}) => {
+  const dirA = await createProject('alpha-app', {
+    'package.json': packageJson({ dev: 'node -v' })
+  })
+  const dirB = await createProject('beta-app', {
+    'package.json': packageJson({ tick: 'node tick.js' }),
+    'tick.js': 'setInterval(() => {}, 1000)'
+  })
+
+  const { page } = await launchDevhub()
+  await addProjectViaApi(page, dirA)
+  await addProjectViaApi(page, dirB)
+  // Nothing was chosen, so the first project is shown.
+  await expect(page.getByRole('heading', { name: 'alpha-app' })).toBeVisible()
+
+  // Starting beta-app without choosing it sorts it to the top but leaves the detail view alone.
+  await page.evaluate(async () => {
+    const { devhub } = window as unknown as DevhubWindow
+    const beta = (await devhub.listProjects()).find((project) => project.name === 'beta-app')
+    if (!beta) throw new Error('beta-app was not added')
+    const { scripts } = await devhub.listScripts(beta.id)
+    const tick = scripts.find((script) => script.name === 'tick')
+    if (!tick) throw new Error('tick script was not detected')
+    await devhub.startScript(beta.id, tick.id)
+  })
+  const items = page.locator('aside section[aria-label="独立项目"] li')
+  await expect(items.first()).toContainText('beta-app')
+  await expect(page.getByRole('heading', { name: 'alpha-app' })).toBeVisible()
 })
