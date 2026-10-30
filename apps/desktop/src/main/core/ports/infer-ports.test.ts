@@ -74,4 +74,16 @@ describe('readSpringPort', () => {
     await writeFile(join(resources(), 'application.yml'), 'management:\n  port: 9001\n')
     await expect(readSpringPort(dir)).resolves.toBe(8080)
   })
+
+  it('handles a long server section without a port', async () => {
+    const content = `server:\n${'  option: value\n'.repeat(40)}management:\n  port: 9001\n`
+    await writeFile(join(resources(), 'application.yml'), content)
+    await expect(readSpringPort(dir)).resolves.toBe(8080)
+  })
+
+  it('finds a port after a long server section', async () => {
+    const content = `server:\n${'  option: value\n'.repeat(40)}  port: 9090\n`
+    await writeFile(join(resources(), 'application.yml'), content)
+    await expect(readSpringPort(dir)).resolves.toBe(9090)
+  })
 })

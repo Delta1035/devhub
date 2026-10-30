@@ -57,8 +57,24 @@ export function inferNpmPorts(body: string): number[] {
 const springDefaultPort = 8080
 // `server.port=8081`, `server.port: ${PORT:8081}` (the fallback after ':' is used).
 const propertiesPort = /^\s*server\.port\s*[=:]\s*(?:\$\{[^:}]+:)?(\d+)/m
-// `server:` followed (indented, before the next top-level key) by `port: 8081`.
-const yamlPort = /^server:\s*\n(?:[ \t]+.*\n)*?[ \t]+port:\s*["']?(?:\$\{[^:}]+:)?(\d+)/m
+// Inspect lines once: a regex spanning indented lines can backtrack exponentially when port is absent.
+function yamlServerPort(content: string): string | null {
+  let inServer = false
+  for (const line of content.split(/\r?\n/)) {
+    if (/^server:[ \t]*$/.test(line)) {
+      inServer = true
+      continue
+    }
+    if (!inServer || line.trim() === '') continue
+    if (!/^[ \t]/.test(line)) {
+      inServer = false
+      continue
+    }
+    const port = /^[ \t]+port:\s*["']?(?:\$\{[^:}]+:)?(\d+)/.exec(line)?.[1]
+    if (port) return port
+  }
+  return null
+}
 
 /** The port of a Spring Boot app, from its application.properties / .yml, else 8080. */
 export async function readSpringPort(projectDir: string): Promise<number> {
@@ -71,7 +87,7 @@ export async function readSpringPort(projectDir: string): Promise<number> {
 
   for (const file of ['application.yml', 'application.yaml']) {
     const yaml = await readOptionalFile(join(resources, file)).catch(() => null)
-    const fromYaml = yaml && yamlPort.exec(`${yaml}\n`)?.[1]
+    const fromYaml = yaml && yamlServerPort(yaml)
     if (fromYaml && validPort(Number(fromYaml))) return Number(fromYaml)
   }
   return springDefaultPort
