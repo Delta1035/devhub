@@ -4,6 +4,17 @@ User-facing changes in each DevHub release. `pnpm release` generates each sectio
 Conventional Commits since the previous tag (`scripts/changelog.mjs`), and the Release workflow
 uses it as the GitHub Release notes.
 
+## v1.7.0 - 2026-10-30
+
+### Features
+
+- **desktop:** enable in-app updates for Linux deb users (cb26489)
+- make the DevHub repository accessible from the title bar (f2bf488)
+
+### Fixes
+
+- prevent project hover scans from freezing the app (2f088f5)
+
 ## v1.6.0 - 2026-10-29
 
 ### Features
