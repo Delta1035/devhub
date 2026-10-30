@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { shellChannel, type IpcResult, type UpdateStatus } from '@devhub/shared'
@@ -7,6 +9,14 @@ import { nextUpdateStatus, updateSupport, type UpdaterEvent } from './update-sta
 const firstCheckDelayMs = 15_000
 const checkIntervalMs = 6 * 60 * 60 * 1000
 
+function installedPackageType(): string | undefined {
+  try {
+    return readFileSync(join(process.resourcesPath, 'package-type'), 'utf8').trim()
+  } catch {
+    return undefined
+  }
+}
+
 /**
  * Self-update from GitHub Releases (ADR 0009). Never downloads or installs on its own: the
  * user sees "new version" and chooses to download, then to restart.
@@ -15,7 +25,8 @@ export function registerUpdater(stopRuns: () => Promise<void>): void {
   const unsupported = updateSupport({
     isPackaged: app.isPackaged,
     platform: process.platform,
-    appImage: process.env.APPIMAGE
+    appImage: process.env.APPIMAGE,
+    packageType: process.platform === 'linux' && app.isPackaged ? installedPackageType() : undefined
   })
   let status: UpdateStatus = unsupported
     ? { state: 'unsupported', reason: unsupported }
@@ -56,6 +67,7 @@ export function registerUpdater(stopRuns: () => Promise<void>): void {
 
   autoUpdater.autoDownload = false
   autoUpdater.autoInstallOnAppQuit = false
+  let installing = false
   autoUpdater.on('checking-for-update', () => apply({ type: 'checking' }))
   autoUpdater.on('update-available', (info) => apply({ type: 'available', version: info.version }))
   autoUpdater.on('update-not-available', () => apply({ type: 'not-available' }))
@@ -65,7 +77,10 @@ export function registerUpdater(stopRuns: () => Promise<void>): void {
   autoUpdater.on('update-downloaded', (info) =>
     apply({ type: 'downloaded', version: info.version })
   )
-  autoUpdater.on('error', (error) => apply({ type: 'error', error }))
+  autoUpdater.on('error', (error) => {
+    installing = false
+    apply({ type: 'error', error })
+  })
 
   // Failures are reported through the 'error' event, so the promises are only awaited to settle.
   const check = (): Promise<void> =>
@@ -83,7 +98,6 @@ export function registerUpdater(stopRuns: () => Promise<void>): void {
   )
   // electron-updater starts the installer before app.quit emits before-quit.
   // Finish stopping managed processes before allowing it to replace the app.
-  let installing = false
   handle(shellChannel.installUpdate, async () => {
     if (installing || status.state !== 'downloaded') return
     installing = true

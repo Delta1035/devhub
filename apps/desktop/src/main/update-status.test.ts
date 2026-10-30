@@ -6,12 +6,39 @@ const now = () => new Date('2026-10-02T12:00:00.000Z')
 
 describe('updateSupport', () => {
   it.each([
-    [{ isPackaged: false, platform: 'win32' as const, appImage: undefined }, '开发版本不检查更新'],
-    [{ isPackaged: true, platform: 'win32' as const, appImage: undefined }, null],
-    [{ isPackaged: true, platform: 'linux' as const, appImage: '/opt/devhub.AppImage' }, null],
     [
-      { isPackaged: true, platform: 'linux' as const, appImage: undefined },
-      '通过 deb 安装时，请用系统的包管理器更新'
+      {
+        isPackaged: false,
+        platform: 'win32' as const,
+        appImage: undefined,
+        packageType: undefined
+      },
+      '开发版本不检查更新'
+    ],
+    [
+      { isPackaged: true, platform: 'win32' as const, appImage: undefined, packageType: undefined },
+      null
+    ],
+    [
+      {
+        isPackaged: true,
+        platform: 'linux' as const,
+        appImage: '/opt/devhub.AppImage',
+        packageType: undefined
+      },
+      null
+    ],
+    [
+      { isPackaged: true, platform: 'linux' as const, appImage: undefined, packageType: 'deb' },
+      null
+    ],
+    [
+      { isPackaged: true, platform: 'linux' as const, appImage: undefined, packageType: undefined },
+      '当前 Linux 安装方式不支持自动更新'
+    ],
+    [
+      { isPackaged: true, platform: 'linux' as const, appImage: undefined, packageType: 'rpm' },
+      '当前 Linux 安装方式不支持自动更新'
     ]
   ])('%o → %s', (input, expected) => {
     expect(updateSupport(input)).toBe(expected)

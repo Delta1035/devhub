@@ -52,7 +52,7 @@ Download from [Releases](https://github.com/Delta1035/devhub/releases):
 | Platform | File                                                        |
 | -------- | ----------------------------------------------------------- |
 | Windows  | `devhub-*-setup.exe` (installer, lets you pick a folder)    |
-| Linux    | `.AppImage` (auto-updates) or `.deb`                        |
+| Linux    | `.AppImage` or `.deb` (both support in-app updates)         |
 | Android  | `DevHub-*.apk` (remote client for a desktop running DevHub) |
 
 The installers are not code-signed, so Windows SmartScreen warns on first launch; choose "More info → Run anyway".

@@ -9,7 +9,7 @@ DevHub 支持 Windows 与 Linux（Ubuntu / X11）。
 | 平台    | 文件                                         |
 | ------- | -------------------------------------------- |
 | Windows | `devhub-*-setup.exe`（安装向导，可选择目录） |
-| Linux   | `.AppImage`（支持自动更新）或 `.deb`         |
+| Linux   | `.AppImage` 或 `.deb`（均支持应用内更新）    |
 
 安装包未签名，Windows 首次运行会出现 SmartScreen 提示，选择「更多信息 → 仍要运行」。
 
@@ -54,4 +54,4 @@ DevHub 能自动识别：
 
 ## 更新
 
-Windows 安装版和 Linux AppImage 会从 GitHub Releases 自动更新；`.deb` 包不会自动更新，需要手动安装新版本。
+Windows 安装版、Linux AppImage 和 `.deb` 包会从 GitHub Releases 检查更新；用户确认后才下载并安装。`.deb` 安装时需要系统管理员授权；旧版 `.deb` 需手动安装一次支持此功能的新版本。

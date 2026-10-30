@@ -12,15 +12,23 @@ export type UpdaterEvent =
 export interface UpdateSupport {
   isPackaged: boolean
   platform: NodeJS.Platform
-  /** Set by the AppImage runtime; the .deb package has no such variable. */
+  /** Set by the AppImage runtime. */
   appImage: string | undefined
+  /** Written by electron-builder into the installed deb's resources. */
+  packageType: string | undefined
 }
 
-/** electron-updater can replace the NSIS install on Windows and the AppImage on Linux. */
-export function updateSupport({ isPackaged, platform, appImage }: UpdateSupport): string | null {
+/** electron-updater selects the matching installer for NSIS, AppImage and deb. */
+export function updateSupport({
+  isPackaged,
+  platform,
+  appImage,
+  packageType
+}: UpdateSupport): string | null {
   if (!isPackaged) return '开发版本不检查更新'
   if (platform === 'win32') return null
-  if (platform === 'linux') return appImage ? null : '通过 deb 安装时，请用系统的包管理器更新'
+  if (platform === 'linux')
+    return appImage || packageType === 'deb' ? null : '当前 Linux 安装方式不支持自动更新'
   return '当前系统不支持自动更新'
 }
 

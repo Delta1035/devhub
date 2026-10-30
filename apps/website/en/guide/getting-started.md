@@ -9,7 +9,7 @@ Download the latest version from [GitHub Releases](https://github.com/Delta1035/
 | Platform | File                                                     |
 | -------- | -------------------------------------------------------- |
 | Windows  | `devhub-*-setup.exe` (installer, lets you pick a folder) |
-| Linux    | `.AppImage` (auto-updates) or `.deb`                     |
+| Linux    | `.AppImage` or `.deb` (both support in-app updates)      |
 
 The installers are not code-signed, so Windows SmartScreen warns on first launch; choose **More info → Run anyway**.
 
@@ -54,4 +54,4 @@ Closing the window keeps DevHub in the tray with scripts still running; quitting
 
 ## Updates
 
-The Windows installer and the Linux AppImage update themselves from GitHub Releases. The `.deb` package does not; install the new version manually.
+The Windows installer, Linux AppImage, and `.deb` package check GitHub Releases for updates. Download and installation require confirmation; installing a `.deb` also requires administrator authorization. Existing `.deb` installations need one manual upgrade to a version with this feature.

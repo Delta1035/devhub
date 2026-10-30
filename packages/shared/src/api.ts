@@ -216,8 +216,8 @@ export interface WindowState {
 }
 
 /**
- * Self-update of the installed app. `unsupported`: dev builds and the .deb package (updated by
- * the system package manager), where nothing is checked.
+ * Self-update of the installed app. `unsupported`: dev builds and unknown package formats,
+ * where nothing is checked.
  */
 export type UpdateStatus =
   | { state: 'unsupported'; reason: string }

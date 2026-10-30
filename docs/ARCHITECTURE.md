@@ -98,6 +98,7 @@ ShellApi 的通道在 `shellChannel` 中手动定义（数量少，不走自动�
 `openProjectFolder(projectId)` 在系统文件管理器中打开项目目录：renderer 只传 id，路径由 `core/shell/project-folder.ts` 从项目注册表查出并确认是目录，再交给 `shell.openPath`。
 
 更新安装入口通过注入的清理函数等待 `core.dispose()` 成功，再调用 `quitAndInstall()`；不能仅依赖 `before-quit`，因为 electron-updater 会先启动安装再请求退出。清理失败不安装。
+Linux 已打包版本由 `APPIMAGE` 或 electron-builder 写入 `resources/package-type=deb` 判断更新支持；electron-updater 按安装格式选择 AppImageUpdater 或 DebUpdater。deb 下载校验使用 Release 的 `latest-linux.yml`，安装通过系统授权执行。
 
 ## 质量与诊断
 

@@ -13,7 +13,7 @@
 
 - electron-builder 官方配套，读取 `electron-builder.yml` 的 `publish`（`github` / `Delta1035/devhub`）。仓库公开，无需令牌。
 - 主进程运行时依赖（`dependencies`）。
-- 支持范围：Windows（NSIS 安装版）与 Linux AppImage。deb 包由系统包管理器管理，开发版本不检查——这些情况显示原因，不提供按钮。
+- 支持范围：Windows（NSIS 安装版）与 Linux AppImage。deb 包由系统包管理器管理，开发版本不检查——这些情况显示原因，不提供按钮。Linux deb 支持后来由 ADR 0031 扩展。
 
 ### 由用户决定下载与安装
 

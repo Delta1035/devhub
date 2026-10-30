@@ -3,7 +3,7 @@ import { shellChannel } from '@devhub/shared'
 
 const mocks = vi.hoisted(() => ({
   handlers: new Map<string, () => Promise<unknown>>(),
-  listeners: new Map<string, (info: { version: string }) => void>(),
+  listeners: new Map<string, (info: unknown) => void>(),
   quitAndInstall: vi.fn()
 }))
 
@@ -18,8 +18,7 @@ vi.mock('electron', () => ({
 
 vi.mock('electron-updater', () => ({
   autoUpdater: {
-    on: (event: string, listener: (info: { version: string }) => void) =>
-      mocks.listeners.set(event, listener),
+    on: (event: string, listener: (info: unknown) => void) => mocks.listeners.set(event, listener),
     quitAndInstall: mocks.quitAndInstall
   }
 }))
@@ -85,5 +84,24 @@ describe('update installation', () => {
     await install()
     expect(stopRuns).not.toHaveBeenCalled()
     expect(mocks.quitAndInstall).not.toHaveBeenCalled()
+  })
+
+  it('shows an authorization or installation error and allows another attempt', async () => {
+    const stopRuns = vi.fn(async () => {})
+    mocks.quitAndInstall.mockImplementationOnce(() => {
+      mocks.listeners.get('error')!(new Error('Authorization cancelled'))
+    })
+    registerUpdater(stopRuns)
+    ready()
+
+    await install()
+    expect(await mocks.handlers.get(shellChannel.getUpdateStatus)!()).toEqual({
+      ok: true,
+      value: { state: 'error', message: 'Authorization cancelled' }
+    })
+
+    ready()
+    await install()
+    expect(mocks.quitAndInstall).toHaveBeenCalledTimes(2)
   })
 })
