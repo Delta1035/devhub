@@ -4,6 +4,12 @@ User-facing changes in each DevHub release. `pnpm release` generates each sectio
 Conventional Commits since the previous tag (`scripts/changelog.mjs`), and the Release workflow
 uses it as the GitHub Release notes.
 
+## v1.7.1 - 2026-10-30
+
+### Fixes
+
+- **release:** preserve Linux GLIBC compatibility (ddb4ab2)
+
 ## v1.7.0 - 2026-10-30
 
 ### Features
