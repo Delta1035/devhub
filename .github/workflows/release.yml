@@ -20,7 +20,8 @@ jobs:
         include:
           - os: windows-latest
             target: win
-          - os: ubuntu-latest
+          # Keep native modules compatible with Ubuntu 22.04 and newer.
+          - os: ubuntu-22.04
             target: linux
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
@@ -58,6 +59,9 @@ jobs:
       - run: pnpm --filter @devhub/desktop build:${{ matrix.target }} --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
+      - name: Verify Linux native module compatibility
+        if: runner.os == 'Linux'
+        run: node scripts/verify-linux-package.mjs apps/desktop/dist/linux-unpacked
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: installers-${{ matrix.target }}

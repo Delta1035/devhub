@@ -125,7 +125,8 @@ jobs:
         include:
           - os: windows-latest
             target: win
-          - os: ubuntu-latest
+          # Native modules built here must run on Ubuntu 22.04 and newer.
+          - os: ubuntu-22.04
             target: linux
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
@@ -160,18 +161,18 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
       - name: Verify node-pty native module is unpacked
+        if: runner.os == 'Windows'
         shell: bash
         run: |
-          # Windows ships prebuilds; Linux has none, so node-pty is compiled into build/Release.
-          case "$RUNNER_OS" in
-            Windows) native=apps/desktop/dist/win-unpacked/resources/app.asar.unpacked/node_modules/node-pty/prebuilds/win32-x64/pty.node ;;
-            Linux) native=apps/desktop/dist/linux-unpacked/resources/app.asar.unpacked/node_modules/node-pty/build/Release/pty.node ;;
-          esac
+          native=apps/desktop/dist/win-unpacked/resources/app.asar.unpacked/node_modules/node-pty/prebuilds/win32-x64/pty.node
           if [ ! -f "$native" ]; then
             echo "::error::node-pty native module missing from package: $native"
             exit 1
           fi
           echo "found $native"
+      - name: Verify Linux native module compatibility
+        if: runner.os == 'Linux'
+        run: node scripts/verify-linux-package.mjs apps/desktop/dist/linux-unpacked
 
   # Builds the Android APK (unsigned: secrets are not available to pull requests) so Gradle and
   # Capacitor problems show up before a release.

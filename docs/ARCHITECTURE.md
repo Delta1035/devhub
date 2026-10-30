@@ -108,6 +108,7 @@ Linux 已打包版本由 `APPIMAGE` 或 electron-builder 写入 `resources/packa
 - 提交信息由 husky `commit-msg` 钩子与 CI `commit-messages` 任务校验（`scripts/commit-msg.mjs`）；`pnpm release` 经 `apps/desktop` 的 `version` 生命周期调用 `scripts/changelog.mjs` 生成 `CHANGELOG.md` 段落，Release 工作流以其作为 Release 正文（ADR 0026）。仓库根的 `scripts/*.mjs` 是零依赖 Node 脚本，测试为同名 `*.test.mjs`（`node --test`，包含在 `pnpm test` 中）。
 - 发版保护：`pnpm release` 先运行 `scripts/release-guard.mjs`，要求当前在 `main`、工作区干净、与 `origin/main` 完全同步，且最新的 `v*` tag 在 HEAD 的历史中，否则报错退出（#63）。发版提交必须落在 main 上，否则 `git describe` 找不到上一个 tag，下一次的 CHANGELOG 会重复列出已发布的提交。
 - Android APK（ADR 0029）：`ci.yml` 与 `release.yml` 的 `android` 任务在 Ubuntu 上用 JDK 21 执行 `mobile-capacitor sync` 与 `assembleRelease`；版本号由 `android/app/build.gradle` 从 `apps/desktop/package.json` 计算，签名 keystore 只来自 GitHub Secrets（`ANDROID_KEYSTORE_BASE64` 等），推 tag 时缺少即失败；APK 以 `DevHub-<版本>.apk` 随安装包进入校验和、构建来源证明与草稿 Release。该任务是 DevHub 专有的，不同步到桌面模板仓库。
+- Linux 安装包固定在 GitHub Actions `ubuntu-22.04` 构建，原生模块的 GLIBC 需求不得高于 2.35；`scripts/verify-linux-package.mjs` 检查打包后 `pty.node` 的符号版本，并通过打包后的 Electron 实际加载它。不要把桌面 Linux 构建改回会漂移系统版本的 `ubuntu-latest`。
 
 ## 领域模型（`packages/shared/src/domain.ts`）
 
