@@ -15,6 +15,7 @@ export function ConnectPage({
   message,
   offline,
   onRetry,
+  onCancel,
   onChange,
   onScan,
   onSubmit
@@ -26,6 +27,7 @@ export function ConnectPage({
   message: string | null
   offline: boolean
   onRetry: () => void
+  onCancel: () => void
   onChange: () => void
   /** The Android app's QR scanner; absent elsewhere. */
   onScan?: () => Promise<ScanResult>
@@ -74,6 +76,9 @@ export function ConnectPage({
             <p className="text-sm text-muted-foreground" role="status">
               正在连接…
             </p>
+            <Button variant="outline" onClick={onCancel}>
+              取消连接
+            </Button>
             {choosesAddress && (
               <Button variant="outline" onClick={onChange}>
                 更换桌面端

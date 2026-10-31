@@ -34,6 +34,7 @@ function Gate({
   const [rejected, setRejected] = useState(false)
   // The app user asked to enter another desktop instead of retrying this one.
   const [changing, setChanging] = useState(false)
+  const [cancelled, setCancelled] = useState(false)
 
   useEffect(() => {
     void connection.restore().then(setSaved)
@@ -45,22 +46,25 @@ function Gate({
   const token = saved?.token ?? null
   const session = useQuery({
     queryKey: ['remote-session', saved?.baseUrl, token],
-    enabled: token !== null,
+    enabled: token !== null && !changing && !cancelled,
     retry: false,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       try {
-        const value = await connection.client.session()
+        const value = await connection.client.session(signal)
+        if (signal.aborted) throw new Error('连接已取消')
         access.terminal = value.allowTerminal
         appUpdates?.sync(value.appVersion)
         return { accepted: true as const, behind: protocolMismatch(value.protocol) }
       } catch (error) {
         if (error instanceof RemoteError && error.code === 'UNAUTHORIZED') {
+          if (signal.aborted) throw error
           connection.clearToken()
           return { accepted: false as const }
         }
         // The app's requests are cross-origin: a desktop before 1.4 answers but blocks them.
         if (error instanceof RemoteError && error.code === 'NETWORK' && probeDesktop) {
           const info = await probeDesktop(connection.current().baseUrl)
+          if (signal.aborted) throw error
           if (explainConnectFailure(info) === 'outdated-desktop') {
             throw new RemoteError('OUTDATED_DESKTOP', outdatedDesktopMessage, 0)
           }
@@ -90,11 +94,20 @@ function Gate({
     connection.connect(next)
     setRejected(false)
     setChanging(false)
+    setCancelled(false)
     setSaved(next)
   }
 
+  const stopChecking = (): void => {
+    setCancelled(true)
+    void queryClient.cancelQueries({
+      queryKey: ['remote-session', saved?.baseUrl, token],
+      exact: true
+    })
+  }
+
   if (saved === undefined) return <></>
-  if (token !== null && !rejected && !changing && session.data?.accepted) {
+  if (token !== null && !rejected && !changing && !cancelled && session.data?.accepted) {
     return (
       <>
         <AppUpdateBanner behind={session.data.behind} />
@@ -108,7 +121,7 @@ function Gate({
     <ConnectPage
       choosesAddress={connection.choosesAddress}
       address={saved.baseUrl}
-      checking={token !== null && !refused && !changing && session.isFetching}
+      checking={token !== null && !refused && !changing && !cancelled && session.isFetching}
       message={
         changing
           ? null
@@ -118,9 +131,16 @@ function Gate({
               ? session.error.message
               : null
       }
-      offline={!refused && !changing && session.isError}
-      onRetry={() => void session.refetch()}
-      onChange={() => setChanging(true)}
+      offline={cancelled || (!refused && !changing && session.isError)}
+      onRetry={() => {
+        if (cancelled) setCancelled(false)
+        else void session.refetch()
+      }}
+      onCancel={stopChecking}
+      onChange={() => {
+        stopChecking()
+        setChanging(true)
+      }}
       onScan={scanQrCode ?? undefined}
       onSubmit={submit}
     />

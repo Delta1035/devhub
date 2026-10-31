@@ -50,7 +50,7 @@ export function createRemoteConnection({
   const client = createRemoteClient({
     baseUrl: () => state.baseUrl,
     token: () => state.token ?? '',
-    fetch: (url, init) => window.fetch(url, init),
+    fetch: (url, init) => window.fetch(url, { ...init, signal: init.signal as AbortSignal }),
     createDecoder: () => {
       const decoder = new TextDecoder()
       return (chunk) => decoder.decode(chunk, { stream: true })

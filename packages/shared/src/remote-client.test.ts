@@ -153,6 +153,19 @@ describe('remote api', () => {
     })
   })
 
+  it('passes session cancellation through and ignores a late rejected token', async () => {
+    let answer: ((response: FetchResponse) => void) | undefined
+    const fetch = vi.fn<FetchFn>(() => new Promise((resolve) => (answer = resolve)))
+    const onUnauthorized = vi.fn()
+    const signal = { aborted: false }
+    const pending = client(fetch, { onUnauthorized }).session(signal)
+    expect(fetch.mock.calls[0]?.[1].signal).toBe(signal)
+    signal.aborted = true
+    answer?.(json(401, { ok: false, error: { code: 'UNAUTHORIZED', message: '旧令牌' } }))
+    await expect(pending).rejects.toMatchObject({ code: 'UNAUTHORIZED' })
+    expect(onUnauthorized).not.toHaveBeenCalled()
+  })
+
   it('gives up on a session check the desktop never answers', async () => {
     const delay = vi.fn(async () => undefined)
     const hanging = client(() => new Promise<FetchResponse>(() => undefined), {

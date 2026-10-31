@@ -14,7 +14,7 @@ export function createMobileClient(
     baseUrl: settings.baseUrl,
     token: () => settings.token,
     fetch: async (url, init) => {
-      const response = await fetch(url, init)
+      const response = await fetch(url, { ...init, signal: init.signal as AbortSignal })
       return {
         status: response.status,
         json: () => response.json(),

@@ -82,3 +82,43 @@ test('the web app asks for a token when it has none', async ({ launchDevhub }) =
   await expect(web.getByText('访问令牌无效或已重新生成')).toBeVisible()
   await desktop.app.close()
 })
+
+test('a cancelled connection ignores a late session response and can retry', async ({
+  launchDevhub
+}) => {
+  const desktop = await launchDevhub()
+  const port = await freePort()
+  const remote = await enableRemote(desktop.page, port)
+  const web = await openWebApp(desktop, `http://127.0.0.1:${port}/`)
+  let release: (() => void) | undefined
+  let arrived: (() => void) | undefined
+  let finished: (() => void) | undefined
+  const requestArrived = new Promise<void>((resolve) => (arrived = resolve))
+  const requestFinished = new Promise<void>((resolve) => (finished = resolve))
+  await web.route('**/api/v1/session', async (route) => {
+    arrived?.()
+    await new Promise<void>((resolve) => (release = resolve))
+    await route
+      .fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ protocol: 1, allowTerminal: false })
+      })
+      .catch(() => undefined)
+    finished?.()
+  })
+
+  await web.getByLabel('访问令牌').fill(remote.token)
+  await web.getByRole('button', { name: '连接', exact: true }).click()
+  await requestArrived
+  await expect(web.getByRole('status').filter({ hasText: '正在连接' })).toBeVisible()
+  await web.getByRole('button', { name: '取消连接' }).click()
+  await expect(web.getByRole('button', { name: '重试' })).toBeVisible()
+  release?.()
+  await requestFinished
+  await expect(web.getByRole('heading', { name: '连接 DevHub' })).toBeVisible()
+  await web.unroute('**/api/v1/session')
+  await web.getByRole('button', { name: '重试' }).click()
+  await expect(web.getByRole('button', { name: '设置' })).toBeVisible()
+  await desktop.app.close()
+})

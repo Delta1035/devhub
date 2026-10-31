@@ -21,7 +21,7 @@ export interface FetchResponse {
 
 export type FetchFn = (
   url: string,
-  init: { method: 'GET' | 'POST'; headers: Record<string, string>; body?: string }
+  init: { method: 'GET' | 'POST'; headers: Record<string, string>; body?: string; signal?: object }
 ) => Promise<FetchResponse>
 
 export interface RemoteClientOptions {
@@ -71,7 +71,7 @@ export interface RemoteClient {
   api: DevhubApi
   events: RemoteEvents
   /** Checks the token and returns what this client may do. */
-  session(): Promise<RemoteSession>
+  session(signal?: { readonly aborted: boolean }): Promise<RemoteSession>
 }
 
 export function createRemoteClient(options: RemoteClientOptions): RemoteClient {
@@ -83,17 +83,18 @@ export function createRemoteClient(options: RemoteClientOptions): RemoteClient {
 
   const request = async (
     path: string,
-    init: { method: 'GET' | 'POST'; body?: string }
+    init: { method: 'GET' | 'POST'; body?: string },
+    signal?: { readonly aborted: boolean }
   ): Promise<{ status: number; body: unknown }> => {
     let response: FetchResponse
     try {
       const headers =
         init.body === undefined ? auth() : { ...auth(), 'content-type': 'application/json' }
-      response = await options.fetch(url(path), { ...init, headers })
+      response = await options.fetch(url(path), { ...init, headers, ...(signal ? { signal } : {}) })
     } catch {
       throw new RemoteError('NETWORK', '无法连接到 DevHub，请检查网络和远程访问设置', 0)
     }
-    if (response.status === 401) options.onUnauthorized?.()
+    if (response.status === 401 && !signal?.aborted) options.onUnauthorized?.()
     return { status: response.status, body: await response.json().catch(() => null) }
   }
 
@@ -116,8 +117,8 @@ export function createRemoteClient(options: RemoteClientOptions): RemoteClient {
   return {
     api,
     events: createEventStream(options, () => url('/events'), auth),
-    async session() {
-      const pending = request('/session', { method: 'GET' })
+    async session(signal) {
+      const pending = request('/session', { method: 'GET' }, signal)
       const { sessionTimeoutMs } = options
       const { status, body } =
         sessionTimeoutMs === undefined
