@@ -57,13 +57,24 @@ test('on a phone-sized screen the web app uses a drawer and still drives scripts
   web.on('request', (request) => {
     if (new URL(request.url()).pathname === '/api/v1/rescanWorkspaces') rescans++
   })
+  const slowDrawerAnimation = await web.addStyleTag({
+    content: '[data-slot="sheet-content"][data-state="open"] { animation-duration: 2s !important; }'
+  })
   await web.getByRole('button', { name: '打开导航' }).click()
   const drawer = web.getByRole('dialog', { name: '导航' })
   await expect(drawer).toBeVisible()
+  await expect(drawer.getByRole('status', { name: '正在准备导航' })).toBeVisible()
+  await expect(drawer.getByRole('button', { name: 'app 的更多操作' })).toHaveCount(0)
+  await web.keyboard.press('Escape')
+  await expect(drawer).toBeHidden()
+  await web.getByRole('button', { name: '打开导航' }).click()
+  await expect(drawer.getByRole('status', { name: '正在准备导航' })).toBeVisible()
   expect(rescans).toBe(0)
   await drawer.evaluate((element) =>
     Promise.all(element.getAnimations().map((animation) => animation.finished))
   )
+  await expect(drawer.getByRole('button', { name: 'app 的更多操作' })).toBeVisible()
+  await slowDrawerAnimation.evaluate((element) => element.parentNode?.removeChild(element))
   await web.screenshot({ path: testInfo.outputPath('phone-drawer.png') })
   // Touch screens have no right click: the same actions sit behind a "more" button.
   await drawer.getByRole('button', { name: 'app 的更多操作' }).click()

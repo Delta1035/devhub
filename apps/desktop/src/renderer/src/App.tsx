@@ -8,6 +8,7 @@ import { OrphansBanner } from '@renderer/features/runs/orphans-banner'
 import { useRunEventsSync, useRuns } from '@renderer/features/runs/use-runs'
 import { Sheet, SheetContent, SheetTitle } from '@renderer/components/ui/sheet'
 import { Sidebar } from '@renderer/features/sidebar/sidebar'
+import { SidebarSkeleton } from '@renderer/features/sidebar/sidebar-skeleton'
 import { useResizableWidth } from '@renderer/features/sidebar/use-resizable-width'
 import { TitleBar } from '@renderer/features/title-bar/title-bar'
 import { useWorkspaceEventsSync, useWorkspaces } from '@renderer/features/workspaces/use-workspaces'
@@ -35,7 +36,9 @@ function App(): React.JSX.Element {
   const [requestedRunId, setRequestedRunId] = useState<string | null>(null)
   // On phones the sidebar is a drawer over the content, closed once something is chosen.
   const narrow = useMediaQuery(narrowQuery)
+  const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [drawerReady, setDrawerReady] = useState(false)
   const groups = useGroups().data ?? []
   const selectedGroup = groups.find((group) => group.id === selectedGroupId)
   // Choosing a project in the sidebar leaves the settings page.
@@ -101,9 +104,12 @@ function App(): React.JSX.Element {
               showCloseButton={false}
               aria-describedby={undefined}
               className="w-[min(20rem,85vw)] gap-0 p-3 pt-[calc(env(safe-area-inset-top)+0.75rem)]"
+              onAnimationEnd={(event) => {
+                if (event.target === event.currentTarget && drawerOpen) setDrawerReady(true)
+              }}
             >
               <SheetTitle className="sr-only">导航</SheetTitle>
-              {sidebarContent}
+              {drawerReady || reducedMotion ? sidebarContent : <SidebarSkeleton />}
             </SheetContent>
           </Sheet>
         ) : (
