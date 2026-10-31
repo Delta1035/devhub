@@ -6,11 +6,12 @@ import { Button } from '@renderer/components/ui/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@renderer/components/ui/hover-card'
 import { EditorButtons } from '@renderer/features/editors/editor-buttons'
 import { cn } from '@renderer/lib/utils'
-import { ProjectContextMenu, ProjectMoreMenu } from './project-menu'
+import { ProjectContextMenu, ProjectMoreMenu, ProjectMoreMenuLazy } from './project-menu'
 import { useProjectMenuActions } from './use-project-menu-actions'
 import { ProjectSummary } from './project-summary'
 
 interface ProjectItemProps {
+  narrow: boolean
   project: Project
   /** The workspace that discovered the project; absent for projects added by hand. */
   workspace?: WorkspaceView
@@ -29,7 +30,42 @@ interface ProjectItemProps {
   onError: (error: Error) => void
 }
 
-export function ProjectItem({
+export function ProjectItem(props: ProjectItemProps): React.JSX.Element {
+  return props.narrow ? <NarrowProjectItem {...props} /> : <DesktopProjectItem {...props} />
+}
+
+function NarrowProjectItem({
+  project,
+  subtitle,
+  selected,
+  activeRuns,
+  onSelect,
+  onRemove,
+  onShowDetails,
+  onShellStarted,
+  onError
+}: ProjectItemProps): React.JSX.Element {
+  return (
+    <li className={cn('flex items-center gap-1 rounded-lg pr-1', selected && 'bg-muted')}>
+      <ProjectButton
+        project={project}
+        subtitle={subtitle}
+        selected={selected}
+        activeRuns={activeRuns}
+        onChoose={onSelect}
+      />
+      <ProjectMoreMenuLazy
+        project={project}
+        onShowDetails={onShowDetails}
+        onRemove={onRemove}
+        onShellStarted={onShellStarted}
+        onError={onError}
+      />
+    </li>
+  )
+}
+
+function DesktopProjectItem({
   project,
   workspace,
   subtitle,
@@ -59,69 +95,89 @@ export function ProjectItem({
       setHoverOpen(false)
     }
   }
-  return (
-    <ProjectContextMenu {...menu}>
-      <li
-        className={cn(
-          'group flex items-center gap-1 rounded-lg pr-1 hover:bg-muted',
-          selected && 'bg-muted'
-        )}
+  const item = (
+    <li
+      className={cn(
+        'group flex items-center gap-1 rounded-lg pr-1 hover:bg-muted',
+        selected && 'bg-muted'
+      )}
+    >
+      <HoverCard
+        open={hoverOpen && !menuOpen}
+        onOpenChange={(open) => setHoverOpen(open && pointerOver.current)}
+        openDelay={600}
+        closeDelay={100}
       >
-        <HoverCard
-          open={hoverOpen && !menuOpen}
-          onOpenChange={(open) => setHoverOpen(open && pointerOver.current)}
-          openDelay={600}
-          closeDelay={100}
+        <HoverCardTrigger asChild>
+          <ProjectButton
+            project={project}
+            subtitle={subtitle}
+            selected={selected}
+            activeRuns={activeRuns}
+            onChoose={onSelect}
+            onPointerEnter={() => (pointerOver.current = true)}
+            onPointerLeave={() => (pointerOver.current = false)}
+          />
+        </HoverCardTrigger>
+        <HoverCardContent side="right" align="start" className="w-80">
+          <ProjectSummary project={project} workspace={workspace} activeRuns={activeRuns} />
+          <p className="mt-2 text-[11px] text-muted-foreground">右键查看更多操作</p>
+        </HoverCardContent>
+      </HoverCard>
+      <EditorButtons
+        projectId={project.id}
+        projectName={project.name}
+        variant="icon"
+        onError={onError}
+        className="opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"
+      />
+      <ProjectMoreMenu {...menu} />
+      {access.manage && (
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          onClick={onRemove}
+          title={removeTitle}
+          aria-label={`移除 ${project.name}`}
+          className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
         >
-          <HoverCardTrigger asChild>
-            <button
-              type="button"
-              onClick={onSelect}
-              onPointerEnter={() => (pointerOver.current = true)}
-              onPointerLeave={() => (pointerOver.current = false)}
-              aria-current={selected ? 'true' : undefined}
-              className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <FolderGit2 className="size-4 shrink-0 text-muted-foreground" />
-              <span className="min-w-0">
-                <span className="flex items-center gap-1.5">
-                  <span className="truncate text-sm font-medium">{project.name}</span>
-                  <ActiveRunsIndicator runs={activeRuns} />
-                </span>
-                {/* A direct child of a workspace would only repeat its name. */}
-                {subtitle !== project.name && (
-                  <span className="block truncate text-xs text-muted-foreground">{subtitle}</span>
-                )}
-              </span>
-            </button>
-          </HoverCardTrigger>
-          <HoverCardContent side="right" align="start" className="w-80">
-            <ProjectSummary project={project} workspace={workspace} activeRuns={activeRuns} />
-            <p className="mt-2 text-[11px] text-muted-foreground">右键查看更多操作</p>
-          </HoverCardContent>
-        </HoverCard>
-        <EditorButtons
-          projectId={project.id}
-          projectName={project.name}
-          variant="icon"
-          onError={onError}
-          className="opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"
-        />
-        <ProjectMoreMenu {...menu} />
-        {access.manage && (
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={onRemove}
-            title={removeTitle}
-            aria-label={`移除 ${project.name}`}
-            className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-          >
-            <X />
-          </Button>
+          <X />
+        </Button>
+      )}
+    </li>
+  )
+  return <ProjectContextMenu {...menu}>{item}</ProjectContextMenu>
+}
+
+function ProjectButton({
+  project,
+  subtitle,
+  selected,
+  activeRuns,
+  onChoose,
+  ...buttonProps
+}: Pick<ProjectItemProps, 'project' | 'subtitle' | 'selected' | 'activeRuns'> & {
+  onChoose: () => void
+} & Omit<React.ComponentProps<'button'>, 'onSelect'>): React.JSX.Element {
+  return (
+    <button
+      {...buttonProps}
+      type="button"
+      onClick={onChoose}
+      aria-current={selected ? 'true' : undefined}
+      className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <FolderGit2 className="size-4 shrink-0 text-muted-foreground" />
+      <span className="min-w-0">
+        <span className="flex items-center gap-1.5">
+          <span className="truncate text-sm font-medium">{project.name}</span>
+          <ActiveRunsIndicator runs={activeRuns} />
+        </span>
+        {subtitle !== project.name && (
+          <span className="block truncate text-xs text-muted-foreground">{subtitle}</span>
         )}
-      </li>
-    </ProjectContextMenu>
+      </span>
+    </button>
   )
 }
 

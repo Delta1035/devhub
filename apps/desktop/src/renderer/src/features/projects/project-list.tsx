@@ -36,6 +36,7 @@ interface ProjectDialog {
 }
 
 interface ProjectListProps {
+  narrow: boolean
   selectedId: string | null
   onSelect: (projectId: string) => void
   /** Shows a run's terminal tab in its project (after opening a shell from the context menu). */
@@ -43,6 +44,7 @@ interface ProjectListProps {
 }
 
 export function ProjectList({
+  narrow,
   selectedId,
   onSelect,
   onOpenRun
@@ -110,6 +112,7 @@ export function ProjectList({
   const renderItem = (project: Project, workspace?: WorkspaceView): React.JSX.Element => (
     <ProjectItem
       key={project.id}
+      narrow={narrow}
       project={project}
       workspace={workspace}
       subtitle={workspace ? relativeToWorkspace(project.path, workspace) : project.path}

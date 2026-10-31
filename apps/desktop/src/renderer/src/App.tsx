@@ -10,7 +10,7 @@ import { Sheet, SheetContent, SheetTitle } from '@renderer/components/ui/sheet'
 import { Sidebar } from '@renderer/features/sidebar/sidebar'
 import { useResizableWidth } from '@renderer/features/sidebar/use-resizable-width'
 import { TitleBar } from '@renderer/features/title-bar/title-bar'
-import { useWorkspaceEventsSync } from '@renderer/features/workspaces/use-workspaces'
+import { useWorkspaceEventsSync, useWorkspaces } from '@renderer/features/workspaces/use-workspaces'
 import { narrowQuery, useMediaQuery } from '@renderer/lib/use-media-query'
 
 // Opened now and then; also carries the QR code encoder.
@@ -24,6 +24,7 @@ function App(): React.JSX.Element {
   useRunEventsSync()
   useGroupEventsSync()
   useWorkspaceEventsSync()
+  useWorkspaces()
   const { data: projects } = useProjects()
   const { data: runs } = useRuns()
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -63,6 +64,7 @@ function App(): React.JSX.Element {
 
   const sidebarContent = (
     <Sidebar
+      narrow={narrow}
       selectedGroupId={showSettings ? null : selectedGroupId}
       onSelectGroup={(groupId) => {
         setSelectedGroupId(groupId)

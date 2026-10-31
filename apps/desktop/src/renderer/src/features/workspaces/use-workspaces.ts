@@ -14,11 +14,16 @@ const workspacesKey = ['workspaces'] as const
 const projectsKey = ['projects'] as const
 
 /**
- * Fetching rescans: on mount and on window focus, so projects created or deleted outside
- * DevHub show up on return. Projects that change arrive through `projects-updated`.
+ * The app mounts this query once; opening the mobile drawer must not start another scan.
+ * Window focus still rescans so projects changed outside DevHub show up on return.
  */
 export function useWorkspaces(): UseQueryResult<WorkspaceView[]> {
-  return useQuery({ queryKey: workspacesKey, queryFn: () => api.rescanWorkspaces() })
+  return useQuery({
+    queryKey: workspacesKey,
+    queryFn: () => api.rescanWorkspaces(),
+    refetchOnMount: false,
+    refetchOnWindowFocus: 'always'
+  })
 }
 
 /** Reloads both lists without triggering another scan. */

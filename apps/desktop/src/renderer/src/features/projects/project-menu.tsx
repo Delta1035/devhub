@@ -1,5 +1,5 @@
 import { AppWindow, Copy, Ellipsis, FolderOpen, Info, SquareTerminal, X } from 'lucide-react'
-import type { Project } from '@devhub/shared'
+import type { Project, Run } from '@devhub/shared'
 import { access, shell } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
 import {
@@ -24,6 +24,7 @@ import {
 } from '@renderer/components/ui/dropdown-menu'
 import { cn } from '@renderer/lib/utils'
 import type { ProjectMenuActions } from './use-project-menu-actions'
+import { useProjectMenuActions } from './use-project-menu-actions'
 
 interface ProjectMenuProps {
   project: Project
@@ -82,6 +83,65 @@ export function ProjectMoreMenu({
         <ProjectMenuItems parts={dropdownParts} {...props} />
       </DropdownMenuContent>
     </DropdownMenu>
+  )
+}
+
+/** On narrow screens, action hooks are created only when the user opens the menu. */
+export function ProjectMoreMenuLazy({
+  project,
+  onShowDetails,
+  onRemove,
+  onShellStarted,
+  onError
+}: Omit<ProjectMenuProps, 'actions' | 'onOpenChange'> & {
+  onShellStarted: (run: Run) => void
+  onError: (error: Error) => void
+}): React.JSX.Element {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          title="更多操作"
+          aria-label={`${project.name} 的更多操作`}
+          className="inline-flex size-8"
+        >
+          <Ellipsis />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-48" aria-label={`${project.name} 的操作`}>
+        <LazyProjectMenuItems
+          project={project}
+          onShowDetails={onShowDetails}
+          onRemove={onRemove}
+          onShellStarted={onShellStarted}
+          onError={onError}
+        />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function LazyProjectMenuItems({
+  project,
+  onShowDetails,
+  onRemove,
+  onShellStarted,
+  onError
+}: Omit<ProjectMenuProps, 'actions' | 'onOpenChange'> & {
+  onShellStarted: (run: Run) => void
+  onError: (error: Error) => void
+}): React.JSX.Element {
+  const actions = useProjectMenuActions(project, { onShellStarted, onError })
+  return (
+    <ProjectMenuItems
+      parts={dropdownParts}
+      project={project}
+      actions={actions}
+      onShowDetails={onShowDetails}
+      onRemove={onRemove}
+    />
   )
 }
 

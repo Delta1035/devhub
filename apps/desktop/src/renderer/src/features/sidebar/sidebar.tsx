@@ -12,6 +12,7 @@ type SidebarTab = 'projects' | 'groups'
 const tabKey = 'devhub.sidebarTab'
 
 interface SidebarProps {
+  narrow: boolean
   selectedGroupId: string | null
   onSelectGroup: (groupId: string) => void
   /** Highlighted project; null while the settings page is open. */
@@ -25,6 +26,7 @@ interface SidebarProps {
 
 /** Projects and batch groups share the sidebar as tabs, so each gets the full height. */
 export function Sidebar({
+  narrow,
   selectedGroupId,
   onSelectGroup,
   selectedProjectId,
@@ -75,6 +77,7 @@ export function Sidebar({
         </TabsList>
         <TabsContent value="projects" className="min-h-0 overflow-y-auto">
           <ProjectList
+            narrow={narrow}
             selectedId={selectedProjectId}
             onSelect={onSelectProject}
             onOpenRun={onOpenRun}

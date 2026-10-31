@@ -53,9 +53,14 @@ test('on a phone-sized screen the web app uses a drawer and still drives scripts
   expect(manifest).toMatchObject({ start_url: './', scope: './', display: 'standalone' })
 
   // The sidebar is a drawer, closed once a project is chosen.
+  let rescans = 0
+  web.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/v1/rescanWorkspaces') rescans++
+  })
   await web.getByRole('button', { name: '打开导航' }).click()
   const drawer = web.getByRole('dialog', { name: '导航' })
   await expect(drawer).toBeVisible()
+  expect(rescans).toBe(0)
   await drawer.evaluate((element) =>
     Promise.all(element.getAnimations().map((animation) => animation.finished))
   )
@@ -74,6 +79,7 @@ test('on a phone-sized screen the web app uses a drawer and still drives scripts
   await expect(web.locator('main li', { hasText: 'npm run dev' })).toBeVisible()
   await web.getByRole('button', { name: '打开导航' }).click()
   await drawer.getByRole('button', { name: /^app(?! 的)/ }).click()
+  expect(rescans).toBe(0)
 
   await web.getByRole('button', { name: '运行 tick' }).click()
   await expect(tickRow.getByText('运行中')).toBeVisible()
