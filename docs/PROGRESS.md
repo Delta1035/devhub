@@ -68,6 +68,10 @@ M4-3 Android：
 - #10 已完成：提交信息校验与 CHANGELOG（ADR 0026），Release 正文改为取自 `CHANGELOG.md`，待下次发布时验证；已发布版本的 Release 正文暂不修改。已同步到模板仓库 [electron-desktop-template](https://github.com/Delta1035/electron-desktop-template)（78e45ce，模板 ADR 0009）。
 - #8 已完成：Linux Mint（X11）上 AppImage 自动更新 1.3.0 → 1.4.0 实测通过（增量下载、替换文件、自动重启、数据保留）。
 
+桌面模板维护：
+
+- #72 已完成：核对 DevHub 与独立桌面模板的通用能力、差异和手动同步规则（`docs/DESKTOP-TEMPLATE.md`）。
+
 ## 已知问题 / 待定
 
 - 脚本命令目前是字符串（经 shell 执行）；进程管理时再决定是否改为 argv 形式
