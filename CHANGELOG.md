@@ -4,6 +4,12 @@ User-facing changes in each DevHub release. `pnpm release` generates each sectio
 Conventional Commits since the previous tag (`scripts/changelog.mjs`), and the Release workflow
 uses it as the GitHub Release notes.
 
+## v1.7.3 - 2026-11-01
+
+### Performance
+
+- **mobile:** defer first drawer content until animation ends (cbfd5a7)
+
 ## v1.7.2 - 2026-10-31
 
 ### Fixes
