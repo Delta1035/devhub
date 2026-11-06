@@ -13,7 +13,7 @@ export function createTray(handlers: { show: () => void; quit: () => void }): Tr
     Menu.buildFromTemplate([
       { label: '显示窗口', click: handlers.show },
       { type: 'separator' },
-      { label: '退出 DevHub', click: handlers.quit }
+      { label: '完全退出 DevHub', click: handlers.quit }
     ])
   )
   tray.on('click', handlers.show)
