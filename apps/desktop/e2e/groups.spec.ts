@@ -63,18 +63,18 @@ test('a serial group across projects waits for each step, then stops everything'
   const detail = page.getByRole('region', { name: '任务运行 front1' })
   await expect(detail).toContainText('输出出现文字「API ready」')
   await item.getByRole('button', { name: '执行 front1' }).click()
-  // The tab, a bar above the tabs and the title bar name the group while it starts...
+  // The tab and the persistent bar name the group while it starts; the title bar stays clear.
   const running = page.getByRole('tab', { name: /批量/ }).getByRole('status')
   const bar = page.getByRole('region', { name: '正在运行的批量任务' })
   const titleBar = page.getByRole('banner').getByRole('button', { name: /^正在运行：/ })
   await expect(running).toHaveAttribute('aria-label', /front1（启动中 \d\/2）/)
   await expect(bar).toContainText(/front1启动中 \d\/2/)
-  await expect(titleBar).toContainText('front1')
+  await expect(titleBar).toHaveCount(0)
   await expect(item).toContainText('已完成', { timeout: 30_000 })
-  // ...and while the servers it started keep running after the execution ended.
+  // The tab and bar remain while the servers keep running after the execution ended.
   await expect(running).toHaveAttribute('aria-label', '正在运行：front1（运行中 2/2）')
   await expect(bar).toContainText('front1运行中 2/2')
-  await expect(titleBar).toContainText('front1运行中 2/2')
+  await expect(titleBar).toHaveCount(0)
   await expect(detail).toContainText('2/2 个步骤完成')
   await expect(detail).toContainText('服务进程可能仍在运行')
   await expect(detail.getByRole('button', { name: '停止全部' })).toBeEnabled()
@@ -111,7 +111,7 @@ test('a serial group across projects waits for each step, then stops everything'
     .toBe(0)
   await expect(bar).toBeHidden()
   await expect(running).toBeHidden()
-  await expect(titleBar).toBeHidden()
+  await expect(titleBar).toHaveCount(0)
 })
 
 test('a failing serial step stops the sequence and explains why', async ({
