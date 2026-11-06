@@ -40,7 +40,7 @@ export interface DevhubApi {
   updateWorkspace(workspaceId: string, patch: WorkspacePatch): Promise<WorkspaceView>
   /** Removes the workspace together with the projects discovered in it. */
   removeWorkspace(workspaceId: string): Promise<void>
-  /** Rescans every workspace; changes also arrive as a `projects-updated` event. */
+  /** Rescans workspaces and removes confirmed-missing hand-added projects. */
   rescanWorkspaces(): Promise<WorkspaceView[]>
   /** Scans the project directory for runnable scripts. Never cached: reflects the files on disk. */
   listScripts(projectId: string): Promise<ProjectScripts>

@@ -1,7 +1,14 @@
-import { mkdir, writeFile } from 'fs/promises'
+import { mkdir, rm, writeFile } from 'fs/promises'
 import { join } from 'path'
 import type { Page } from '@playwright/test'
-import { addFromMenu, packageJson, stubFolderPicker, test, expect } from './fixtures'
+import {
+  addFromMenu,
+  addProjectViaApi,
+  packageJson,
+  stubFolderPicker,
+  test,
+  expect
+} from './fixtures'
 
 const manifest = packageJson({ dev: 'node -v' })
 
@@ -77,6 +84,27 @@ test('a workspace discovers projects, follows changes on disk, excludes, restore
   await expect(page.getByRole('dialog')).toContainText('将同时移除其中的 5 个项目')
   await page.getByRole('dialog').getByRole('button', { name: '确认移除' }).click()
   await expect(page.getByText('还没有项目')).toBeVisible()
+})
+
+test('refresh removes deleted workspace and hand-added projects', async ({
+  launchDevhub,
+  createProject
+}) => {
+  const code = await createProject('code', { 'web/package.json': manifest })
+  const manual = await createProject('manual', { 'package.json': manifest })
+  const { app, page } = await launchDevhub()
+  await stubFolderPicker(app, code)
+  await addFromMenu(page, '添加工作区')
+  await addProjectViaApi(page, manual)
+  await expect(projectButton(page, 'web')).toBeVisible()
+  await expect(projectButton(page, 'manual')).toBeVisible()
+
+  await rm(join(code, 'web'), { recursive: true })
+  await rm(manual, { recursive: true })
+  await page.getByRole('button', { name: '重新扫描 code' }).click()
+
+  await expect(projectButton(page, 'web')).toHaveCount(0)
+  await expect(projectButton(page, 'manual')).toHaveCount(0)
 })
 
 test('shows active run indicator on collapsed workspace and hides when expanded', async ({
