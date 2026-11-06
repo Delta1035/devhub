@@ -48,7 +48,10 @@ describe('createWorkspaceService', () => {
     return join(root, name)
   }
 
-  const makeServices = (platform: NodeJS.Platform = 'linux') => {
+  const makeServices = (
+    platform: NodeJS.Platform = 'linux',
+    checkDirectory: (path: string) => Promise<boolean> = isDirectory
+  ) => {
     const projects = createProjectService({
       store: createJsonStore({
         filePath: join(dir, 'data', 'projects.json'),
@@ -71,7 +74,7 @@ describe('createWorkspaceService', () => {
         return scanOverride ?? scanWorkspace(root, { depth })
       },
       isActive: (id) => active.has(id),
-      isDirectory,
+      isDirectory: checkDirectory,
       forgetProject: async (id) => {
         forgotten.push(id)
       },
@@ -129,22 +132,58 @@ describe('createWorkspaceService', () => {
     expect(forgotten).toHaveLength(1)
   })
 
-  it('picks up new projects and keeps deleted ones as missing on rescan', async () => {
+  it('picks up new projects and removes deleted ones on rescan', async () => {
     const web = await projectDir('web')
     const { projects, workspaces } = makeServices()
     await workspaces.add(code)
+    const removedId = only(await projects.list()).id
     events = []
 
     const api = await projectDir('api')
     await rm(web, { recursive: true })
     await workspaces.rescanAll()
 
-    expect(await paths(projects)).toEqual([web, api])
+    expect(await paths(projects)).toEqual([api])
+    expect(forgotten).toEqual([removedId])
     expect(events).toEqual([{ type: 'projects-updated' }])
 
     events = []
     await workspaces.rescanAll()
     expect(events).toEqual([])
+  })
+
+  it('removes missing hand-added projects and forgets their history', async () => {
+    const elsewhere = await projectDir('elsewhere', dir)
+    const { projects, workspaces } = makeServices()
+    const manual = await projects.add(elsewhere)
+    await rm(elsewhere, { recursive: true })
+
+    await workspaces.rescanAll()
+
+    await expect(projects.list()).resolves.toEqual([])
+    expect(forgotten).toEqual([manual.id])
+    expect(events).toEqual([{ type: 'projects-updated' }])
+  })
+
+  it('keeps a missing hand-added project while it is active', async () => {
+    const activePath = await projectDir('active', dir)
+    const activeServices = makeServices()
+    const activeProject = await activeServices.projects.add(activePath)
+    active.add(activeProject.id)
+    await rm(activePath, { recursive: true })
+
+    await activeServices.workspaces.rescanAll()
+    await expect(activeServices.projects.list()).resolves.toEqual([activeProject])
+  })
+
+  it('keeps a hand-added project when its path cannot be inspected', async () => {
+    const unreadablePath = await projectDir('unreadable', dir)
+    const unreadableServices = makeServices('linux', async () => {
+      throw new Error('EIO')
+    })
+    const unreadableProject = await unreadableServices.projects.add(unreadablePath)
+    await unreadableServices.workspaces.rescanAll()
+    await expect(unreadableServices.projects.list()).resolves.toEqual([unreadableProject])
   })
 
   it('keeps projects that stopped qualifying while they are running', async () => {

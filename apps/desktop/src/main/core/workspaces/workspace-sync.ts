@@ -21,9 +21,9 @@ export interface PlanSyncInput {
 
 /**
  * Decides how a scan changes the workspace's projects. Removal is deliberately cautious, since
- * it also deletes run history: a project stays when its directory is gone (a branch switch or an
- * unplugged drive should not wipe it; it shows as missing), when the scan was incomplete, or
- * while it is running. Paths the user excluded always go.
+ * it also deletes run history: a project stays when the scan was incomplete, while it is running,
+ * or when its path cannot be inspected. A complete scan may remove both directories that stopped
+ * qualifying as projects and paths confirmed to be gone. Paths the user excluded always go.
  */
 export async function planSync({
   workspace,
@@ -50,17 +50,18 @@ export async function planSync({
     if (project.workspaceId !== workspace.id) continue
     if (excluded(project.path)) remove.push(project)
     else if (found(project.path) || !scan.complete || isActive(project.id)) continue
-    else if (await stillExists(project.path, isDirectory)) remove.push(project)
+    else if (await pathStateIsKnown(project.path, isDirectory)) remove.push(project)
   }
   return { add, remove }
 }
 
-async function stillExists(
+async function pathStateIsKnown(
   path: string,
   isDirectory: (path: string) => Promise<boolean>
 ): Promise<boolean> {
   try {
-    return await isDirectory(path)
+    await isDirectory(path)
+    return true
   } catch {
     // Unknown state (permissions, I/O error): keep the project rather than lose its history.
     return false
