@@ -1,5 +1,45 @@
 import { describe, expect, it } from 'vitest'
-import { continueConditionSchema, groupInputSchema, groupRunStateSchema } from './groups'
+import {
+  continueConditionSchema,
+  groupInputSchema,
+  groupRunStateSchema,
+  groupSchema,
+  sortGroups,
+  type Group
+} from './groups'
+
+const group = (id: string, pinnedAt?: string): Group => ({
+  id,
+  name: id,
+  mode: 'parallel',
+  steps: [],
+  ...(pinnedAt ? { pinnedAt } : {})
+})
+
+describe('groupSchema and sorting', () => {
+  it('loads older groups without a pin', () => {
+    const legacy = group('legacy')
+    expect(groupSchema.parse(legacy)).toEqual(legacy)
+  })
+
+  it('sorts pins newest first, then active groups, then keeps storage order', () => {
+    const groups = [
+      group('idle-a'),
+      group('pinned-old', '2026-01-01T00:00:00.000Z'),
+      group('active'),
+      group('pinned-new', '2026-01-02T00:00:00.000Z'),
+      group('idle-b')
+    ]
+
+    expect(sortGroups(groups, new Set(['active'])).map((candidate) => candidate.id)).toEqual([
+      'pinned-new',
+      'pinned-old',
+      'active',
+      'idle-a',
+      'idle-b'
+    ])
+  })
+})
 
 describe('groupRunStateSchema', () => {
   it('loads older results without execution snapshots or reuse information', () => {

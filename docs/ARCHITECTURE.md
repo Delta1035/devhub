@@ -126,6 +126,8 @@ Linux 已打包版本由 `APPIMAGE` 或 electron-builder 写入 `resources/packa
 | RunHealth      | 运行中脚本的就绪状态：starting / ready / unhealthy，与 Run 分开推送（ADR 0011）                     |
 | RunRecord      | 脚本执行记录：running / finished / interrupted、时间、退出码、是否用户停止；存于 `run-history.json` |
 
+- 手动置顶：`Project` 与 `Group` 以可选的 `pinnedAt` 随各自 JSON 记录持久化；排序时置顶优先于活动状态与默认顺序。置顶 API 对已鉴权远程客户端开放，并通过 `projects-updated` / `groups-updated` 事件同步各端。
+
 ## 脚本探测
 
 - `ScriptDetector { source, detect(dir) }`（`core/detectors/types.ts`）：不适用返回 `[]`；构建文件损坏时抛出面向用户的 `Error`。

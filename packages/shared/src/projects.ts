@@ -38,10 +38,11 @@ export function activeRunsOf(projectId: string, runs: readonly Run[]): Run[] {
  * appear first.
  *
  * Sorting precedence:
- * 1. Active projects (with runs whose status !== 'exited') before inactive projects.
- * 2. Between active projects: latest started run timestamp descending (more recently activated first).
- * 3. If latest start times are equal: number of active runs descending.
- * 4. Ties between active projects, and all inactive projects: sorted by `secondary` comparator
+ * 1. Pinned projects before unpinned projects; multiple pins are ordered newest first.
+ * 2. Active projects (with runs whose status !== 'exited') before inactive projects.
+ * 3. Between active projects: latest started run timestamp descending (more recently activated first).
+ * 4. If latest start times are equal: number of active runs descending.
+ * 5. Ties between active projects, and all inactive projects: sorted by `secondary` comparator
  *    (defaults to project name, then path).
  *
  * Returns a new array without mutating the input.
@@ -69,6 +70,13 @@ export function sortProjects(
   }
 
   return [...projects].sort((a, b) => {
+    if (a.pinnedAt && !b.pinnedAt) return -1
+    if (!a.pinnedAt && b.pinnedAt) return 1
+    if (a.pinnedAt && b.pinnedAt) {
+      const byPinnedAt = Date.parse(b.pinnedAt) - Date.parse(a.pinnedAt)
+      if (byPinnedAt !== 0) return byPinnedAt
+    }
+
     const aStats = stats.get(a.id)
     const bStats = stats.get(b.id)
     const aActive = (aStats?.count ?? 0) > 0

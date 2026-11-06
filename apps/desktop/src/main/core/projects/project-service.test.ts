@@ -88,9 +88,32 @@ describe('createProjectService', () => {
   it('removes a project and persists the removal', async () => {
     const service = makeService()
     const project = await service.add(repoA)
+    await service.setPinned(project.id, true)
     await service.remove(project.id)
     await expect(makeService().list()).resolves.toEqual([])
     await expectCode(service.remove(project.id), 'PROJECT_NOT_FOUND')
+  })
+
+  it('pins and unpins a project and persists the state', async () => {
+    const service = makeService()
+    const project = await service.add(repoA)
+
+    await expect(service.setPinned(project.id, true)).resolves.toMatchObject({
+      id: project.id,
+      pinnedAt: '2026-10-02T00:00:00.000Z'
+    })
+    await expect(makeService().list()).resolves.toMatchObject([
+      { id: project.id, pinnedAt: '2026-10-02T00:00:00.000Z' }
+    ])
+    await expect(service.setPinned(project.id, false)).resolves.not.toHaveProperty('pinnedAt')
+    await expect(makeService().list()).resolves.toEqual([project])
+  })
+
+  it('validates pin updates', async () => {
+    const service = makeService()
+    const project = await service.add(repoA)
+    await expectCode(service.setPinned('missing', true), 'PROJECT_NOT_FOUND')
+    await expectCode(service.setPinned(project.id, 'yes'), 'INVALID_INPUT')
   })
 
   it('gets a project by id and rejects unknown or malformed ids', async () => {

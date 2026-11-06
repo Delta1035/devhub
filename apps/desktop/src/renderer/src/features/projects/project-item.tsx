@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { FolderGit2, X } from 'lucide-react'
+import { FolderGit2, Pin, X } from 'lucide-react'
 import type { Project, Run, WorkspaceView } from '@devhub/shared'
 import { access } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
@@ -171,6 +171,9 @@ function ProjectButton({
       <span className="min-w-0">
         <span className="flex items-center gap-1.5">
           <span className="truncate text-sm font-medium">{project.name}</span>
+          {project.pinnedAt && (
+            <Pin className="size-3 shrink-0 text-muted-foreground" aria-label="已置顶" />
+          )}
           <ActiveRunsIndicator runs={activeRuns} />
         </span>
         {subtitle !== project.name && (

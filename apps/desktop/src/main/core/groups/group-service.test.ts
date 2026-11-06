@@ -34,6 +34,7 @@ const makeService = (store = memoryStore()) => {
         return project(id)
       }
     },
+    now: () => new Date('2026-10-02T00:00:00.000Z'),
     newId: () => `id-${++next}`
   })
 }
@@ -84,6 +85,32 @@ describe('createGroupService', () => {
     await expect(service.list()).resolves.toEqual([updated])
   })
 
+  it('persists a pin, preserves it while editing, and removes it when unpinned', async () => {
+    const store = memoryStore()
+    const service = makeService(store)
+    const created = await service.save(input)
+
+    await expect(service.setPinned(created.id, true)).resolves.toMatchObject({
+      id: created.id,
+      pinnedAt: '2026-10-02T00:00:00.000Z'
+    })
+    const updated = await service.save({ ...input, id: created.id, name: 'front2' })
+    expect(updated.pinnedAt).toBe('2026-10-02T00:00:00.000Z')
+    await expect(service.setPinned(created.id, false)).resolves.not.toHaveProperty('pinnedAt')
+    expect(store.saved().groups[0]).not.toHaveProperty('pinnedAt')
+  })
+
+  it('validates pin updates', async () => {
+    const service = makeService()
+    const created = await service.save(input)
+    await expect(service.setPinned('missing', true)).rejects.toMatchObject({
+      code: 'GROUP_NOT_FOUND'
+    })
+    await expect(service.setPinned(created.id, 'yes')).rejects.toMatchObject({
+      code: 'INVALID_INPUT'
+    })
+  })
+
   it('rejects a second group with the same name', async () => {
     const service = makeService()
     await service.save(input)
@@ -116,6 +143,7 @@ describe('createGroupService', () => {
     const store = memoryStore()
     const service = makeService(store)
     const created = await service.save(input)
+    await service.setPinned(created.id, true)
     await service.remove(created.id)
     expect(store.saved().groups).toEqual([])
     await expect(service.remove(created.id)).rejects.toMatchObject({ code: 'GROUP_NOT_FOUND' })

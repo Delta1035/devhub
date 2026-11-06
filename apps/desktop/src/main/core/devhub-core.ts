@@ -256,6 +256,11 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     },
     listProjects: () => projects.list(),
     addProject: (path) => projects.add(path),
+    setProjectPinned: async (projectId, pinned) => {
+      const project = await projects.setPinned(projectId, pinned)
+      events.emit({ type: 'projects-updated' })
+      return project
+    },
     removeProject: (projectId) => workspaces.removeProject(projectId),
     listWorkspaces: () => workspaces.list(),
     addWorkspace: (path, depth) => workspaces.add(path, depth),
@@ -285,11 +290,21 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     getSettings: () => settings.get(),
     updateSettings: (patch) => settings.update(patch),
     listGroups: () => groupService.list(),
-    saveGroup: (input) => groupService.save(input),
+    saveGroup: async (input) => {
+      const group = await groupService.save(input)
+      events.emit({ type: 'groups-updated' })
+      return group
+    },
+    setGroupPinned: async (groupId, pinned) => {
+      const group = await groupService.setPinned(groupId, pinned)
+      events.emit({ type: 'groups-updated' })
+      return group
+    },
     deleteGroup: async (groupId) => {
       await groupRunner.stop(groupId).catch(() => undefined)
       await groupService.remove(groupId)
       if (typeof groupId === 'string') await groupRunner.forget(groupId)
+      events.emit({ type: 'groups-updated' })
     },
     startGroup: (groupId) => groupRunner.start(groupId),
     stopGroup: (groupId) => groupRunner.stop(groupId),
