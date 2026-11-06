@@ -190,3 +190,8 @@ Linux 已打包版本由 `APPIMAGE` 或 electron-builder 写入 `resources/packa
 - 来自 renderer 的参数一律视为不可信，在 core 中用 zod 校验。
 - 交给系统打开的 URL（ShellApi `openExternal`、`setWindowOpenHandler`）统一经 `core/shell/external-url.ts` 校验，只允许 http / https：链接可能来自不可信的进程输出。
 - 远程 API 默认关闭；开启时必须 Token 鉴权（ADR 0022）。每个 `DevhubApi` 方法在 shared 的 `remoteAccess` 中标注 `read` / `control` / `terminal` / `local`，新增方法不归类则编译失败；`local` 永不远程开放，`terminal` 需单独开关。Token 存 `remote.json`，不进 `settings.json`（设置会推送给所有客户端）。
+
+## GPUI 实验原型（独立项目）
+
+- `apps/desktop-gpui/` 是独立 Cargo 项目（ADR 0032），`src/domain` 放 Rust 模型，`src/core` 放脚本发现、存储、PTY、批量任务和历史的原型实现，`src/ui` 与 `app_state.rs` 放 GPUI 界面和交互状态。它尚未接入 shared API 契约，也不进入现有 pnpm 构建与发布流程；正式客户端仍为 Electron。
+- Rust 格式、编译和测试单独用 Cargo 验证；Electron E2E 不覆盖 GPUI。原型默认存储位置可能与正式客户端重叠，运行前必须按原型 README 隔离配置；GPUI UI、Windows 与数据兼容性待验收。

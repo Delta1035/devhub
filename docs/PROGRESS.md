@@ -75,6 +75,10 @@ M4-3 Android：
 
 - #72 已完成：核对 DevHub 与独立桌面模板的通用能力、差异和手动同步规则（`docs/DESKTOP-TEMPLATE.md`）。
 
+GPUI 实验原型：
+
+- #77 已整理，待提交确认：独立保存 Rust / GPUI 实验原型（ADR 0032），移除开发机绝对路径；`pnpm check`、Electron E2E（40 通过、1 跳过）、Rust 格式/编译/9 个单测通过；GPUI UI、Windows 与数据兼容性未验收，运行需隔离配置；正式客户端仍为 Electron。
+
 ## 已知问题 / 待定
 
 - 脚本命令目前是字符串（经 shell 执行）；进程管理时再决定是否改为 argv 形式
