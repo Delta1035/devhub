@@ -64,16 +64,22 @@ describe('planSync', () => {
     expect(result.remove).toEqual([project('a')])
   })
 
-  it('keeps projects whose directory is gone, so their history survives', async () => {
-    const result = await plan({
+  it('removes projects whose path is confirmed gone and keeps unknown path states', async () => {
+    const gone = await plan({
       scan: ok([]),
-      projects: [project('a'), project('b')],
-      isDirectory: async (path) => {
-        if (path === at('b')) throw new Error('EIO')
-        return false
+      projects: [project('a')],
+      isDirectory: async () => false
+    })
+    expect(gone.remove).toEqual([project('a')])
+
+    const unknown = await plan({
+      scan: ok([]),
+      projects: [project('b')],
+      isDirectory: async () => {
+        throw new Error('EIO')
       }
     })
-    expect(result.remove).toEqual([])
+    expect(unknown.remove).toEqual([])
   })
 
   it('keeps running projects and everything after an incomplete scan', async () => {

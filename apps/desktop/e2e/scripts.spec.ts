@@ -20,7 +20,10 @@ test('lists detected scripts with the package manager from the lockfile', async 
   await expect(main.getByText('pnpm run build')).toBeVisible()
 })
 
-test('flags a project whose directory was deleted', async ({ launchDevhub, createProject }) => {
+test('removes a deleted project when the app refreshes on restart', async ({
+  launchDevhub,
+  createProject
+}) => {
   const dir = await createProject('gone', { 'package.json': packageJson({ dev: 'node -v' }) })
   const first = await launchDevhub()
   const { app } = first
@@ -31,7 +34,7 @@ test('flags a project whose directory was deleted', async ({ launchDevhub, creat
 
   await rm(dir, { recursive: true, force: true })
   page = (await launchDevhub()).page
-  await expect(page.getByText('项目目录不存在')).toBeVisible()
+  await expect(page.getByText('还没有项目')).toBeVisible()
 })
 
 test('runs custom scripts from .devhub.yaml and points at mistakes in it', async ({

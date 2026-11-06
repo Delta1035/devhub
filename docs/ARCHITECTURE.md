@@ -145,8 +145,8 @@ Linux 已打包版本由 `APPIMAGE` 或 electron-builder 写入 `resources/packa
 ## 工作区（`core/workspaces/`，见 ADR 0018）
 
 - `workspace-scanner.ts`：只读扫描，按构建文件判定项目，找到即不再深入；不跟随符号链接 / junction，最多读取 5000 个目录。返回 `unavailable`（根目录不可读）或带 `complete` 标记的结果；`readDir` 可注入以测试读取失败。
-- `workspace-sync.ts`：纯函数，根据扫描结果规划增删。扫描不完整、根目录不可用、项目运行中、目录已删除时都不移除；已排除路径始终移除。
-- `workspace-service.ts`：工作区存储与 API 实现；所有操作排队串行，并发重扫合并；通过 `ProjectService.addDiscovered` / `removeMany` 一次写入，移除的项目经注入的 `forgetProject` 清理历史。`removeProject`（DevhubApi）也由它实现，以便把被移除的工作区内项目记入 `excluded`。
+- `workspace-sync.ts`：纯函数，根据扫描结果规划增删。扫描不完整、根目录不可用、项目运行中或路径状态因权限 / I/O 错误无法确认时不移除；完整扫描后可移除已删除或不再符合项目条件的路径，已排除路径始终移除。
+- `workspace-service.ts`：工作区存储与 API 实现；所有操作排队串行，并发重扫合并；通过 `ProjectService.addDiscovered` / `removeMany` 一次写入，移除的项目经注入的 `forgetProject` 清理历史。重扫也会校验手动添加项目的路径，确认不存在且没有运行中进程时移除，权限 / I/O 错误时保留。`removeProject`（DevhubApi）也由它实现，以便把被移除的工作区内项目记入 `excluded`。
 - 路径比较统一用 `core/fs/path-compare.ts`（Windows 不区分大小写；`isWithin` 只把 `..` 段视为越界）。
 - renderer：`features/workspaces/` 提供查询（查询即重扫，挂载与窗口聚焦时触发）、`projects-updated` 事件同步、侧栏分组与设置对话框；项目条目在 `features/projects/project-item.tsx`（悬停详情 `project-summary.tsx`、右键菜单与触屏「⋯」菜单 `project-menu.tsx`（共用菜单项，动作在 `use-project-menu-actions.ts`）、移除确认与详情对话框 `project-dialogs.tsx`，对话框状态由 `project-list.tsx` 统一持有）。侧栏宽度由 `features/sidebar/use-resizable-width.ts` 管理（拖动 / 方向键 / 双击复位，存 localStorage）。
 
