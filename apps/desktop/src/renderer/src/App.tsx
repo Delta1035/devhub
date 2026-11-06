@@ -91,10 +91,6 @@ function App(): React.JSX.Element {
           setDrawerOpen(false)
         }}
         onOpenNavigation={narrow ? () => setDrawerOpen(true) : undefined}
-        onSelectGroup={(groupId) => {
-          setSelectedGroupId(groupId)
-          setShowSettings(false)
-        }}
       />
       <div className="flex min-h-0 flex-1">
         {narrow ? (

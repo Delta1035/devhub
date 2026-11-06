@@ -66,6 +66,7 @@ M4-3 Android：
 - #67 已完成：v1.6.0/v1.7.0 Linux 包因 `ubuntu-latest` 迁移到 Ubuntu 26，`pty.node` 要求 GLIBC 2.42、无法在 Ubuntu 24.04 启动；安装包改在 Ubuntu 22.04 构建，并校验 GLIBC 不高于 2.35、打包后的 Electron 能实际加载原生模块。
 - #75 已发布（v1.8.0），待 Linux/X11 安装版实测：重复启动恢复已有窗口；本机死 PID 的单实例锁安全清理并重试，失败时显示错误；`pnpm check` 与 `pnpm e2e` 通过。
 - #76 已发布（v1.8.0）：项目和批量任务支持跨桌面、网页与 Android 共享的手动置顶；置顶优先于活动状态和默认排序，状态随条目持久化并在删除时清理。`pnpm check` 与 `pnpm e2e` 通过。
+- #81 已完成：移除标题栏中重复的运行中批量任务信息，保留侧栏常驻区域、批量 Tab 提示与脚本行徽标；`pnpm check` 与 `pnpm e2e` 通过。
 
 桌面 MVP 发布：
 
