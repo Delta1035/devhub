@@ -1,5 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { projectConfigSchema } from './domain'
+import { projectConfigSchema, projectSchema } from './domain'
+
+describe('projectSchema', () => {
+  const project = {
+    id: 'p1',
+    name: 'project',
+    path: '/project',
+    addedAt: '2026-01-01T00:00:00.000Z'
+  }
+
+  it('loads older projects without a pin and preserves a valid pin timestamp', () => {
+    expect(projectSchema.parse(project)).toEqual(project)
+    expect(projectSchema.parse({ ...project, pinnedAt: '2026-01-02T00:00:00.000Z' }).pinnedAt).toBe(
+      '2026-01-02T00:00:00.000Z'
+    )
+  })
+})
 
 describe('projectConfigSchema', () => {
   it('fills defaults for an empty config', () => {

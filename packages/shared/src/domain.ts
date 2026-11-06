@@ -178,6 +178,8 @@ export const projectSchema = z.object({
   /** Absolute, normalized directory path. */
   path: z.string().min(1),
   addedAt: z.iso.datetime(),
+  /** When the user pinned this project; absent means unpinned. */
+  pinnedAt: z.iso.datetime().optional(),
   /** Set when the project was discovered in a workspace; absent for projects added by hand. */
   workspaceId: z.string().min(1).optional()
 })

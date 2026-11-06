@@ -22,6 +22,18 @@ export function useAddProject(): UseMutationResult<Project, Error, string> {
   })
 }
 
+export function useSetProjectPinned(): UseMutationResult<
+  Project,
+  Error,
+  { projectId: string; pinned: boolean }
+> {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ projectId, pinned }) => api.setProjectPinned(projectId, pinned),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: projectsKey })
+  })
+}
+
 /** Desktop only: hide the entry when `shell` is null (remote clients). */
 export function useOpenProjectFolder(): UseMutationResult<void, Error, string> {
   return useMutation({

@@ -2,22 +2,45 @@ import { useState } from 'react'
 import {
   Check,
   CircleDashed,
+  Ellipsis,
   Layers,
   Loader2,
   Pencil,
+  Pin,
+  PinOff,
   Play,
   Plus,
   Square,
   X as XIcon
 } from 'lucide-react'
-import type { Group, GroupRunState, GroupStepState, Project } from '@devhub/shared'
+import {
+  activeGroups,
+  sortGroups,
+  type Group,
+  type GroupRunState,
+  type GroupStepState,
+  type Project
+} from '@devhub/shared'
 import { access } from '@renderer/api'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@renderer/components/ui/dropdown-menu'
 import { useProjects } from '@renderer/features/projects/use-projects'
+import { useRuns } from '@renderer/features/runs/use-runs'
 import { cn } from '@renderer/lib/utils'
 import { GroupEditor } from './group-editor'
-import { useGroupStates, useGroups, useStartGroup, useStopGroup } from './use-groups'
+import {
+  useGroupStates,
+  useGroups,
+  useSetGroupPinned,
+  useStartGroup,
+  useStopGroup
+} from './use-groups'
 
 interface GroupListProps {
   selectedGroupId: string | null
@@ -37,11 +60,15 @@ export function GroupList({
   const groups = useGroups()
   const states = useGroupStates()
   const projects = useProjects().data ?? []
+  const runs = useRuns().data ?? []
   const start = useStartGroup()
   const stop = useStopGroup()
+  const setPinned = useSetGroupPinned()
   // undefined: closed; null: creating; Group: editing.
   const [editing, setEditing] = useState<Group | null | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
+  const activeIds = new Set(activeGroups(states.data ?? [], runs).map((group) => group.groupId))
+  const sortedGroups = sortGroups(groups.data ?? [], activeIds)
 
   return (
     <section className="flex flex-col gap-3" aria-label="批量任务">
@@ -73,7 +100,7 @@ export function GroupList({
       )}
 
       <ul className="flex flex-col gap-1">
-        {groups.data?.map((group) => (
+        {sortedGroups.map((group) => (
           <GroupItem
             key={group.id}
             group={group}
@@ -88,6 +115,13 @@ export function GroupList({
             onStart={() => start.mutate(group.id, { onError: (e) => setError(e.message) })}
             onStop={() => stop.mutate(group.id, { onError: (e) => setError(e.message) })}
             onEdit={access.manage ? () => setEditing(group) : undefined}
+            pinPending={setPinned.isPending && setPinned.variables?.groupId === group.id}
+            onTogglePinned={() =>
+              setPinned.mutate(
+                { groupId: group.id, pinned: !group.pinnedAt },
+                { onError: (e) => setError(e.message) }
+              )
+            }
             onSelectProject={onSelectProject}
           />
         ))}
@@ -115,6 +149,8 @@ interface GroupItemProps {
   onStop: () => void
   /** Absent where groups cannot be changed (the web app). */
   onEdit?: () => void
+  pinPending: boolean
+  onTogglePinned: () => void
   onSelectProject: (projectId: string) => void
 }
 
@@ -135,6 +171,8 @@ function GroupItem({
   onStart,
   onStop,
   onEdit,
+  pinPending,
+  onTogglePinned,
   onSelectProject
 }: GroupItemProps): React.JSX.Element {
   const running = state?.status === 'running'
@@ -157,6 +195,9 @@ function GroupItem({
         >
           <p className="flex items-center gap-1.5">
             <span className="truncate text-sm font-medium">{group.name}</span>
+            {group.pinnedAt && (
+              <Pin className="size-3 shrink-0 text-muted-foreground" aria-label="已置顶" />
+            )}
             <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
               {group.mode === 'parallel' ? '并行' : '串行'}
             </Badge>
@@ -194,17 +235,30 @@ function GroupItem({
         >
           <Square />
         </Button>
-        {onEdit && (
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={onEdit}
-            aria-label={`编辑 ${group.name}`}
-            title="编辑"
-          >
-            <Pencil />
-          </Button>
-        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              aria-label={`${group.name} 的更多操作`}
+              title="更多操作"
+            >
+              <Ellipsis />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" aria-label={`${group.name} 的操作`}>
+            <DropdownMenuItem onSelect={onTogglePinned} disabled={pinPending}>
+              {group.pinnedAt ? <PinOff /> : <Pin />}
+              {group.pinnedAt ? '取消置顶' : '置顶'}
+            </DropdownMenuItem>
+            {onEdit && (
+              <DropdownMenuItem onSelect={onEdit}>
+                <Pencil />
+                编辑
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {showSteps && (

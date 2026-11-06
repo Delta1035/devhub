@@ -17,12 +17,14 @@ export interface GroupService {
   list(): Promise<Group[]>
   get(groupId: unknown): Promise<Group>
   save(input: unknown): Promise<Group>
+  setPinned(groupId: unknown, pinned: unknown): Promise<Group>
   remove(groupId: unknown): Promise<void>
 }
 
 export interface GroupServiceDeps {
   store: JsonStore<GroupsFile>
   projects: Pick<ProjectService, 'get'>
+  now?: () => Date
   newId?: () => string
 }
 
@@ -31,6 +33,7 @@ const idInput = z.string().min(1)
 export function createGroupService({
   store,
   projects,
+  now = () => new Date(),
   newId = randomUUID
 }: GroupServiceDeps): GroupService {
   let cache: GroupsFile | null = null
@@ -89,10 +92,25 @@ export function createGroupService({
           id: input.id ?? newId(),
           name: input.name,
           mode: input.mode,
-          steps: input.steps.map((step) => ({ ...step, id: newId() }))
+          steps: input.steps.map((step) => ({ ...step, id: newId() })),
+          ...(data.groups[existingIndex]?.pinnedAt
+            ? { pinnedAt: data.groups[existingIndex].pinnedAt }
+            : {})
         }
         if (existingIndex === -1) data.groups.push(group)
         else data.groups[existingIndex] = group
+        return group
+      })
+    },
+
+    setPinned(rawId, rawPinned) {
+      return mutate(async (data) => {
+        const group = data.groups[indexOf(data, rawId)]
+        if (!group) throw new DevhubError('GROUP_NOT_FOUND', '批量任务不存在或已被删除')
+        const parsed = z.boolean().safeParse(rawPinned)
+        if (!parsed.success) throw new DevhubError('INVALID_INPUT', '置顶状态无效')
+        if (parsed.data) group.pinnedAt = now().toISOString()
+        else delete group.pinnedAt
         return group
       })
     },
