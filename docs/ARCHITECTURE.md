@@ -11,6 +11,7 @@ devhub/                        pnpm monorepo
 │   └── src/
 │       ├── main/              主进程（Node）
 │       │   ├── index.ts       应用生命周期：单实例、托盘、窗口
+│       │   ├── single-instance.ts Linux 失效单实例锁的安全恢复
 │       │   ├── window.ts      主窗口（无系统边框，关闭 = 隐藏到托盘）
 │       │   ├── window-controls.ts  自制标题栏的窗口按钮处理器与状态推送（ADR 0010）
 │       │   ├── tray.ts        托盘菜单
@@ -105,6 +106,7 @@ Linux 已打包版本由 `APPIMAGE` 或 electron-builder 写入 `resources/packa
 ## 质量与诊断
 
 - `pnpm check` 包含格式、架构 lint、类型检查和测试；E2E 驱动真实 Electron 构建产物。
+- 主进程在 Electron ready 前不因重复启动提前创建窗口，由正常启动流程在 ready 后显示。Linux 单实例锁失败时，仅清理由本机已退出 PID 持有且链接未被替换的 `SingletonLock` / `SingletonSocket` / `SingletonCookie`，再重试一次；无法恢复时显示启动错误，活实例的重复启动仍只激活原窗口。
 - E2E 从启动起捕获 Electron stdout / stderr；失败或关闭超过 10 秒时保存退出状态与系统进程快照至 `test-results`，随 CI 失败产物上传。诊断不扩大测试超时，也不吞掉活应用的关闭错误。
 - CI 的独立依赖审计任务展示全部依赖告警并保存原始 JSON；目前为报告模式，网络或格式错误仍失败（ADR 0012）。
 - 提交信息由 husky `commit-msg` 钩子与 CI `commit-messages` 任务校验（`scripts/commit-msg.mjs`）；`pnpm release` 经 `apps/desktop` 的 `version` 生命周期调用 `scripts/changelog.mjs` 生成 `CHANGELOG.md` 段落，Release 工作流以其作为 Release 正文（ADR 0026）。仓库根的 `scripts/*.mjs` 是零依赖 Node 脚本，测试为同名 `*.test.mjs`（`node --test`，包含在 `pnpm test` 中）。
