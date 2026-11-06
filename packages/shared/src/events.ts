@@ -15,6 +15,8 @@ export type DevhubEvent =
   /** Emitted after history changes have been processed, including clear operations. */
   | { type: 'history-updated'; projectId: string; scriptId: string }
   | { type: 'group-updated'; state: GroupRunState }
+  /** A batch task definition changed; refetch the group list. */
+  | { type: 'groups-updated' }
   /** `health` is null once the run is no longer checked (stopping, exited, removed). */
   | { type: 'run-health'; runId: string; health: RunHealth | null }
   | { type: 'settings-updated'; settings: Settings }

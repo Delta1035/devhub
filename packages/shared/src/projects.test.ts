@@ -83,6 +83,23 @@ describe('sortProjects', () => {
     expect(sorted.map((p) => p.id)).toEqual(['3', '1', '2'])
   })
 
+  it('moves pinned projects ahead of active projects and orders pins newest first', () => {
+    const pinnedOlder = {
+      ...makeProject('1', 'alpha'),
+      pinnedAt: '2026-01-02T00:00:00.000Z'
+    }
+    const active = makeProject('2', 'beta')
+    const pinnedNewer = {
+      ...makeProject('3', 'charlie'),
+      pinnedAt: '2026-01-03T00:00:00.000Z'
+    }
+    const runs = [makeRun('r1', active.id, 'running')]
+
+    const sorted = sortProjects([active, pinnedOlder, pinnedNewer], runs)
+
+    expect(sorted.map((project) => project.id)).toEqual(['3', '1', '2'])
+  })
+
   it('orders multiple active projects by most recent start time', () => {
     const pA = makeProject('1', 'alpha')
     const pB = makeProject('2', 'beta')

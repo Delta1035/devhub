@@ -29,6 +29,8 @@ export interface DevhubApi {
   listProjects(): Promise<Project[]>
   /** Registers an existing local directory. `path` must be absolute. */
   addProject(path: string): Promise<Project>
+  /** Pins or unpins a project in every client sharing this host. */
+  setProjectPinned(projectId: string, pinned: boolean): Promise<Project>
   /** A project discovered in a workspace is also excluded there, so rescans do not re-add it. */
   removeProject(projectId: string): Promise<void>
   listWorkspaces(): Promise<WorkspaceView[]>
@@ -87,6 +89,8 @@ export interface DevhubApi {
   listGroups(): Promise<Group[]>
   /** Creates a group (input without id) or replaces an existing one. */
   saveGroup(input: GroupInput): Promise<Group>
+  /** Pins or unpins a group in every client sharing this host. */
+  setGroupPinned(groupId: string, pinned: boolean): Promise<Group>
   deleteGroup(groupId: string): Promise<void>
   /** Starts every step (parallel) or the first one (serial); progress arrives as events. */
   startGroup(groupId: string): Promise<GroupRunState>
@@ -122,6 +126,7 @@ export const devhubApiMethods = [
   'getAppInfo',
   'listProjects',
   'addProject',
+  'setProjectPinned',
   'removeProject',
   'listWorkspaces',
   'addWorkspace',
@@ -151,6 +156,7 @@ export const devhubApiMethods = [
   'updateSettings',
   'listGroups',
   'saveGroup',
+  'setGroupPinned',
   'deleteGroup',
   'startGroup',
   'stopGroup',
