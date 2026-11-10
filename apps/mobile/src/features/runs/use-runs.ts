@@ -6,18 +6,12 @@ import {
   type UseMutationResult,
   type UseQueryResult
 } from '@tanstack/react-query'
-import { describePortConflicts, type PortConflict, type Run } from '@devhub/shared'
+import { startScriptWithPortPolicy, type Run, type StartScriptInput } from '@devhub/shared'
 import { useDevhub } from '@/api'
 
-const runsKey = ['runs'] as const
+export { PortConflictError, type StartScriptInput } from '@devhub/shared'
 
-/** A script's port is taken; the screen offers to start it anyway. */
-export class PortConflictError extends Error {
-  constructor(readonly conflicts: PortConflict[]) {
-    super(describePortConflicts(conflicts))
-    this.name = 'PortConflictError'
-  }
-}
+const runsKey = ['runs'] as const
 
 export function useRuns(): UseQueryResult<Run[]> {
   const { api } = useDevhub()
@@ -46,25 +40,12 @@ export function useRunEventsSync(): void {
   )
 }
 
-export interface StartScriptInput {
-  projectId: string
-  scriptId: string
-  ignorePortConflicts?: boolean
-}
-
 // Mutations need no cache updates: the core pushes run-updated / run-removed events.
 
 export function useStartScript(): UseMutationResult<Run, Error, StartScriptInput> {
   const { api } = useDevhub()
   return useMutation({
-    mutationFn: async ({ projectId, scriptId, ignorePortConflicts }) => {
-      // Ask first so the user can decide; the core checks again in case a port was taken since.
-      if (!ignorePortConflicts) {
-        const conflicts = await api.checkScriptPorts(projectId, scriptId)
-        if (conflicts.length > 0) throw new PortConflictError(conflicts)
-      }
-      return api.startScript(projectId, scriptId, { ignorePortConflicts })
-    }
+    mutationFn: (input) => startScriptWithPortPolicy(api, input)
   })
 }
 

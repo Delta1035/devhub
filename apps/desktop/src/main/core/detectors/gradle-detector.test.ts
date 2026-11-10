@@ -65,6 +65,12 @@ describe('createGradleDetector', () => {
     await expect(names()).resolves.toEqual(['clean', 'build', 'test'])
   })
 
+  it('marks Spring Boot ports as inferred rather than declaring them safe to release', async () => {
+    await write('build.gradle', "plugins { id 'org.springframework.boot' }")
+    const bootRun = (await detect()).find((script) => script.name === 'bootRun')
+    expect(bootRun).toMatchObject({ ports: [8080], portsInferred: true })
+  })
+
   it.each([
     ['Groovy id', "plugins {\n  id 'application'\n}"],
     ['Kotlin id', 'plugins {\n  id("application")\n}'],

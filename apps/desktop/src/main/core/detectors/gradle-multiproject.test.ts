@@ -63,7 +63,8 @@ describe('Gradle multi-project detection', () => {
       expect(scripts[3]).toMatchObject({
         id: 'gradle::api:bootRun',
         command: `${platform === 'win32' ? 'gradlew.bat' : './gradlew'} :api:bootRun`,
-        ports: [8092]
+        ports: [8092],
+        portsInferred: true
       })
       await expect(detect(platform)).resolves.toEqual(scripts)
     }

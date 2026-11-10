@@ -24,6 +24,7 @@ import { checkHttpOk, checkLocalHttp } from './net/http-check'
 import { checkLocalPort } from './net/local-port'
 import { createPortGuard } from './ports/port-guard'
 import { createPortOwnerFinder } from './ports/port-owner'
+import { createPortReleaser } from './ports/port-releaser'
 import {
   createGroupHistory,
   emptyGroupHistoryFile,
@@ -184,6 +185,8 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
   const runs = createRunManager({
     scripts,
     portConflicts,
+    portConflictPolicy: async () => (await settings.get()).portConflictPolicy,
+    releasePorts: createPortReleaser({ platform: env.platform, graceMs: () => stopGraceMs }),
     projects,
     shells,
     spawn: nodePtySpawner,

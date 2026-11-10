@@ -5,6 +5,10 @@ import { healthPathSchema } from './health'
 export const scriptSourceSchema = z.enum(['npm', 'maven', 'gradle', 'custom'])
 export type ScriptSource = z.infer<typeof scriptSourceSchema>
 
+/** Whether starting a script may stop processes that already listen on its ports. */
+export const portConflictPolicySchema = z.enum(['error', 'terminate'])
+export type PortConflictPolicy = z.infer<typeof portConflictPolicySchema>
+
 /** A runnable command inside a project, either auto-detected or user-defined. */
 export const scriptSchema = z.object({
   id: z.string().min(1),
@@ -14,10 +18,14 @@ export const scriptSchema = z.object({
   cwd: z.string().optional(),
   /** Human-readable detail, e.g. the raw npm script body. */
   description: z.string().optional(),
-  /** Ports the script is expected to listen on (inferred), checked before it starts. */
+  /** Ports the script is expected to listen on, checked before it starts. */
   ports: z.array(z.number().int().min(1).max(65535)).optional(),
+  /** Inferred ports can be checked, but must never authorize stopping their listeners. */
+  portsInferred: z.literal(true).optional(),
   /** HTTP path checked on the first port to decide readiness; otherwise the ports are. */
-  healthPath: healthPathSchema.optional()
+  healthPath: healthPathSchema.optional(),
+  /** Overrides the host setting for this script; absent means inherit. */
+  portConflictPolicy: portConflictPolicySchema.optional()
 })
 export type Script = z.infer<typeof scriptSchema>
 
@@ -126,7 +134,9 @@ export const projectConfigSchema = z
             port: z.number().int().min(1).max(65535).optional(),
             ports: z.array(z.number().int().min(1).max(65535)).optional(),
             /** HTTP path that must answer 2xx for the script to count as ready. */
-            health: healthPathSchema.optional()
+            health: healthPathSchema.optional(),
+            /** Overrides the host's port conflict policy for this script. */
+            portConflictPolicy: portConflictPolicySchema.optional()
           })
           .strict()
       )
