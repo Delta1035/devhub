@@ -4,6 +4,19 @@ User-facing changes in each DevHub release. `pnpm release` generates each sectio
 Conventional Commits since the previous tag (`scripts/changelog.mjs`), and the Release workflow
 uses it as the GitHub Release notes.
 
+## v1.9.0 - 2026-11-10
+
+### Features
+
+- 启动前安全释放显式端口 (3498e0b)
+
+### Fixes
+
+- **windows:** 容忍已退出的父进程 (085b56b)
+- **windows:** 加速端口监听进程查询 (a232622)
+- 移除标题栏重复的批量任务信息 (63726a0)
+- 刷新时清理已删除的项目 (34c3ec2)
+
 ## v1.8.0 - 2026-11-06
 
 ### Features
