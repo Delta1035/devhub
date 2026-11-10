@@ -247,7 +247,8 @@ for (const mode of ['serial', 'parallel'] as const) {
     const item = page.getByRole('listitem', { name: '批量任务 replace listeners' })
     await item.getByRole('button', { name: '执行 replace listeners' }).click()
 
-    await expect(item).toContainText('已完成')
+    // Windows performs verified CIM snapshots for each sequential port takeover.
+    await expect(item).toContainText('已完成', { timeout: 35_000 })
     await expect.poll(() => httpBody(first.port)).toBe('group-first')
     await expect.poll(() => httpBody(second.port)).toBe('group-second')
     await expect.poll(() => [hasExited(first), hasExited(second)]).toEqual([true, true])
