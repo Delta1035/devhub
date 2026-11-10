@@ -192,11 +192,19 @@ describe('process ancestry protection', () => {
     ])
   })
 
-  it('refuses to guess missing ancestor relationships', () => {
+  it('refuses to guess missing Linux ancestor relationships', () => {
     const incomplete = new Map(processes)
     incomplete.delete(100)
     expect(() => protectedPortPids(900, incomplete, 'linux')).toThrow(
       '无法核验应用的祖先进程 PID 100'
     )
+  })
+
+  it('stops at a missing Windows parent while protecting the stale PID', () => {
+    const incomplete = new Map(processes)
+    incomplete.delete(100)
+    expect([...protectedPortPids(900, incomplete, 'win32')].sort((a, b) => a - b)).toEqual([
+      0, 1, 2, 3, 4, 100, 900
+    ])
   })
 })

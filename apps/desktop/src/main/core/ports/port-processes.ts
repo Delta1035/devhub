@@ -122,7 +122,11 @@ export function protectedPortPids(
   while (pid > 0 && !protectedPids.has(pid)) {
     protectedPids.add(pid)
     const process = processes.get(pid)
-    if (!process) throw new Error(`无法核验应用的祖先进程 PID ${pid}`)
+    if (!process) {
+      // Windows retains a child's original parent PID after that parent exits.
+      if (platform === 'win32') break
+      throw new Error(`无法核验应用的祖先进程 PID ${pid}`)
+    }
     pid = process.parentPid
   }
   return protectedPids

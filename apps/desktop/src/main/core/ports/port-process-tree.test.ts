@@ -298,12 +298,21 @@ describe.each(['linux', 'win32'] as const)('%s process identity and protection',
     expect(state.exec).not.toHaveBeenCalled()
   })
 
-  it('rejects missing ancestry information before issuing any command', async () => {
+  it('handles a missing ancestor according to platform process semantics', async () => {
     const state = harness(platform, [root])
-    const terminate = state.make({ readProcesses: async () => [self, root] })
-    await expect(terminate([root])).rejects.toThrow('无法核验应用的祖先进程 PID 100')
-    expect(state.kill).not.toHaveBeenCalled()
-    expect(state.exec).not.toHaveBeenCalled()
+    state.remove(100)
+    if (platform === 'linux') {
+      await expect(state.make()([root])).rejects.toThrow('无法核验应用的祖先进程 PID 100')
+      expect(state.kill).not.toHaveBeenCalled()
+      expect(state.exec).not.toHaveBeenCalled()
+    } else {
+      state.exec.mockImplementation(async () => {
+        state.remove(root.pid)
+        return { stdout: '' }
+      })
+      await expect(state.make()([root])).resolves.toBeUndefined()
+      expect(state.exec).toHaveBeenCalledWith('taskkill', ['/PID', '200', '/T'])
+    }
   })
 
   it('propagates a failed snapshot without attempting termination', async () => {
