@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { customShellIdSchema, shellIdSchema } from './domain'
+import { customShellIdSchema, portConflictPolicySchema, shellIdSchema } from './domain'
 
 /** A shell the user added: any program run interactively in the project directory. */
 export const customShellSchema = z.object({
@@ -24,6 +24,8 @@ export const settingsSchema = z.object({
   }),
   /** Seconds a stopped script gets to exit after Ctrl+C before its tree is force-killed. */
   stopGraceSeconds: z.number().int().min(1).max(60),
+  /** Existing settings keep reporting conflicts until the user explicitly opts in. */
+  portConflictPolicy: portConflictPolicySchema.default('error'),
   /** Closing the window: keep running in the tray, or quit (stopping every run). */
   closeAction: z.enum(['tray', 'quit']),
   /** Defaults to none, so settings files written before this field existed still load. */
@@ -35,18 +37,19 @@ export const defaultSettings: Settings = {
   defaultShell: null,
   editorPaths: { vscode: null, idea: null },
   stopGraceSeconds: 5,
+  portConflictPolicy: 'error',
   closeAction: 'tray',
   customShells: []
 }
 
 /**
- * A partial update; `editorPaths` may set either editor alone. `customShells` is redeclared
- * without its default: under `.partial()` the default would still fill in `[]` and every
- * unrelated update would erase the user's shells.
+ * A partial update; `editorPaths` may set either editor alone. Fields with defaults are
+ * redeclared without them so an unrelated update cannot reset the user's preferences.
  */
 export const settingsPatchSchema = settingsSchema
   .extend({
     editorPaths: settingsSchema.shape.editorPaths.partial(),
+    portConflictPolicy: portConflictPolicySchema,
     customShells: z.array(customShellSchema).max(10)
   })
   .partial()

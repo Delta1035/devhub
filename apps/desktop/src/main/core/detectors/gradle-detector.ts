@@ -56,7 +56,7 @@ export function createGradleDetector({ platform }: GradleDetectorDeps): ScriptDe
         source: 'gradle',
         command: `${executable} ${projects.length && launches.includes(task) ? ':' : ''}${task}`,
         description,
-        ...(task === 'bootRun' && springPort ? { ports: [springPort] } : {})
+        ...(task === 'bootRun' && springPort ? { ports: [springPort], portsInferred: true } : {})
       }))
       for (const project of projects) {
         const childDir = join(dir, ...project.segments)
@@ -81,7 +81,9 @@ export function createGradleDetector({ platform }: GradleDetectorDeps): ScriptDe
             source: 'gradle',
             command: `${executable} ${name}`,
             description: task === 'bootRun' ? '运行 Spring Boot 子项目' : '运行应用子项目',
-            ...(task === 'bootRun' ? { ports: [await readSpringPort(childDir)] } : {})
+            ...(task === 'bootRun'
+              ? { ports: [await readSpringPort(childDir)], portsInferred: true }
+              : {})
           })
         }
       }

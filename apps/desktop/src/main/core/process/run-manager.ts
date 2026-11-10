@@ -8,6 +8,7 @@ import {
   type DevhubEvent,
   type Run,
   type PortConflict,
+  type PortConflictPolicy,
   type RunOutputSnapshot,
   type Script
 } from '@devhub/shared'
@@ -15,6 +16,7 @@ import { isDirectory as isDirectoryOnDisk } from '../fs/is-directory'
 import type { ProjectService } from '../projects/project-service'
 import type { ScriptService } from '../scripts/script-service'
 import type { ShellLocator } from '../shells/shell-locator'
+import type { ManagedPortRun } from '../ports/port-releaser'
 import type { ProcessKiller } from './process-killer'
 import { shellInvocation, type PtySpawner } from './pty'
 import {
@@ -25,6 +27,7 @@ import {
   type RunEntry
 } from './run-entry'
 import { stopEntry as stopRunEntry } from './stop-run'
+import { createLaunchQueue } from './launch-queue'
 
 export interface RunManager {
   start(projectId: unknown, scriptId: unknown, options?: unknown): Promise<Run>
@@ -47,6 +50,8 @@ export interface RunManagerDeps {
   scripts: Pick<ScriptService, 'find'>
   /** Ports the script needs that are taken; checked before starting it. */
   portConflicts?: (script: Script) => Promise<PortConflict[]>
+  portConflictPolicy?: () => Promise<PortConflictPolicy>
+  releasePorts?: (script: Script, managedRuns: ManagedPortRun[]) => Promise<void>
   projects: Pick<ProjectService, 'get'>
   shells: ShellLocator
   isDirectory?: (path: string) => Promise<boolean>
@@ -82,6 +87,8 @@ const terminalSize = z.object({
 export function createRunManager({
   scripts,
   portConflicts = async () => [],
+  portConflictPolicy = async () => 'error',
+  releasePorts = async () => undefined,
   projects,
   shells,
   isDirectory = isDirectoryOnDisk,
@@ -99,6 +106,9 @@ export function createRunManager({
   afterScriptStart = async () => undefined
 }: RunManagerDeps): RunManager {
   const entries = new Map<string, RunEntry>()
+  const scriptPorts = new Map<string, number[]>()
+  const launches = createLaunchQueue()
+  let disposed = false
 
   const getEntry = (rawId: unknown): RunEntry => {
     const parsed = idInput.safeParse(rawId)
@@ -114,6 +124,7 @@ export function createRunManager({
   }
 
   const launch = (params: LaunchParams): Run => {
+    if (disposed) throw new DevhubError('SPAWN_FAILED', 'DevHub 正在退出，无法启动服务')
     const entry = launchEntry(params, { spawn, emit, outputLimit, outputFlushMs, now, newId })
     entries.set(entry.run.id, entry)
     announceRun(entry, emit)
@@ -128,44 +139,85 @@ export function createRunManager({
     const { project, script } = await scripts.find(projectId, scriptId)
     const options = startOptions.safeParse(rawOptions ?? {})
     if (!options.success) throw new DevhubError('INVALID_INPUT', '启动选项无效')
-    // Resolved before the running check, so it adds no await between the check and the launch.
     const runEnv = definedEnv(await resolveEnv())
+    const policy = script.portConflictPolicy ?? (await portConflictPolicy())
+    return launches.run(
+      [`script:${project.id}:${script.id}`, ...(script.ports ?? []).map((port) => `port:${port}`)],
+      async () => {
+        if (disposed) throw new DevhubError('SPAWN_FAILED', 'DevHub 正在退出，无法启动服务')
 
-    // Keep only the latest run per script: an active one blocks, an exited one is replaced.
-    const previous = [...entries.values()].filter(
-      ({ run }) =>
-        run.kind === 'script' && run.projectId === project.id && run.scriptId === script.id
-    )
-    if (previous.some(({ run }) => run.status !== 'exited')) {
-      throw new DevhubError('SCRIPT_ALREADY_RUNNING', `${script.name} 已在运行`)
-    }
-
-    if (!options.data.ignorePortConflicts) {
-      const conflicts = await portConflicts(script)
-      if (conflicts.length > 0) {
-        throw new DevhubError(
-          'PORT_IN_USE',
-          `无法启动 ${script.name}：${describePortConflicts(conflicts)}`
+        // Keep only the latest run per script: an active one blocks, an exited one is replaced.
+        const previous = [...entries.values()].filter(
+          ({ run }) =>
+            run.kind === 'script' && run.projectId === project.id && run.scriptId === script.id
         )
+        if (previous.some(({ run }) => run.status !== 'exited')) {
+          throw new DevhubError('SCRIPT_ALREADY_RUNNING', `${script.name} 已在运行`)
+        }
+
+        if (policy === 'terminate' && !script.portsInferred) {
+          // Also stop a managed service that has reserved the port but has not bound it yet.
+          const sharing = [...entries.values()].filter(
+            ({ run }) =>
+              run.status !== 'exited' &&
+              (scriptPorts.get(run.id) ?? []).some((port) => script.ports?.includes(port))
+          )
+          for (const entry of sharing) await stopEntry(entry)
+          await releasePorts(
+            script,
+            [...entries.values()]
+              .filter(({ run }) => run.status !== 'exited')
+              .map((entry) => ({ pid: entry.run.pid, stop: () => stopEntry(entry) }))
+          )
+          const conflicts = await portConflicts(script)
+          if (conflicts.length > 0) {
+            throw new DevhubError(
+              'PORT_RELEASE_FAILED',
+              `端口释放失败：${describePortConflicts(conflicts)}`
+            )
+          }
+        } else if (!options.data.ignorePortConflicts) {
+          const conflicts = await portConflicts(script)
+          for (const entry of entries.values()) {
+            if (entry.run.status === 'exited') continue
+            for (const port of scriptPorts.get(entry.run.id) ?? []) {
+              if (
+                script.ports?.includes(port) &&
+                !conflicts.some((conflict) => conflict.port === port)
+              ) {
+                conflicts.push({ port, pid: entry.run.pid, processName: entry.run.title })
+              }
+            }
+          }
+          if (conflicts.length > 0) {
+            throw new DevhubError(
+              'PORT_IN_USE',
+              `无法启动 ${script.name}：${describePortConflicts(conflicts)}`
+            )
+          }
+        }
+
+        for (const { run } of previous) {
+          entries.delete(run.id)
+          scriptPorts.delete(run.id)
+          emit({ type: 'run-removed', runId: run.id })
+        }
+
+        if (disposed) throw new DevhubError('SPAWN_FAILED', 'DevHub 正在退出，无法启动服务')
+        const run = launch({
+          projectId: project.id,
+          identity: { kind: 'script', scriptId: script.id },
+          title: script.name,
+          command: script.command,
+          ...shellInvocation(script.command, platform, runEnv),
+          cwd: script.cwd ? resolve(project.path, script.cwd) : project.path,
+          env: runEnv
+        })
+        scriptPorts.set(run.id, script.portsInferred ? [] : (script.ports ?? []))
+        await afterScriptStart()
+        return run
       }
-    }
-
-    for (const { run } of previous) {
-      entries.delete(run.id)
-      emit({ type: 'run-removed', runId: run.id })
-    }
-
-    const run = launch({
-      projectId: project.id,
-      identity: { kind: 'script', scriptId: script.id },
-      title: script.name,
-      command: script.command,
-      ...shellInvocation(script.command, platform, runEnv),
-      cwd: script.cwd ? resolve(project.path, script.cwd) : project.path,
-      env: runEnv
-    })
-    await afterScriptStart()
-    return run
+    )
   }
 
   const startShell = async (projectId: unknown, rawShellId?: unknown): Promise<Run> => {
@@ -268,11 +320,13 @@ export function createRunManager({
         throw new DevhubError('RUN_STILL_ACTIVE', '请先停止该进程')
       }
       entries.delete(entry.run.id)
+      scriptPorts.delete(entry.run.id)
       emit({ type: 'run-removed', runId: entry.run.id })
     },
 
     async dispose() {
-      await Promise.all([...entries.values()].map(stopEntry))
+      disposed = true
+      await Promise.all([launches.idle(), ...[...entries.values()].map(stopEntry)])
     }
   }
 }

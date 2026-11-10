@@ -156,12 +156,13 @@ Linux 已打包版本由 `APPIMAGE` 或 electron-builder 写入 `resources/packa
 - 子进程环境（`core/env/`，ADR 0024）：不直接继承 DevHub 的环境，而是在每次启动前调用 `createLaunchEnvResolver`。Windows 读注册表 Environment，修复并补全 PATH（`windows-env.ts`，缓存 5 秒）；Linux / macOS 每个会话用 `$SHELL -ilc` 捕获一次环境（`shell-env.ts`）；失败时退回继承的环境。真正的 I/O 在 `env-readers.ts` 中，通过注入使用。RunManager、编辑器和系统终端统一使用解析后的环境。
 - `process-killer.ts`：两阶段停止。Windows：Ctrl+C → `taskkill /T /F`；Linux：进程组 SIGTERM → SIGKILL。
 - `run-manager.ts`：对外 API 与输入校验；脚本每个只保留最新一次运行；交互式 shell 每个项目可多个（ADR 0005）；`dispose()` 停止全部运行。
-- `run-entry.ts`：启动一个运行（spawn、输出缓冲最近 512 KB、退出时更新状态）；`stop-run.ts`：两阶段停止一个运行。
+- `run-entry.ts`：启动一个运行（spawn、输出缓冲最近 512 KB、退出时更新状态）；`stop-run.ts`：两阶段停止一个运行，并发停止共享一次结果，停止失败时恢复未退出运行的状态并允许重试。
 - 停止：脚本先 `interrupt`（Ctrl+C / SIGTERM），shell 用 `hangup`（SIGHUP / `taskkill /T`）；超时后 `forceKill`，Linux 上同时扫描整个会话。
 - `batch-prompt.ts`：Windows 停止脚本时自动回答 cmd 的「终止批处理操作吗(Y/N)?」。
 - `run-registry.ts` + `process-identity.ts`：把运行的 pid 与进程启动时间记入 `runs.json`，崩溃后下次启动发现仍存活的进程并提示用户处理。
 - `createDevhubCore` 返回 `DevhubCore`（`DevhubApi` + `dispose`）；主进程在 `before-quit` 中等待 `dispose()`（最多 10 秒）。
 - renderer 只传 id，命令由 core 重新扫描得到。
+- 端口冲突策略（#86）：`settings.portConflictPolicy` 默认为 `error`，`.devhub.yaml` 中脚本的同名字段可覆盖为 `error` / `terminate`。客户端的 shared 启动流程即时读取设置与脚本；明确声明端口的 `terminate` 交给 core 处理，`error` 保留占用详情提示。所有探测器为推断端口标记 `portsInferred: true`，即使配置 `terminate` 也回退到报告冲突，只有 YAML 显式 `port` / `ports` 可自动释放。RunManager 按脚本与端口排队，将尚未监听的受管运行也视为端口预留，避免并发启动穿透检查。自动接管先正常停止共享端口的受管服务，`ports/port-releaser.ts` 再核验实际监听者、停止受管进程或通过 `port-process-tree.ts` 结束外部进程树，确认全部端口释放后才 spawn。Linux 枚举 `/proc` 父子关系并用 SIGTERM → SIGKILL，Windows 用 CIM 读取身份并执行 `taskkill /T` → `/T /F`；结束前复核创建身份，保护自身、祖先和系统关键 PID，未知占用者、权限不足、身份变化或释放超时均报不可忽略的 `PORT_RELEASE_FAILED`。
 
 ## 用编辑器打开项目（`core/editors/`）
 

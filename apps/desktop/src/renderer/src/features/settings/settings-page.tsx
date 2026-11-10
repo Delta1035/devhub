@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { ArrowLeft, TriangleAlert } from 'lucide-react'
-import type { EditorId, Settings, SettingsPatch } from '@devhub/shared'
+import {
+  portConflictPolicySchema,
+  type EditorId,
+  type Settings,
+  type SettingsPatch
+} from '@devhub/shared'
 import { access, shell } from '@renderer/api'
 import { Alert, AlertDescription } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
@@ -240,6 +245,23 @@ function EditorsSection({
 function ProcessSection({ settings, save }: SectionProps): React.JSX.Element {
   return (
     <SettingsSection title="进程">
+      <SettingRow
+        label="端口被占用时"
+        htmlFor="settings-port-conflict-policy"
+        description="仅自动释放脚本明确配置的端口，会结束占用服务及其子进程；推断端口仍报告冲突"
+      >
+        <select
+          id="settings-port-conflict-policy"
+          className={selectClass}
+          value={settings.portConflictPolicy}
+          onChange={(event) =>
+            save({ portConflictPolicy: portConflictPolicySchema.parse(event.target.value) })
+          }
+        >
+          <option value="error">报告冲突</option>
+          <option value="terminate">结束占用进程后启动</option>
+        </select>
+      </SettingRow>
       <SettingRow
         label="停止等待时间"
         htmlFor="settings-grace"

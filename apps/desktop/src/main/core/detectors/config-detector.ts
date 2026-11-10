@@ -79,7 +79,11 @@ export function createConfigDetector({ platform }: ConfigDetectorDeps): ScriptDe
           ...(entry.cwd ? { cwd: entry.cwd } : {}),
           ...(entry.description ? { description: entry.description } : {}),
           ...(ports.length > 0 ? { ports } : {}),
-          ...(entry.health ? { healthPath: entry.health } : {})
+          ...(ports.length > 0 && entry.ports === undefined && entry.port === undefined
+            ? { portsInferred: true }
+            : {}),
+          ...(entry.health ? { healthPath: entry.health } : {}),
+          ...(entry.portConflictPolicy ? { portConflictPolicy: entry.portConflictPolicy } : {})
         })
       }
       return scripts

@@ -23,6 +23,7 @@ export interface RunEntry {
   pty: PtyProcess
   output: RunOutput
   exited: Promise<void>
+  stopPromise?: Promise<void>
   markExited: (exitCode: number | null) => void
 }
 

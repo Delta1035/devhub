@@ -43,7 +43,9 @@ export function createMavenDetector({ platform }: MavenDetectorDeps): ScriptDete
         source: 'maven',
         command: `${executable}${goal === 'spring-boot:run' && rootPom.modules.length > 0 ? ' -N' : ''} ${goal}`,
         description,
-        ...(goal === 'spring-boot:run' && springPort ? { ports: [springPort] } : {})
+        ...(goal === 'spring-boot:run' && springPort
+          ? { ports: [springPort], portsInferred: true }
+          : {})
       }))
       const root = await realpath(dir)
       const visited = new Set([root])
@@ -91,7 +93,8 @@ export function createMavenDetector({ platform }: MavenDetectorDeps): ScriptDete
                 source: 'maven',
                 command: `${executable} -pl ${target} spring-boot:run`,
                 description: '运行模块 Spring Boot 应用（先构建依赖）',
-                ports: [port]
+                ports: [port],
+                portsInferred: true
               }
             )
           }
