@@ -57,7 +57,7 @@ export function createPortOwnerFinder({
 /** Enumerates every listener; incomplete ownership must never authorize killing only a subset. */
 export function createPortOwnersFinder({
   platform,
-  execFile: exec = (file, args) => execFileAsync(file, args, { windowsHide: true, timeout: 5000 })
+  execFile: exec = (file, args) => execFileAsync(file, args, { windowsHide: true, timeout: 15_000 })
 }: PortOwnerDeps): FindPortOwners {
   return async (rawPort) => {
     const port = portSchema.parse(rawPort)
@@ -65,7 +65,7 @@ export function createPortOwnersFinder({
       // Enumerate first: a filtered CIM query reports a missing port as an error, not an empty list.
       const script =
         "$ErrorActionPreference = 'Stop'; [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); " +
-        `$connections = @(Get-NetTCPConnection -ErrorAction Stop | Where-Object { $_.State -eq 'Listen' -and $_.LocalPort -eq ${port} }); ` +
+        `$connections = @(Get-NetTCPConnection -State Listen -ErrorAction Stop | Where-Object { $_.LocalPort -eq ${port} }); ` +
         '$owners = @($connections | ForEach-Object { $p = Get-Process -Id $_.OwningProcess -ErrorAction Stop; ' +
         '[PSCustomObject]@{ pid = [int]$_.OwningProcess; name = [string]$p.ProcessName } }); ' +
         'ConvertTo-Json -InputObject $owners -Compress'

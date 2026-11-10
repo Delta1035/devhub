@@ -156,8 +156,8 @@ describe('createPortOwnersFinder', () => {
     expect(call?.[0]).toBe('powershell.exe')
     expect(call?.[1].slice(0, 3)).toEqual(['-NoProfile', '-NonInteractive', '-Command'])
     const script = call?.[1][3]
-    expect(script).toContain('Get-NetTCPConnection -ErrorAction Stop')
-    expect(script).toContain("$_.State -eq 'Listen' -and $_.LocalPort -eq 8080")
+    expect(script).toContain('Get-NetTCPConnection -State Listen -ErrorAction Stop')
+    expect(script).toContain('$_.LocalPort -eq 8080')
     expect(script).toContain('Get-Process -Id $_.OwningProcess -ErrorAction Stop')
     expect(script).toContain('ConvertTo-Json -InputObject $owners')
     expect(script).not.toMatch(/Select-Object|SilentlyContinue/)
