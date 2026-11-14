@@ -6,6 +6,8 @@ import {
   Folder,
   FolderOpen,
   GitBranch,
+  Pin,
+  PinOff,
   RefreshCw,
   SquareTerminal
 } from 'lucide-react'
@@ -20,7 +22,8 @@ import {
 } from '@renderer/components/ui/dropdown-menu'
 import { EditorButtons } from '@renderer/features/editors/editor-buttons'
 import { useOpenInSystemTerminal } from '@renderer/features/editors/use-editors'
-import { useOpenProjectFolder } from './use-projects'
+import { useOpenProjectFolder, useSetProjectPinned } from './use-projects'
+import { toast } from '@renderer/lib/toast'
 import { cn } from '@renderer/lib/utils'
 
 interface ProjectHeaderProps {
@@ -45,15 +48,35 @@ export function ProjectHeader({
   const [copied, setCopied] = useState(false)
   const openFolder = useOpenProjectFolder()
   const openTerminal = useOpenInSystemTerminal()
+  const setPinned = useSetProjectPinned()
+
+  const isPinned = Boolean(project.pinnedAt)
 
   const handleCopyPath = async (): Promise<void> => {
     try {
       await navigator.clipboard.writeText(project.path)
       setCopied(true)
+      toast.success('项目路径已复制')
       setTimeout(() => setCopied(false), 1500)
     } catch {
       // Ignore clipboard write failures
     }
+  }
+
+  const handleTogglePin = (): void => {
+    setPinned.mutate(
+      { projectId: project.id, pinned: !isPinned },
+      {
+        onSuccess: () => {
+          toast.success(!isPinned ? '已置顶该项目' : '已取消置顶')
+        }
+      }
+    )
+  }
+
+  const handleRefresh = (): void => {
+    onRefresh()
+    toast.success('已重新扫描项目目录')
   }
 
   // Detect distinct package managers or runtimes from detected scripts
@@ -115,11 +138,26 @@ export function ProjectHeader({
           onError={onEditorError}
         />
 
+        {/* Pin Button */}
+        <Button
+          variant="outline"
+          size="icon-xs"
+          onClick={handleTogglePin}
+          title={isPinned ? '取消置顶' : '置顶此项目'}
+          aria-label={isPinned ? '取消置顶' : '置顶此项目'}
+          className={cn(
+            'size-8 border-border bg-secondary/80 text-muted-foreground hover:text-foreground',
+            isPinned && 'text-primary border-primary/40 bg-primary/10'
+          )}
+        >
+          {isPinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
+        </Button>
+
         {/* 刷新 */}
         <Button
           variant="outline"
           size="sm"
-          onClick={onRefresh}
+          onClick={handleRefresh}
           disabled={isFetching}
           title="重新扫描项目目录"
           className="h-8 gap-1.5 border-border bg-secondary/80 px-2.5 text-xs text-muted-foreground hover:text-foreground"
@@ -142,11 +180,23 @@ export function ProjectHeader({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => openFolder.mutate(project.id)}>
+            <DropdownMenuItem
+              onClick={() =>
+                openFolder.mutate(project.id, {
+                  onSuccess: () => toast.info('已请求在文件资源管理器中打开项目')
+                })
+              }
+            >
               <FolderOpen className="size-3.5" />
               打开所在目录
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => openTerminal.mutate(project.id)}>
+            <DropdownMenuItem
+              onClick={() =>
+                openTerminal.mutate(project.id, {
+                  onSuccess: () => toast.success('已在系统终端中打开项目')
+                })
+              }
+            >
               <SquareTerminal className="size-3.5" />
               在系统终端中打开
             </DropdownMenuItem>

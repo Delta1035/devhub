@@ -1,25 +1,12 @@
 import { useState } from 'react'
-import {
-  ChevronRight,
-  FileCode,
-  FlaskConical,
-  FolderX,
-  Layers,
-  Package,
-  Play,
-  ShieldCheck,
-  TriangleAlert,
-  X
-} from 'lucide-react'
+import { ChevronRight, FileCode, FolderX, TriangleAlert, X } from 'lucide-react'
 import type { Project, Run, Script, ScriptSource } from '@devhub/shared'
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
-import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Skeleton } from '@renderer/components/ui/skeleton'
-import { useActiveGroups, type ActiveGroupView } from '@renderer/features/groups/use-active-groups'
-import { RunControls } from '@renderer/features/runs/run-controls'
-import { RunHistoryButton } from '@renderer/features/runs/run-history-button'
+import { useActiveGroups } from '@renderer/features/groups/use-active-groups'
 import { useRuns } from '@renderer/features/runs/use-runs'
+import { ScriptGroup } from './script-group'
 import { sourceLabels } from './source-labels'
 import { useProjectScripts } from './use-scripts'
 
@@ -29,21 +16,6 @@ interface ScriptListProps {
   /** Called with a freshly started run so the terminal panel can switch to it. */
   onRunStarted: (run: Run) => void
   onOpenSettings?: () => void
-}
-
-function ScriptIcon({
-  scriptName,
-  className
-}: {
-  scriptName: string
-  className?: string
-}): React.JSX.Element {
-  const name = scriptName.toLowerCase()
-  if (/dev|start|serve/.test(name)) return <Play className={className} />
-  if (/build|compile|package|dist/.test(name)) return <Package className={className} />
-  if (/test|check|verify|spec/.test(name)) return <FlaskConical className={className} />
-  if (/lint|format|style/.test(name)) return <ShieldCheck className={className} />
-  return <Layers className={className} />
 }
 
 export function ScriptList({
@@ -176,6 +148,7 @@ export function ScriptList({
           activeGroups={activeGroups}
           onRunError={(error, retry) => setRunError({ error, retry })}
           onRunStarted={onRunStarted}
+          onOpenSettings={onOpenSettings}
         />
       ))}
 
@@ -203,125 +176,6 @@ export function ScriptList({
 
       <ConfigHint />
     </div>
-  )
-}
-
-interface ScriptGroupProps {
-  projectId: string
-  source: ScriptSource
-  scripts: Script[]
-  runs: Run[]
-  /** Labels scripts that a batch run started or reused. */
-  activeGroups: ActiveGroupView[]
-  onRunError: (error: Error, retry?: () => void) => void
-  onRunStarted: (run: Run) => void
-}
-
-function ScriptGroup({
-  projectId,
-  source,
-  scripts,
-  runs,
-  activeGroups,
-  onRunError,
-  onRunStarted
-}: ScriptGroupProps): React.JSX.Element {
-  // All scripts of one source share the executable, e.g. "pnpm" or "mvnw.cmd".
-  const executable = scripts[0]?.command.split(' ')[0]
-
-  return (
-    <section className="flex flex-col gap-2">
-      <h3 className="flex items-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-        {sourceLabels[source]}
-        {executable && (
-          <Badge variant="secondary" className="font-mono text-[10px]">
-            {executable}
-          </Badge>
-        )}
-      </h3>
-      <ul className="divide-y divide-border/60 rounded-lg border border-border/80 bg-card overflow-hidden">
-        {scripts.map((script) => {
-          const run = runs.find(
-            (candidate) =>
-              candidate.kind === 'script' &&
-              candidate.projectId === projectId &&
-              candidate.scriptId === script.id
-          )
-          const groups = run ? activeGroups.filter((group) => group.runIds.includes(run.id)) : []
-          return (
-            <li
-              key={script.id}
-              className="group flex items-center gap-4 px-4 py-2.5 transition-colors hover:bg-muted/30 max-md:gap-2 max-md:px-3"
-            >
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground">
-                <ScriptIcon scriptName={script.name} className="size-3.5" />
-              </div>
-
-              {/* On phones the name goes above the command, leaving the row's width to the controls. */}
-              <div className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-4">
-                <span className="flex min-w-0 items-center gap-1.5 md:w-36 md:shrink-0">
-                  <span className="truncate font-medium text-xs md:text-sm" title={script.name}>
-                    {script.name}
-                  </span>
-                  {groups.length > 0 && (
-                    <Badge
-                      variant="secondary"
-                      className="h-4 min-w-0 shrink px-1.5 text-[10px] text-info"
-                      title={`由批量任务启动或纳入：${groups.map((group) => group.name).join('、')}`}
-                    >
-                      <span className="truncate">
-                        批量：{groups.map((group) => group.name).join('、')}
-                      </span>
-                    </Badge>
-                  )}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <span className="flex min-w-0 items-center gap-2">
-                    <code
-                      className="truncate font-mono text-xs text-foreground/80"
-                      title={script.command}
-                    >
-                      {script.command}
-                    </code>
-                    {script.ports?.map((port) => (
-                      <Badge
-                        key={port}
-                        variant="outline"
-                        className="h-4 shrink-0 px-1.5 font-mono text-[10px] text-info border-info/30 bg-info/10"
-                        title="启动前会检查这个端口是否已被占用"
-                      >
-                        端口 {port}
-                      </Badge>
-                    ))}
-                  </span>
-                  {script.description && (
-                    <p
-                      className="truncate text-xs text-muted-foreground"
-                      title={script.description}
-                    >
-                      {script.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <RunHistoryButton
-                projectId={projectId}
-                scriptId={script.id}
-                scriptName={script.name}
-              />
-              <RunControls
-                projectId={projectId}
-                scriptId={script.id}
-                scriptName={script.name}
-                run={run}
-                onError={onRunError}
-                onStarted={onRunStarted}
-              />
-            </li>
-          )
-        })}
-      </ul>
-    </section>
   )
 }
 

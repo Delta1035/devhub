@@ -11,6 +11,7 @@ import { Sidebar } from '@renderer/features/sidebar/sidebar'
 import { SidebarSkeleton } from '@renderer/features/sidebar/sidebar-skeleton'
 import { useResizableWidth } from '@renderer/features/sidebar/use-resizable-width'
 import { GlobalSearchDialog } from '@renderer/features/search/global-search-dialog'
+import { Toaster } from '@renderer/components/ui/toaster'
 import { StatusBar } from '@renderer/features/status-bar/status-bar'
 import { TitleBar } from '@renderer/features/title-bar/title-bar'
 import { useWorkspaceEventsSync, useWorkspaces } from '@renderer/features/workspaces/use-workspaces'
@@ -179,6 +180,7 @@ function App(): React.JSX.Element {
         </main>
       </div>
       <StatusBar />
+      <Toaster />
     </div>
   )
 }
