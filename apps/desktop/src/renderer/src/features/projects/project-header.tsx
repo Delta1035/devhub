@@ -1,15 +1,33 @@
 import { useState } from 'react'
-import { Check, Copy, Folder, RefreshCw } from 'lucide-react'
-import type { Project, Script } from '@devhub/shared'
+import {
+  Check,
+  Copy,
+  Ellipsis,
+  Folder,
+  FolderOpen,
+  GitBranch,
+  RefreshCw,
+  SquareTerminal
+} from 'lucide-react'
+import type { Project, Run, Script } from '@devhub/shared'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@renderer/components/ui/dropdown-menu'
 import { EditorButtons } from '@renderer/features/editors/editor-buttons'
+import { useOpenInSystemTerminal } from '@renderer/features/editors/use-editors'
+import { useOpenProjectFolder } from './use-projects'
 import { cn } from '@renderer/lib/utils'
 
 interface ProjectHeaderProps {
   project: Project
   activeRunsCount: number
   scripts: Script[]
+  runs?: Run[]
   isFetching: boolean
   onRefresh: () => void
   onEditorError: (error: Error) => void
@@ -19,11 +37,14 @@ export function ProjectHeader({
   project,
   activeRunsCount,
   scripts,
+  runs = [],
   isFetching,
   onRefresh,
   onEditorError
 }: ProjectHeaderProps): React.JSX.Element {
   const [copied, setCopied] = useState(false)
+  const openFolder = useOpenProjectFolder()
+  const openTerminal = useOpenInSystemTerminal()
 
   const handleCopyPath = async (): Promise<void> => {
     try {
@@ -55,8 +76,12 @@ export function ProjectHeader({
 
   const isRunning = activeRunsCount > 0
 
+  // Calculate last run
+  const projectRuns = runs.filter((r) => r.projectId === project.id)
+  const latestRun = [...projectRuns].sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0]
+
   return (
-    <header className="flex flex-col gap-2.5 border-b border-border/80 bg-background px-4 py-3 md:px-6 md:py-4">
+    <header className="flex flex-col gap-2 border-b border-border bg-card/40 px-4 py-3 md:px-6 md:py-3.5">
       {/* Title Row */}
       <div className="flex items-center gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
@@ -67,13 +92,13 @@ export function ProjectHeader({
             role="status"
             className={cn(
               'flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
-              isRunning ? 'bg-success/15 text-success' : 'bg-muted/80 text-muted-foreground'
+              isRunning ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground'
             )}
           >
             <span
               className={cn(
                 'size-1.5 rounded-full',
-                isRunning ? 'animate-pulse bg-success' : 'bg-muted-foreground/60'
+                isRunning ? 'animate-pulse bg-primary' : 'bg-muted-foreground/60'
               )}
             />
             {isRunning ? `${activeRunsCount} 个运行中` : '就绪'}
@@ -82,6 +107,7 @@ export function ProjectHeader({
 
         <div className="flex-1" />
 
+        {/* VS Code & IDEA Buttons */}
         <EditorButtons
           projectId={project.id}
           projectName={project.name}
@@ -89,20 +115,50 @@ export function ProjectHeader({
           onError={onEditorError}
         />
 
+        {/* 刷新 */}
         <Button
           variant="outline"
           size="sm"
           onClick={onRefresh}
           disabled={isFetching}
           title="重新扫描项目目录"
-          className="h-8 gap-1.5 px-2.5 text-xs"
+          className="h-8 gap-1.5 border-border bg-secondary/80 px-2.5 text-xs text-muted-foreground hover:text-foreground"
         >
           <RefreshCw className={cn('size-3.5', isFetching && 'animate-spin')} />
           刷新
         </Button>
+
+        {/* 更多 */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon-xs"
+              className="size-8 border-border bg-secondary/80 text-muted-foreground hover:text-foreground"
+              aria-label="更多操作"
+              title="更多操作"
+            >
+              <Ellipsis className="size-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => openFolder.mutate(project.id)}>
+              <FolderOpen className="size-3.5" />
+              打开所在目录
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => openTerminal.mutate(project.id)}>
+              <SquareTerminal className="size-3.5" />
+              在系统终端中打开
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleCopyPath}>
+              <Copy className="size-3.5" />
+              复制完整路径
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Meta Row: Path & Tech Tags */}
+      {/* Meta Row: Path, Tech Tags, Git Branch & Last Run */}
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <button
           type="button"
@@ -113,7 +169,7 @@ export function ProjectHeader({
           <Folder className="size-3 shrink-0 text-muted-foreground" />
           <span className="truncate">{project.path}</span>
           {copied ? (
-            <Check className="size-3 shrink-0 text-success" />
+            <Check className="size-3 shrink-0 text-primary" />
           ) : (
             <Copy className="size-3 shrink-0 opacity-0 transition-opacity group-hover/path:opacity-100" />
           )}
@@ -127,12 +183,34 @@ export function ProjectHeader({
                 <Badge
                   key={source}
                   variant="secondary"
-                  className="h-5 px-1.5 font-mono text-[10px] text-muted-foreground"
+                  className="h-4.5 px-1.5 font-mono text-[10px] text-muted-foreground border-0"
                 >
                   {source}
                 </Badge>
               ))}
             </div>
+          </>
+        )}
+
+        <span className="h-3 w-px bg-border/80" />
+        <Badge
+          variant="secondary"
+          className="h-4.5 gap-1 px-1.5 font-mono text-[10px] text-muted-foreground border-0"
+        >
+          <GitBranch className="size-2.5" />
+          main
+        </Badge>
+
+        {latestRun && (
+          <>
+            <span className="h-3 w-px bg-border/80" />
+            <span className="text-[11px] text-muted-foreground/70">
+              上次运行{' '}
+              {new Date(latestRun.startedAt).toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </span>
           </>
         )}
       </div>

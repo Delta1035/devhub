@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import {
+  ChevronRight,
+  FileCode,
   FlaskConical,
   FolderX,
   Layers,
@@ -26,6 +28,7 @@ interface ScriptListProps {
   filterQuery?: string
   /** Called with a freshly started run so the terminal panel can switch to it. */
   onRunStarted: (run: Run) => void
+  onOpenSettings?: () => void
 }
 
 function ScriptIcon({
@@ -46,7 +49,8 @@ function ScriptIcon({
 export function ScriptList({
   project,
   filterQuery = '',
-  onRunStarted
+  onRunStarted,
+  onOpenSettings
 }: ScriptListProps): React.JSX.Element {
   const scripts = useProjectScripts(project.id)
   const runs = useRuns()
@@ -174,6 +178,28 @@ export function ScriptList({
           onRunStarted={onRunStarted}
         />
       ))}
+
+      {/* 自定义脚本提示条 (对齐 pen/devhub.pen) */}
+      <div className="flex items-center justify-between rounded-lg border border-border bg-card/60 px-4 py-2.5 text-xs">
+        <div className="flex items-center gap-2">
+          <ChevronRight className="size-3.5 text-muted-foreground" />
+          <FileCode className="size-3.5 text-muted-foreground" />
+          <span className="text-muted-foreground">
+            {items.filter((s) => s.source === 'custom').length > 0
+              ? `检测到 .devhub.yaml 中的 ${items.filter((s) => s.source === 'custom').length} 个自定义脚本`
+              : '检测到 .devhub.yaml 中的 0 个自定义脚本'}
+          </span>
+        </div>
+        {onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="font-semibold text-primary hover:underline text-xs"
+          >
+            查看
+          </button>
+        )}
+      </div>
 
       <ConfigHint />
     </div>

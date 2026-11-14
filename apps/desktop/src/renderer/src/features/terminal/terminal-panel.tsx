@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react'
-import { Eraser, Maximize2, Minimize2, SquareTerminal, X } from 'lucide-react'
+import { Copy, Eraser, Maximize2, Minimize2, Search, SquareTerminal, X } from 'lucide-react'
 import type { Run } from '@devhub/shared'
 import { access } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
@@ -61,6 +61,17 @@ export function TerminalPanel({
     }
   }
 
+  const handleCopyTerminal = (): void => {
+    if (active) {
+      try {
+        const text = getTerminalSession(active.id).terminal.getSelection()
+        if (text) navigator.clipboard.writeText(text).catch(() => undefined)
+      } catch {
+        // Ignore if session not mounted yet
+      }
+    }
+  }
+
   return (
     <section
       className={cn(
@@ -112,18 +123,46 @@ export function TerminalPanel({
         {activeCount > 0 && (
           <span className="hidden font-mono text-[10px] text-muted-foreground sm:inline-block">
             {activeCount} 个运行中
+            {runs.length > activeCount ? ` · ${runs.length - activeCount} 个待启动` : ''}
           </span>
         )}
         {active && (
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={handleClearTerminal}
-            title="清屏"
-            aria-label="清屏"
-          >
-            <Eraser className="size-3.5 text-muted-foreground" />
-          </Button>
+          <>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={handleClearTerminal}
+              title="清屏"
+              aria-label="清屏"
+            >
+              <Eraser className="size-3.5 text-muted-foreground" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={handleCopyTerminal}
+              title="复制选中内容"
+              aria-label="复制选中内容"
+            >
+              <Copy className="size-3.5 text-muted-foreground" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              title="在终端中查找"
+              aria-label="在终端中查找"
+              onClick={() => {
+                // Focus terminal to allow terminal search shortcut
+                try {
+                  getTerminalSession(active.id).terminal.focus()
+                } catch {
+                  // Ignore
+                }
+              }}
+            >
+              <Search className="size-3.5 text-muted-foreground" />
+            </Button>
+          </>
         )}
         {error && (
           <p className="flex min-w-0 items-center gap-1 text-xs text-destructive">

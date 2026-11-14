@@ -7,7 +7,7 @@ import { useEditors, useOpenInEditor } from './use-editors'
 
 // Monograms instead of vendor logos: recognizable at 16px and no trademark artwork to ship.
 const marks: Record<EditorId, { label: string; short: string; className: string }> = {
-  vscode: { label: 'VS', short: 'VS Code', className: 'bg-sky-600' },
+  vscode: { label: 'VS', short: '在 VS Code 打开', className: 'bg-sky-600' },
   idea: { label: 'IJ', short: 'IDEA', className: 'bg-fuchsia-600' }
 }
 
