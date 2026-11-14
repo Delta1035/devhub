@@ -77,6 +77,12 @@ React UI ──> @renderer/api ──> DevhubApi (packages/shared)
 
 这些边界由 ESLint 强制（见根目录 `eslint.config.mjs`）。
 
+### 前端状态与逻辑解耦（面向 AI 协作与高可测性）
+
+- **业务逻辑与视图解耦（Headless 优先）**：UI 组件（`features/<x>/`）只负责结构布局、样式呈现与事件绑定（受控属性进，Action 触发）。复杂状态机、数据计算、筛选过滤与异步流程必须抽离为独立于 React 生命周期的纯 TS 模块（纯函数、纯类或外部 Store），严禁在组件或自定义 Hook 中滥用 `useState`/`useEffect` 堆砌业务。
+- **纯逻辑单测先行（TDD 闭环）**：前端独立的纯逻辑模块必须编写 Vitest 单元测试并纳入 `pnpm check`；通过毫秒级单测为 AI 协作提供确定性闭环，避免日常开发调试依赖高成本的 Playwright E2E（E2E 仅作为发版与关键链路冒烟防线）。
+- **契约与服务端状态**：与核心的交互严格通过 `@renderer/api` 与 TanStack Query 进行数据查询与缓存失效，契约与领域模型由 `packages/shared` 单一事实来源约束。
+
 ### 错误处理
 
 - 预期内的失败在 core 中抛出 `DevhubError(code, message)`（`packages/shared/src/errors.ts`）；`message` 面向用户，直接显示在 UI。

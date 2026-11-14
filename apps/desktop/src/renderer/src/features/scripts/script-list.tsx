@@ -1,5 +1,14 @@
 import { useState } from 'react'
-import { FolderX, TriangleAlert, X } from 'lucide-react'
+import {
+  FlaskConical,
+  FolderX,
+  Layers,
+  Package,
+  Play,
+  ShieldCheck,
+  TriangleAlert,
+  X
+} from 'lucide-react'
 import type { Project, Run, Script, ScriptSource } from '@devhub/shared'
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Badge } from '@renderer/components/ui/badge'
@@ -14,11 +23,31 @@ import { useProjectScripts } from './use-scripts'
 
 interface ScriptListProps {
   project: Project
+  filterQuery?: string
   /** Called with a freshly started run so the terminal panel can switch to it. */
   onRunStarted: (run: Run) => void
 }
 
-export function ScriptList({ project, onRunStarted }: ScriptListProps): React.JSX.Element {
+function ScriptIcon({
+  scriptName,
+  className
+}: {
+  scriptName: string
+  className?: string
+}): React.JSX.Element {
+  const name = scriptName.toLowerCase()
+  if (/dev|start|serve/.test(name)) return <Play className={className} />
+  if (/build|compile|package|dist/.test(name)) return <Package className={className} />
+  if (/test|check|verify|spec/.test(name)) return <FlaskConical className={className} />
+  if (/lint|format|style/.test(name)) return <ShieldCheck className={className} />
+  return <Layers className={className} />
+}
+
+export function ScriptList({
+  project,
+  filterQuery = '',
+  onRunStarted
+}: ScriptListProps): React.JSX.Element {
   const scripts = useProjectScripts(project.id)
   const runs = useRuns()
   const activeGroups = useActiveGroups()
@@ -57,6 +86,16 @@ export function ScriptList({ project, onRunStarted }: ScriptListProps): React.JS
       </Alert>
     )
   }
+
+  const query = filterQuery.trim().toLowerCase()
+  const displayItems = query
+    ? items.filter(
+        (s) =>
+          s.name.toLowerCase().includes(query) ||
+          s.command.toLowerCase().includes(query) ||
+          (s.description && s.description.toLowerCase().includes(query))
+      )
+    : items
 
   return (
     <div className="flex flex-col gap-4">
@@ -111,13 +150,19 @@ export function ScriptList({ project, onRunStarted }: ScriptListProps): React.JS
       )}
 
       {items.length === 0 && warnings.length === 0 && (
-        <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+        <p className="rounded-lg border border-dashed border-border/80 p-8 text-center text-sm text-muted-foreground">
           没有识别到脚本。目前支持 package.json（npm / pnpm / yarn）、pom.xml（Maven）、
           build.gradle（Gradle），以及项目根目录的 .devhub.yaml（自定义脚本）。
         </p>
       )}
 
-      {groupBySource(items).map(([source, group]) => (
+      {displayItems.length === 0 && items.length > 0 && (
+        <p className="rounded-lg border border-dashed border-border/80 p-6 text-center text-xs text-muted-foreground">
+          没有匹配「{filterQuery}」的脚本
+        </p>
+      )}
+
+      {groupBySource(displayItems).map(([source, group]) => (
         <ScriptGroup
           key={source}
           projectId={project.id}
@@ -160,11 +205,15 @@ function ScriptGroup({
 
   return (
     <section className="flex flex-col gap-2">
-      <h3 className="flex items-center gap-2 text-sm font-semibold">
+      <h3 className="flex items-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
         {sourceLabels[source]}
-        {executable && <Badge variant="secondary">{executable}</Badge>}
+        {executable && (
+          <Badge variant="secondary" className="font-mono text-[10px]">
+            {executable}
+          </Badge>
+        )}
       </h3>
-      <ul className="divide-y rounded-lg border bg-card">
+      <ul className="divide-y divide-border/60 rounded-lg border border-border/80 bg-card overflow-hidden">
         {scripts.map((script) => {
           const run = runs.find(
             (candidate) =>
@@ -176,12 +225,16 @@ function ScriptGroup({
           return (
             <li
               key={script.id}
-              className="flex items-center gap-4 px-4 py-2.5 max-md:gap-2 max-md:px-3"
+              className="group flex items-center gap-4 px-4 py-2.5 transition-colors hover:bg-muted/30 max-md:gap-2 max-md:px-3"
             >
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground transition-colors group-hover:bg-muted group-hover:text-foreground">
+                <ScriptIcon scriptName={script.name} className="size-3.5" />
+              </div>
+
               {/* On phones the name goes above the command, leaving the row's width to the controls. */}
               <div className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-4">
-                <span className="flex min-w-0 items-center gap-1.5 md:w-40 md:shrink-0">
-                  <span className="truncate font-medium" title={script.name}>
+                <span className="flex min-w-0 items-center gap-1.5 md:w-36 md:shrink-0">
+                  <span className="truncate font-medium text-xs md:text-sm" title={script.name}>
                     {script.name}
                   </span>
                   {groups.length > 0 && (
@@ -198,14 +251,17 @@ function ScriptGroup({
                 </span>
                 <div className="min-w-0 flex-1">
                   <span className="flex min-w-0 items-center gap-2">
-                    <code className="truncate font-mono text-xs" title={script.command}>
+                    <code
+                      className="truncate font-mono text-xs text-foreground/80"
+                      title={script.command}
+                    >
                       {script.command}
                     </code>
                     {script.ports?.map((port) => (
                       <Badge
                         key={port}
                         variant="outline"
-                        className="h-4 shrink-0 px-1.5 text-[10px]"
+                        className="h-4 shrink-0 px-1.5 font-mono text-[10px] text-info border-info/30 bg-info/10"
                         title="启动前会检查这个端口是否已被占用"
                       >
                         端口 {port}

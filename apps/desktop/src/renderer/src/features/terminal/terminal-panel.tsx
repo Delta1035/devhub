@@ -1,12 +1,15 @@
 import { lazy, Suspense, useState } from 'react'
-import { Maximize2, Minimize2, SquareTerminal, X } from 'lucide-react'
+import { Eraser, Maximize2, Minimize2, SquareTerminal, X } from 'lucide-react'
 import type { Run } from '@devhub/shared'
 import { access } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
 import { healthLabels, useHealthOf } from '@renderer/features/runs/use-run-health'
 import { useRuns } from '@renderer/features/runs/use-runs'
 import { cn } from '@renderer/lib/utils'
+import { ExitedTerminalDropdown } from './exited-terminal-dropdown'
 import { NewTerminalButton } from './new-terminal-button'
+import { TerminalCommandBar } from './terminal-command-bar'
+import { getTerminalSession } from './terminal-sessions'
 import { useResizableHeight } from './use-resizable-height'
 import { useCloseRun } from './use-shells'
 
@@ -33,7 +36,7 @@ export function TerminalPanel({
   maximized,
   onToggleMaximized
 }: TerminalPanelProps): React.JSX.Element {
-  const { height, startResize } = useResizableHeight('devhub.terminalHeight', 260, 120)
+  const { height, startResize } = useResizableHeight('devhub.terminalHeight', 280, 120)
   const closeRun = useCloseRun()
   const [error, setError] = useState<Error | null>(null)
   const runs = (useRuns().data ?? [])
@@ -41,10 +44,27 @@ export function TerminalPanel({
     .sort((a, b) => a.startedAt.localeCompare(b.startedAt))
   const active = runs.find((run) => run.id === activeRunId) ?? runs.at(-1)
 
+  // Separate active/visible tabs from folded exited tabs:
+  // Visible tabs: all running sessions, plus the active session if it happens to be exited
+  const visibleRuns = runs.filter((run) => run.status !== 'exited' || run.id === active?.id)
+  // Folded exited tabs: exited sessions not currently selected
+  const exitedRuns = runs.filter((run) => run.status === 'exited' && run.id !== active?.id)
+  const activeCount = runs.filter((run) => run.status !== 'exited').length
+
+  const handleClearTerminal = (): void => {
+    if (active) {
+      try {
+        getTerminalSession(active.id).terminal.clear()
+      } catch {
+        // Ignore if session not mounted yet
+      }
+    }
+  }
+
   return (
     <section
       className={cn(
-        'flex flex-col border-t bg-muted/30',
+        'flex flex-col border-t border-border/80 bg-background',
         maximized ? 'min-h-0 flex-1' : 'shrink-0'
       )}
       style={maximized ? undefined : { height }}
@@ -59,7 +79,7 @@ export function TerminalPanel({
         />
       )}
       <header
-        className="flex shrink-0 items-center gap-1 border-b px-3 py-1"
+        className="flex shrink-0 items-center gap-1 border-b border-border/80 bg-muted/20 px-3 py-1"
         // Double-clicking empty space in the tab bar toggles maximize, as in VS Code.
         onDoubleClick={(event) => {
           if (!(event.target as HTMLElement).closest('button')) onToggleMaximized()
@@ -68,7 +88,7 @@ export function TerminalPanel({
         <SquareTerminal className="mr-1 size-4 shrink-0 text-muted-foreground" />
         <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
           {runs.length === 0 && <span className="text-sm font-medium">终端</span>}
-          {runs.map((run) => (
+          {visibleRuns.map((run) => (
             <RunTab
               key={run.id}
               run={run}
@@ -78,6 +98,8 @@ export function TerminalPanel({
               onClose={() => closeRun.mutate(run, { onError: setError })}
             />
           ))}
+          {/* Folded closed / dead sessions dropdown */}
+          <ExitedTerminalDropdown exitedRuns={exitedRuns} onSelectRun={onActiveRunChange} />
         </div>
         {access.terminal && (
           <NewTerminalButton
@@ -87,13 +109,29 @@ export function TerminalPanel({
           />
         )}
         <div className="flex-1" />
+        {activeCount > 0 && (
+          <span className="hidden font-mono text-[10px] text-muted-foreground sm:inline-block">
+            {activeCount} 个运行中
+          </span>
+        )}
+        {active && (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={handleClearTerminal}
+            title="清屏"
+            aria-label="清屏"
+          >
+            <Eraser className="size-3.5 text-muted-foreground" />
+          </Button>
+        )}
         {error && (
           <p className="flex min-w-0 items-center gap-1 text-xs text-destructive">
             <span className="truncate" title={error.message}>
               {error.message}
             </span>
             <Button variant="ghost" size="icon-xs" onClick={() => setError(null)} aria-label="关闭">
-              <X />
+              <X className="size-3" />
             </Button>
           </p>
         )}
@@ -122,6 +160,8 @@ export function TerminalPanel({
           </p>
         )}
       </div>
+      {/* Interactive Command Line Bar at the bottom */}
+      <TerminalCommandBar activeRun={active} />
     </section>
   )
 }
@@ -145,8 +185,8 @@ function RunTab({ run, selected, closing, onSelect, onClose }: RunTabProps): Rea
   return (
     <div
       className={cn(
-        'flex shrink-0 items-center rounded-md text-sm hover:bg-muted',
-        selected && 'bg-background shadow-xs'
+        'flex shrink-0 items-center rounded-md border text-sm transition-colors',
+        selected ? 'border-border/80 bg-card shadow-xs' : 'border-transparent hover:bg-muted/60'
       )}
     >
       <button
@@ -180,7 +220,7 @@ function RunTab({ run, selected, closing, onSelect, onClose }: RunTabProps): Rea
           title={exited ? '关闭' : '关闭（结束该终端及其中运行的命令）'}
           aria-label={`关闭 ${run.title}`}
         >
-          <X />
+          <X className="size-3" />
         </Button>
       )}
     </div>
