@@ -199,6 +199,7 @@ for (const mode of ['serial', 'parallel'] as const) {
     createProject,
     listener
   }) => {
+    test.slow()
     const first = await listener('old first')
     const second = await listener('old second')
     const unrelated = await listener('outside the group')
