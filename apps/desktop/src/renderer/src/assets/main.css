@@ -137,3 +137,50 @@
 [data-terminal-run] .xterm .xterm-viewport {
   background-color: transparent;
 }
+
+/* ==========================================================================
+   Global Scrollbar Styling (Unified Modern Dark Tech Look)
+   ========================================================================== */
+
+/* Standards-compliant browsers (Firefox, modern CSS) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong, var(--border)) transparent;
+}
+
+/* WebKit / Chromium / Electron scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--border-strong, var(--border));
+  border-radius: 9999px;
+  transition: background-color 0.15s ease-in-out;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-tertiary, var(--muted-foreground));
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--text-secondary, var(--foreground));
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Utility to explicitly hide scrollbar when needed */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
