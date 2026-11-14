@@ -10,7 +10,7 @@ DevHub 是一个桌面客户端：自动发现本地项目中的脚本（npm / m
 
 1. 非琐碎任务先给出方案，确认后再写代码。一次只做一个小任务（一个 issue）；没有 issue 的非琐碎任务，先建 issue（模板「开发任务」）。
 2. 完成标准：issue 的验收标准全部满足，且 `pnpm check` 全部通过（格式、lint、类型、测试）。不通过不算完成。改动 UI、IPC/preload 或进程管理时，还要跑 `pnpm e2e`（构建后用 Playwright 驱动真实应用，约 30 秒；CI 每次都跑）。
-3. 新增或修改核心逻辑（`apps/desktop/src/main/core/`、`packages/shared/`）必须同时写测试。
+3. 新增或修改核心逻辑（`apps/desktop/src/main/core/`、`packages/shared/` 以及 renderer 独立业务逻辑）必须同时写测试。
 4. 任务结束时在 issue 下评论验证结果（跑了哪些检查、结果、未验证的部分），由完成提交的 `Closes #n` 关闭。阶段、进行中的 issue 或已知问题变化时更新 `docs/PROGRESS.md`；改变了结构或约定则同步更新 `docs/ARCHITECTURE.md`。
    - 这两份文档常被并行分支同时修改，为减少冲突：`PROGRESS.md`「进行中」每个 issue 单独一行，只改自己 issue 的那一行，新条目追加到所属分组末尾；`ARCHITECTURE.md` 新增内容写成独立条目，不要插在别人可能修改的条目中间；开 PR 前和有 PR 刚合并进 main 后，先 `git fetch origin main && git merge origin/main`，在本地解决冲突。
 5. 做出重要技术决策（新依赖、新模式、推翻旧决策）时，在 `docs/decisions/` 新增 ADR，并在 issue 中链接。
@@ -26,6 +26,12 @@ DevHub 是一个桌面客户端：自动发现本地项目中的脚本（npm / m
 - 所有来自 renderer、配置文件、外部进程的输入，在 core 中用 zod 校验。
 - 单文件不超过 400 行；超过前先拆分。
 - 不要使用 `any`、`@ts-ignore`、`eslint-disable`。确有必要时在同一行写明原因。
+
+## 前端与 UI 规范（面向 AI 的解耦与测试要求）
+
+- **业务逻辑与视图解耦（Headless 优先）**：复杂客户端状态与业务逻辑（如过滤搜索、状态编排、批量操作状态机、数据转换）必须抽离为独立于 React 生命周期的纯 TS 模块（纯函数、纯类或外部 Store），严禁将复杂业务逻辑和异步副作用堆砌在 React 组件或自定义 Hook 中。
+- **纯逻辑测试先行（TDD 闭环）**：复杂前端逻辑必须编写 Vitest 单元测试并纳入 `pnpm check`，先跑通单测再挂载视图。日常调试严禁依赖耗时昂贵的 Playwright E2E（E2E 仅作为端到端冒烟与集成防线）。
+- **组件哑巴化（Dumb Components）**：React 组件只负责布局、样式与属性绑定（受控属性进，Action 触发）。禁止在组件内写复杂业务判断、隐式跨组件同步或在 `useEffect` 中编排异步业务。
 
 ## 依赖
 
