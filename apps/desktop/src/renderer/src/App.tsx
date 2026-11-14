@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetTitle } from '@renderer/components/ui/sheet'
 import { Sidebar } from '@renderer/features/sidebar/sidebar'
 import { SidebarSkeleton } from '@renderer/features/sidebar/sidebar-skeleton'
 import { useResizableWidth } from '@renderer/features/sidebar/use-resizable-width'
+import { StatusBar } from '@renderer/features/status-bar/status-bar'
 import { TitleBar } from '@renderer/features/title-bar/title-bar'
 import { useWorkspaceEventsSync, useWorkspaces } from '@renderer/features/workspaces/use-workspaces'
 import { narrowQuery, useMediaQuery } from '@renderer/lib/use-media-query'
@@ -149,6 +150,7 @@ function App(): React.JSX.Element {
           </div>
         </main>
       </div>
+      <StatusBar />
     </div>
   )
 }
