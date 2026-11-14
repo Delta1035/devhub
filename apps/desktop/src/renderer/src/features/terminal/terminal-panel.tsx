@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react'
-import { Copy, Eraser, Maximize2, Minimize2, Search, SquareTerminal, X } from 'lucide-react'
+import { Check, Copy, Eraser, Maximize2, Minimize2, Search, SquareTerminal, X } from 'lucide-react'
 import type { Run } from '@devhub/shared'
 import { access } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
@@ -39,6 +39,9 @@ export function TerminalPanel({
   const { height, startResize } = useResizableHeight('devhub.terminalHeight', 280, 120)
   const closeRun = useCloseRun()
   const [error, setError] = useState<Error | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [terminalSearchOpen, setTerminalSearchOpen] = useState(false)
+  const [terminalSearchTerm, setTerminalSearchTerm] = useState('')
   const runs = (useRuns().data ?? [])
     .filter((run) => run.projectId === projectId)
     .sort((a, b) => a.startedAt.localeCompare(b.startedAt))
@@ -64,8 +67,18 @@ export function TerminalPanel({
   const handleCopyTerminal = (): void => {
     if (active) {
       try {
-        const text = getTerminalSession(active.id).terminal.getSelection()
-        if (text) navigator.clipboard.writeText(text).catch(() => undefined)
+        const session = getTerminalSession(active.id)
+        let text = session.terminal.getSelection()
+        if (!text) {
+          session.terminal.selectAll()
+          text = session.terminal.getSelection()
+          session.terminal.clearSelection()
+        }
+        if (text) {
+          navigator.clipboard.writeText(text).catch(() => undefined)
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1500)
+        }
       } catch {
         // Ignore if session not mounted yet
       }
@@ -141,26 +154,28 @@ export function TerminalPanel({
               variant="ghost"
               size="icon-xs"
               onClick={handleCopyTerminal}
-              title="复制选中内容"
-              aria-label="复制选中内容"
+              title={copied ? '已复制终端内容' : '复制终端内容'}
+              aria-label="复制终端内容"
             >
-              <Copy className="size-3.5 text-muted-foreground" />
+              {copied ? (
+                <Check className="size-3.5 text-primary" />
+              ) : (
+                <Copy className="size-3.5 text-muted-foreground" />
+              )}
             </Button>
             <Button
               variant="ghost"
               size="icon-xs"
               title="在终端中查找"
               aria-label="在终端中查找"
-              onClick={() => {
-                // Focus terminal to allow terminal search shortcut
-                try {
-                  getTerminalSession(active.id).terminal.focus()
-                } catch {
-                  // Ignore
-                }
-              }}
+              onClick={() => setTerminalSearchOpen(!terminalSearchOpen)}
             >
-              <Search className="size-3.5 text-muted-foreground" />
+              <Search
+                className={cn(
+                  'size-3.5',
+                  terminalSearchOpen ? 'text-primary' : 'text-muted-foreground'
+                )}
+              />
             </Button>
           </>
         )}
@@ -184,6 +199,27 @@ export function TerminalPanel({
           {maximized ? <Minimize2 /> : <Maximize2 />}
         </Button>
       </header>
+      {terminalSearchOpen && (
+        <div className="flex items-center gap-2 border-b border-border bg-[#171C23] px-3 py-1.5 text-xs">
+          <Search className="size-3.5 text-muted-foreground shrink-0" />
+          <input
+            type="text"
+            value={terminalSearchTerm}
+            onChange={(e) => setTerminalSearchTerm(e.target.value)}
+            placeholder="在终端日志中搜索..."
+            className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none"
+            autoFocus
+          />
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={() => setTerminalSearchOpen(false)}
+            aria-label="关闭搜索"
+          >
+            <X className="size-3" />
+          </Button>
+        </div>
+      )}
       <div className="min-h-0 flex-1 p-2">
         {active ? (
           <Suspense>

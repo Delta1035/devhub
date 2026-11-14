@@ -1,5 +1,14 @@
 import { useState } from 'react'
-import { ArrowDownWideNarrow, FileText, History, Info, RotateCw, Trash2 } from 'lucide-react'
+import {
+  ArrowDownWideNarrow,
+  Calendar,
+  Download,
+  FileText,
+  History,
+  Info,
+  RotateCw,
+  Trash2
+} from 'lucide-react'
 import type { Project, RunRecord, Script } from '@devhub/shared'
 import { api } from '@renderer/api'
 import { Badge } from '@renderer/components/ui/badge'
@@ -53,6 +62,25 @@ export function ProjectHistoryTab({ project, scripts }: ProjectHistoryTabProps):
     api.startScript(record.projectId, record.scriptId).catch(() => undefined)
   }
 
+  const handleExportLogs = async (): Promise<void> => {
+    const allLogs: string[] = []
+    for (const r of filteredRecords) {
+      const res = await api.getRunHistoryOutput(r.projectId, r.scriptId, r.runId)
+      if (res?.data) {
+        allLogs.push(`=== Run #${r.runId} (${r.scriptId}) ===\n${res.data}\n`)
+      }
+    }
+    const blob = new Blob([allLogs.join('\n') || '无运行日志'], {
+      type: 'text/plain;charset=utf-8'
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${project.name}-${selectedScript?.name ?? 'all'}-history.log`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-1 overflow-hidden">
       {/* 左栏：运行表与筛选 */}
@@ -76,18 +104,33 @@ export function ProjectHistoryTab({ project, scripts }: ProjectHistoryTabProps):
             </p>
           </div>
 
-          {selectedScript && rawRecords.length > 0 && (
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-md border border-border bg-card/60 px-2.5 py-1 text-xs text-muted-foreground">
+              <Calendar className="size-3.5 text-muted-foreground" />
+              <span>最近 7 天</span>
+            </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => clearHistory.mutate()}
-              disabled={clearHistory.isPending}
-              className="h-8 gap-1.5 border-border px-3 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={handleExportLogs}
+              className="h-8 gap-1.5 border-border bg-card/60 px-2.5 text-xs text-muted-foreground hover:text-foreground"
             >
-              <Trash2 className="size-3.5" />
-              清空历史
+              <Download className="size-3.5" />
+              导出日志
             </Button>
-          )}
+            {selectedScript && rawRecords.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => clearHistory.mutate()}
+                disabled={clearHistory.isPending}
+                className="h-8 gap-1.5 border-border px-3 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="size-3.5" />
+                清空历史
+              </Button>
+            )}
+          </div>
         </header>
 
         {/* Script Selection Pills */}
