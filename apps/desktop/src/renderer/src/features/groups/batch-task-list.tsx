@@ -8,6 +8,7 @@ import {
   Play,
   Plus,
   Square,
+  Trash2,
   X as XIcon
 } from 'lucide-react'
 import { activeGroups, sortGroups, type Group } from '@devhub/shared'
@@ -23,12 +24,14 @@ import {
 import { useRuns } from '@renderer/features/runs/use-runs'
 import { cn } from '@renderer/lib/utils'
 import {
+  useDeleteGroup,
   useGroupStates,
   useGroups,
   useSetGroupPinned,
   useStartGroup,
   useStopGroup
 } from './use-groups'
+import { toast } from '@renderer/lib/toast'
 
 interface BatchTaskListProps {
   selectedGroupId: string | null
@@ -49,6 +52,7 @@ export function BatchTaskList({
   const start = useStartGroup()
   const stop = useStopGroup()
   const setPinned = useSetGroupPinned()
+  const deleteGroup = useDeleteGroup()
   const [error, setError] = useState<string | null>(null)
 
   const activeIds = new Set(activeGroups(states.data ?? [], runs).map((group) => group.groupId))
@@ -228,7 +232,11 @@ export function BatchTaskList({
                       onSelect={() =>
                         setPinned.mutate(
                           { groupId: group.id, pinned: !group.pinnedAt },
-                          { onError: (e) => setError(e.message) }
+                          {
+                            onError: (e) => setError(e.message),
+                            onSuccess: () =>
+                              toast.success(!group.pinnedAt ? '已置顶任务' : '已取消置顶')
+                          }
                         )
                       }
                       disabled={pinPending}
@@ -244,6 +252,20 @@ export function BatchTaskList({
                       <DropdownMenuItem onSelect={() => onEditGroup(group)}>
                         <Pencil className="size-3.5" />
                         编辑步骤
+                      </DropdownMenuItem>
+                    )}
+                    {access.manage && (
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onSelect={() => {
+                          deleteGroup.mutate(group.id, {
+                            onSuccess: () => toast.success(`已删除任务「${group.name}」`),
+                            onError: (e) => toast.error(e.message)
+                          })
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                        删除任务
                       </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>

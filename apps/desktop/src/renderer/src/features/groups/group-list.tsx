@@ -11,6 +11,7 @@ import {
   Play,
   Plus,
   Square,
+  Trash2,
   X as XIcon
 } from 'lucide-react'
 import {
@@ -35,12 +36,14 @@ import { useRuns } from '@renderer/features/runs/use-runs'
 import { cn } from '@renderer/lib/utils'
 import { GroupEditor } from './group-editor'
 import {
+  useDeleteGroup,
   useGroupStates,
   useGroups,
   useSetGroupPinned,
   useStartGroup,
   useStopGroup
 } from './use-groups'
+import { toast } from '@renderer/lib/toast'
 
 interface GroupListProps {
   selectedGroupId: string | null
@@ -187,6 +190,7 @@ function GroupItem({
   onTogglePinned,
   onSelectProject
 }: GroupItemProps): React.JSX.Element {
+  const deleteGroup = useDeleteGroup()
   const running = state?.status === 'running'
   // Show the steps while something is happening or went wrong; finished groups stay compact.
   const showSteps = state && (state.status === 'running' || state.status === 'failed')
@@ -267,6 +271,20 @@ function GroupItem({
               <DropdownMenuItem onSelect={onEdit}>
                 <Pencil />
                 编辑
+              </DropdownMenuItem>
+            )}
+            {access.manage && (
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onSelect={() => {
+                  deleteGroup.mutate(group.id, {
+                    onSuccess: () => toast.success(`已删除任务「${group.name}」`),
+                    onError: (e) => toast.error(e.message)
+                  })
+                }}
+              >
+                <Trash2 />
+                删除
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>

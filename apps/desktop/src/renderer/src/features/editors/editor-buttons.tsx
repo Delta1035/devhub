@@ -2,6 +2,7 @@ import { Loader2 } from 'lucide-react'
 import type { EditorId, EditorInfo } from '@devhub/shared'
 import { access } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
+import { toast } from '@renderer/lib/toast'
 import { cn } from '@renderer/lib/utils'
 import { useEditors, useOpenInEditor } from './use-editors'
 
@@ -42,7 +43,15 @@ export function EditorButtons({
             variant={variant === 'icon' ? 'ghost' : 'outline'}
             size={variant === 'icon' ? 'icon-xs' : 'sm'}
             disabled={!editor.available || opening}
-            onClick={() => open.mutate({ projectId, editor: editor.id }, { onError })}
+            onClick={() =>
+              open.mutate(
+                { projectId, editor: editor.id },
+                {
+                  onError,
+                  onSuccess: () => toast.success(`已在 ${editor.name} 中打开项目`)
+                }
+              )
+            }
             title={hint(editor)}
             aria-label={`用 ${editor.name} 打开 ${projectName}`}
           >
