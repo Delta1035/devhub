@@ -55,14 +55,14 @@ export function SidebarBottom({
         <span className="font-mono text-[10px] text-muted-foreground/70">{groupCount} 个</span>
       </button>
 
-      {/* 设置 */}
+      {/* 系统设置 */}
       <button
         type="button"
         onClick={onToggleSettings}
         className="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
       >
         <SlidersHorizontal className="size-3.5 shrink-0 text-muted-foreground group-hover:text-foreground" />
-        <span className="min-w-0 flex-1 truncate text-left">设置</span>
+        <span className="min-w-0 flex-1 truncate text-left">系统设置</span>
       </button>
     </div>
   )

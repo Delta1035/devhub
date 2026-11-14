@@ -181,7 +181,7 @@ Linux 已打包版本由 `APPIMAGE` 或 electron-builder 写入 `resources/packa
 
 - `DevhubEvents.subscribe` 独立于 `DevhubApi`：请求-响应走自动映射的 IPC，推送走 `devhubEventChannel`（主进程 `webContents.send` → preload → `@renderer/api` 的 `events`）。远程端改用 SSE（`GET /api/v1/events`，ADR 0022）。
 - 事件：`run-updated`、`run-removed`、`run-output`（带流偏移量）、`run-health`（就绪状态，ADR 0011）、`history-updated`（历史处理完成，ADR 0015）、`group-updated`（批量任务进度）、`settings-updated`、`projects-updated`（工作区同步改变了项目或扫描结果，ADR 0018）。
-- 设置分两处（ADR 0007）：影响 core 行为的存 `settings.json`；纯显示偏好（主题、风格、终端字号等）存 renderer 的 localStorage（`lib/appearance.ts`、`terminal-prefs.ts`）。设计风格（ADR 0019）是 `<html data-style>` 下对语义 CSS 变量的覆盖（`assets/styles/`），组件只用语义 token（`bg-primary`，运行状态用 `success` / `warning` / `info`），不写死颜色，新增风格不改组件。renderer 用事件直接更新 TanStack Query 缓存（`useRunEventsSync`，在 App 挂载一次）。
+- 设置分两处（ADR 0007）：影响 core 行为的存 `settings.json`；纯显示偏好（深色/浅色/跟随系统模式、终端字号等）存 renderer 的 localStorage（`lib/appearance.ts`、`terminal-prefs.ts`）。全局消息与通知总线（`lib/notifications.ts`）统一协调即时 Toast 浮层与顶栏 Bell 通知中心沉淀。组件只用语义 token（`bg-primary`，运行状态用 `success` / `warning` / `info`），不写死颜色。renderer 用事件直接更新 TanStack Query 缓存（`useRunEventsSync`，在 App 挂载一次）。
 - 终端：先订阅再取 `getRunOutput` 快照，用 shared 的 `OutputCursor` 去重拼接；core 中输出按 16 ms 合并后推送。
 - renderer 的 `terminal-sessions.ts` 为每个运行保留一个 xterm 实例（切换标签只移动 DOM 节点，关闭标签时释放）；只有可见终端使用 WebGL。快捷键在 `terminal-keys.ts`，外观偏好（主题、字号、渲染方式）在 `terminal-prefs.ts`。
 

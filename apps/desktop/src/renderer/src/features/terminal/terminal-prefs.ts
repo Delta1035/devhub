@@ -1,41 +1,23 @@
 import type { ITheme } from '@xterm/xterm'
-import { appearance, type UiStyle } from '@renderer/lib/appearance'
+import { appearance } from '@renderer/lib/appearance'
 
-const colors = (background: string, foreground: string, selection: string): ITheme => ({
+const colors = (
+  background: string,
+  foreground: string,
+  cursor: string,
+  selection: string
+): ITheme => ({
   background,
   foreground,
-  cursor: foreground,
+  cursor,
   cursorAccent: background,
   selectionBackground: selection
 })
 
-/** Terminal colors per design style, matching each style's surfaces. */
-const themes: Record<UiStyle, { light: ITheme; dark: ITheme }> = {
-  neutral: {
-    light: colors('#fafafa', '#27272a', '#bfdbfe'),
-    dark: colors('#18181b', '#e4e4e7', '#3f3f46')
-  },
-  material: {
-    light: colors('#f7f2fa', '#1d1b20', '#eaddff'),
-    dark: colors('#1d1b20', '#e6e0e9', '#4f378b')
-  },
-  fluent: {
-    light: colors('#fbfbfb', '#1a1a1a', '#cce4f7'),
-    dark: colors('#1c1c1c', '#cccccc', '#264f78')
-  },
-  nord: {
-    light: colors('#e5e9f0', '#2e3440', '#d8dee9'),
-    dark: colors('#2e3440', '#d8dee9', '#434c5e')
-  },
-  yaru: {
-    light: colors('#ffffff', '#3d3d3d', '#f6c9b5'),
-    // Ubuntu's classic aubergine terminal.
-    dark: colors('#300a24', '#ffffff', '#5e2750')
-  },
-  terminal: {
-    light: colors('#fbfaf5', '#1c1c1c', '#cde8d2'),
-    dark: colors('#0a0c0a', '#c8dcc8', '#1f3a1f')
-  }
+/** Terminal colors for light and dark modes. */
+const terminalThemes: { light: ITheme; dark: ITheme } = {
+  light: colors('#fbfbfb', '#1a1a1a', '#059669', '#bfdbfe'),
+  dark: colors('#08090c', '#e8ecf2', '#3ed598', '#1a2028')
 }
 
 export const terminalFontFamily =
@@ -63,7 +45,7 @@ const readNumber = (key: string, range: { min: number; max: number }, fallback: 
 
 /** Terminal look shared by every terminal; changes apply to all open terminals at once. */
 export const terminalPrefs = {
-  theme: (): ITheme => themes[appearance.style()][appearance.isDark() ? 'dark' : 'light'],
+  theme: (): ITheme => terminalThemes[appearance.isDark() ? 'dark' : 'light'],
 
   fontSize: (): number => readNumber(fontSizeKey, fontSizeRange, defaultFontSize),
 

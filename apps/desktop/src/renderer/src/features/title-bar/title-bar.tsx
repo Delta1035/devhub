@@ -1,12 +1,18 @@
 import {
+  AlertCircle,
+  AlertTriangle,
   Bell,
+  BellOff,
+  CheckCircle2,
   CodeXml,
   Copy,
+  Info,
   Menu,
   Minus,
   Search,
   Settings as SettingsIcon,
   Square,
+  Trash2,
   X
 } from 'lucide-react'
 import { shell } from '@renderer/api'
@@ -14,6 +20,13 @@ import { Button } from '@renderer/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
 import { useAppInfo } from '@renderer/features/app-info/use-app-info'
 import { UpdateBadge } from '@renderer/features/updates/update-badge'
+import {
+  formatNotificationTime,
+  notify,
+  useNotifications,
+  useUnreadNotificationsCount,
+  type NotificationType
+} from '@renderer/lib/notifications'
 import { cn } from '@renderer/lib/utils'
 import { useWindowState } from './use-window-state'
 
@@ -38,6 +51,8 @@ export function TitleBar({
 }: TitleBarProps): React.JSX.Element {
   const { data: appInfo } = useAppInfo()
   const windowState = useWindowState()
+  const notifications = useNotifications()
+  const unreadCount = useUnreadNotificationsCount()
   const isMac = windowState?.platform === 'darwin'
   // Traffic lights are hidden in full screen, so their space is only kept outside it.
   const trafficLightGap = isMac && !windowState.fullScreen
@@ -92,24 +107,78 @@ export function TitleBar({
         <UpdateBadge />
 
         {/* Notifications Popover */}
-        <Popover>
+        <Popover onOpenChange={(open) => open && notify.markAllAsRead()}>
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
               size="icon-sm"
               aria-label="通知"
-              title="通知"
-              className="text-muted-foreground hover:text-foreground"
+              title={unreadCount > 0 ? `通知 (${unreadCount} 条未读)` : '通知'}
+              className="relative text-muted-foreground hover:text-foreground"
             >
               <Bell className="size-4" />
+              {unreadCount > 0 && (
+                <span
+                  className="absolute top-1.5 right-1.5 size-2 rounded-full bg-destructive ring-2 ring-card"
+                  aria-hidden
+                />
+              )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-64 border-border bg-card p-3 shadow-xl">
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold text-foreground">系统通知</span>
-              <p className="text-[11px] text-muted-foreground">
-                DevHub 服务已就绪，所有模块运行正常。
-              </p>
+          <PopoverContent align="end" className="w-80 border-border bg-card p-0 shadow-xl">
+            <div className="flex items-center justify-between border-b border-border px-3.5 py-2.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-foreground">系统通知</span>
+                {notifications.length > 0 && (
+                  <span className="rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                    {notifications.length}
+                  </span>
+                )}
+              </div>
+              {notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => notify.clear()}
+                  className="flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-destructive cursor-pointer"
+                  title="清空所有通知"
+                >
+                  <Trash2 className="size-3" />
+                  <span>清空</span>
+                </button>
+              )}
+            </div>
+            <div className="max-h-72 divide-y divide-border/50 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
+                  <BellOff className="size-6 stroke-[1.5] text-muted-foreground/60" />
+                  <p className="text-xs">暂无新通知</p>
+                  <span className="text-[10px] text-muted-foreground/60">
+                    运行错误与系统消息将在此汇总
+                  </span>
+                </div>
+              ) : (
+                notifications.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-start gap-2.5 p-3 text-left transition-colors hover:bg-muted/30"
+                  >
+                    <NotificationTypeIcon type={item.type} />
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="truncate text-xs font-medium text-foreground">
+                          {item.title ?? (item.type === 'error' ? '操作失败' : '通知')}
+                        </span>
+                        <span className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
+                          {formatNotificationTime(item.timestamp)}
+                        </span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-muted-foreground break-all">
+                        {item.message}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </PopoverContent>
         </Popover>
@@ -181,4 +250,18 @@ function WindowButtons({ maximized }: { maximized: boolean }): React.JSX.Element
       </button>
     </div>
   )
+}
+
+function NotificationTypeIcon({ type }: { type: NotificationType }): React.JSX.Element {
+  switch (type) {
+    case 'error':
+      return <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-destructive" />
+    case 'warning':
+      return <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warning" />
+    case 'success':
+      return <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-success" />
+    case 'info':
+    default:
+      return <Info className="mt-0.5 size-3.5 shrink-0 text-info" />
+  }
 }

@@ -19,7 +19,6 @@ import {
 import { appearance, type ThemePreference } from '@renderer/lib/appearance'
 import { CustomShellsEditor } from './custom-shells-editor'
 import { RemoteSection } from './remote-section'
-import { StylePicker } from './style-picker'
 import { UpdatesSection } from './updates-section'
 import { NumberSetting, Segmented, SettingRow, SettingsSection } from './settings-controls'
 import { usePreference, useSettings, useUpdateSettings } from './use-settings'
@@ -83,9 +82,9 @@ function AppearanceSection(): React.JSX.Element {
   const theme = usePreference(appearance, appearance.preference)
   return (
     <SettingsSection title="外观">
-      <SettingRow label="主题" description="只影响当前设备">
+      <SettingRow label="模式" description="只影响当前设备">
         <Segmented<ThemePreference>
-          label="主题"
+          label="外观模式"
           value={theme}
           onChange={(value) => appearance.setPreference(value)}
           options={[
@@ -94,9 +93,6 @@ function AppearanceSection(): React.JSX.Element {
             { value: 'dark', label: '深色' }
           ]}
         />
-      </SettingRow>
-      <SettingRow label="风格" description="配色、圆角和字体；终端配色一起切换">
-        <StylePicker />
       </SettingRow>
     </SettingsSection>
   )

@@ -1,7 +1,7 @@
 import { addProjectViaApi, packageJson, test, expect, type DevhubWindow } from './fixtures'
 
 const openSettings = async (page: import('@playwright/test').Page) => {
-  await page.getByRole('button', { name: '设置' }).click()
+  await page.locator('header').getByRole('button', { name: '设置' }).click()
   await expect(page.getByRole('heading', { name: '设置' })).toBeVisible()
 }
 
@@ -13,17 +13,16 @@ test('settings apply at once and survive a restart', async ({ launchDevhub, crea
   await addProjectViaApi(page, dir)
   await openSettings(page)
 
-  // Theme: a fixed choice overrides the OS.
-  await page.getByRole('radio', { name: '深色' }).click()
-  await expect(page.locator('html')).toHaveClass(/dark/)
-
-  // Style: swaps the tokens, so the page background changes with it.
+  // Mode: a fixed choice overrides the OS and swaps background tokens.
   const background = () =>
     page.locator('body').evaluate((body) => getComputedStyle(body).backgroundColor)
-  const neutralBackground = await background()
-  await page.getByRole('radio', { name: 'Material 3' }).click()
-  await expect(page.locator('html')).toHaveAttribute('data-style', 'material')
-  await expect.poll(background).not.toBe(neutralBackground)
+  await page.getByRole('radio', { name: '浅色' }).click()
+  await expect(page.locator('html')).not.toHaveClass(/dark/)
+  const lightBg = await background()
+
+  await page.getByRole('radio', { name: '深色' }).click()
+  await expect(page.locator('html')).toHaveClass(/dark/)
+  await expect.poll(background).not.toBe(lightBg)
 
   // Default shell: pick the last detected one (PowerShell / cmd on Windows, sh… on Linux).
   const shellSelect = page.getByLabel('默认 shell')
@@ -60,7 +59,6 @@ test('settings apply at once and survive a restart', async ({ launchDevhub, crea
   await app.close()
   page = (await launchDevhub()).page
   await expect(page.locator('html')).toHaveClass(/dark/)
-  await expect(page.locator('html')).toHaveAttribute('data-style', 'material')
   await openSettings(page)
   await expect(page.getByLabel('默认 shell')).toHaveValue(chosen)
   await expect(page.getByLabel('停止等待时间')).toHaveValue('9')
@@ -127,7 +125,7 @@ test('a custom shell can be added and opened from the terminal menu', async ({
   await page.getByRole('button', { name: '返回' }).click()
   await page.getByRole('button', { name: '选择终端类型' }).click()
   await page.getByRole('menuitem', { name: 'Node REPL' }).click()
-  await expect(page.getByRole('button', { name: '终端 1', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '终端 1', exact: true }).last()).toBeVisible()
   await expect(page.locator('.xterm-rows')).toContainText('>')
   await page.locator('.xterm').click()
   await page.keyboard.type('6*7')

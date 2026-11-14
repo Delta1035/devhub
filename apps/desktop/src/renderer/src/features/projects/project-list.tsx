@@ -1,8 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDown, FolderPlus, FolderTree } from 'lucide-react'
 import { sortProjects, type Project, type Run, type WorkspaceView } from '@devhub/shared'
 import { access, shell } from '@renderer/api'
-import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
 import {
   DropdownMenu,
@@ -22,6 +21,7 @@ import {
 } from '@renderer/features/workspaces/workspace-display'
 import { WorkspaceSection } from '@renderer/features/workspaces/workspace-section'
 import { WorkspaceSettingsDialog } from '@renderer/features/workspaces/workspace-settings-dialog'
+import { notify } from '@renderer/lib/notifications'
 import { ProjectDetailsDialog, RemoveProjectDialog } from './project-dialogs'
 import { ProjectItem } from './project-item'
 import { useAddProject, useProjects } from './use-projects'
@@ -60,14 +60,13 @@ export function ProjectList({
   const [settingsId, setSettingsId] = useState<string | null>(null)
   // Dialogs are opened from an item (× button or context menu) but live here, once per list.
   const [dialog, setDialog] = useState<ProjectDialog | null>(null)
-  const [actionError, setActionError] = useState<Error | null>(null)
-  const error =
-    projects.error ??
-    workspaces.error ??
-    addProject.error ??
-    addWorkspace.error ??
-    rescan.error ??
-    actionError
+
+  useEffect(() => {
+    const queryError = projects.error ?? workspaces.error ?? rescan.error
+    if (queryError) {
+      notify.error(queryError.message, '项目加载失败')
+    }
+  }, [projects.error, workspaces.error, rescan.error])
 
   const allProjects = projects.data ?? []
   const workspaceList = workspaces.data ?? []
@@ -94,11 +93,20 @@ export function ProjectList({
 
   const handleAddProject = async (): Promise<void> => {
     const path = await shell?.pickDirectory()
-    if (path) addProject.mutate(path, { onSuccess: (project) => onSelect(project.id) })
+    if (path) {
+      addProject.mutate(path, {
+        onSuccess: (project) => onSelect(project.id),
+        onError: (err) => notify.error(err.message, '操作失败')
+      })
+    }
   }
   const handleAddWorkspace = async (): Promise<void> => {
     const path = await shell?.pickDirectory()
-    if (path) addWorkspace.mutate(path)
+    if (path) {
+      addWorkspace.mutate(path, {
+        onError: (err) => notify.error(err.message, '操作失败')
+      })
+    }
   }
 
   const runsOf = (projectId: string): Run[] =>
@@ -123,7 +131,7 @@ export function ProjectList({
       onRemove={() => setDialog({ kind: 'remove', projectId: project.id })}
       onShowDetails={() => setDialog({ kind: 'details', projectId: project.id })}
       onShellStarted={onOpenRun}
-      onError={setActionError}
+      onError={(err) => notify.error(err.message, '操作失败')}
     />
   )
 
@@ -173,13 +181,6 @@ export function ProjectList({
           </DropdownMenu>
         )}
       </header>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertTitle>操作失败</AlertTitle>
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
-      )}
 
       {projects.data?.length === 0 && workspaceList.length === 0 && (
         <p className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">

@@ -48,7 +48,10 @@ export function GlobalSearchDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl p-0 overflow-hidden border-border bg-[#111419] text-[#E8ECF2] shadow-2xl">
+      <DialogContent
+        showCloseButton={false}
+        className="max-w-xl p-0 overflow-hidden border-border bg-[#111419] text-[#E8ECF2] shadow-2xl"
+      >
         <DialogHeader className="sr-only">
           <DialogTitle>全局搜索</DialogTitle>
           <DialogDescription>搜索本地项目、批量任务与脚本</DialogDescription>
@@ -65,9 +68,15 @@ export function GlobalSearchDialog({
             className="flex-1 bg-transparent text-sm text-[#E8ECF2] placeholder:text-[#6F7A8B] outline-none"
             autoFocus
           />
-          <kbd className="rounded border border-[#2D3541] bg-[#111419] px-2 py-0.5 font-mono text-[10px] text-[#8B95A6]">
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={() => onOpenChange(false)}
+            title="关闭 (Esc)"
+            className="cursor-pointer select-none rounded border border-[#2D3541] bg-[#111419] px-2 py-0.5 font-mono text-[10px] text-[#8B95A6] transition-colors hover:border-[#3D4554] hover:text-[#CCD2DC]"
+          >
             ESC
-          </kbd>
+          </button>
         </div>
 
         {/* Results List */}
