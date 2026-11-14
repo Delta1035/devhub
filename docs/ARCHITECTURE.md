@@ -190,7 +190,7 @@ Linux 已打包版本由 `APPIMAGE` 或 electron-builder 写入 `resources/packa
 - 历史由 `core/history/run-history.ts` 串行保存，脚本启动确认前写入运行记录；恢复中断时保留未知结束时间和退出码。`history-log-store.ts` 原子保存每个 runId 的日志，`history-output.ts` 保留最近 512 KB UTF-8 输出。每秒检查点、退出时刷新；记录淘汰或清理时同步移除日志（ADR 0015）。
 - renderer 的运行历史弹层提供清空与查看日志；日志对话框以纯文本显示，旧记录没有日志时显示不可用。移除项目清理其历史，并忽略仍在运行的旧进程之后发来的历史事件；不改变原有进程生命周期。
 
-- `features/groups/group-detail.tsx` 展示任务运行详情，App 管理项目与任务选择；日志入口携带具体 `runId` 切换到项目终端。
+- `features/groups/group-detail.tsx` 展示任务运行详情（包含 `GroupProgressBar` 分段进度条、`GroupStepCard` 步骤时间线卡片与 `GroupOutputPanel` 嵌入式任务输出面板，纯逻辑与时间/条件格式化由 `packages/shared/src/group-format.ts` 提供），App 管理项目与任务选择；日志入口携带具体 `runId` 切换到项目终端。
 - `GroupRunState` 可选保存执行配置快照与每步 `reused` 标志，随最近结果持久化。流程状态与实时 Run / RunHealth 独立，停止使用最近执行配置，兼容旧历史（ADR 0006 补充）。
 - 「正在运行的批量任务」由 shared 的 `activeGroups(states, runs)` 从最近执行状态与实时 Run 推导（执行中，或执行结束但步骤的 `runId` 仍未退出），不新增 API；renderer 经 `features/groups/use-active-groups.ts` 用于侧栏常驻条、「批量」标签、标题栏与脚本行徽标。
 - Windows 使用 NSIS 安装向导，`build/installer.nsh` 的 nsDialogs 目录页在浏览选择时更新输入框、手动输入时预览最终路径，统一规范新选目录为 `devhub` 尾目录，并保留原安装位置及静默升级路径（ADR 0014）。

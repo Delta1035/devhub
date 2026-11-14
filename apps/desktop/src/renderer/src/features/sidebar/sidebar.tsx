@@ -7,6 +7,7 @@ import { ProjectList } from '@renderer/features/projects/project-list'
 import { useProjects } from '@renderer/features/projects/use-projects'
 import { useRuns } from '@renderer/features/runs/use-runs'
 import { cn } from '@renderer/lib/utils'
+import { SidebarBottom } from './sidebar-bottom'
 import { SidebarRunningSection } from './sidebar-running-section'
 
 type SidebarTab = 'projects' | 'groups'
@@ -24,6 +25,7 @@ interface SidebarProps {
   onSelectProject: (projectId: string) => void
   /** Selects the run's project and shows its terminal tab. */
   onOpenRun: (run: Run) => void
+  onToggleSettings?: () => void
 }
 
 /** Projects and batch groups share the sidebar as tabs, with persistent running monitor at the bottom. */
@@ -34,7 +36,8 @@ export function Sidebar({
   selectedProjectId,
   currentProjectId,
   onSelectProject,
-  onOpenRun
+  onOpenRun,
+  onToggleSettings
 }: SidebarProps): React.JSX.Element {
   const [tab, setTab] = useState<SidebarTab>(() =>
     localStorage.getItem(tabKey) === 'groups' ? 'groups' : 'projects'
@@ -100,6 +103,9 @@ export function Sidebar({
         }}
         onOpenRun={onOpenRun}
       />
+
+      {/* Persistent sidebar bottom navigation aligned with prototype */}
+      <SidebarBottom currentTab={tab} onSelectTab={changeTab} onToggleSettings={onToggleSettings} />
     </div>
   )
 }
