@@ -73,12 +73,24 @@ export function GroupList({
   return (
     <section className="flex flex-col gap-3" aria-label="批量任务">
       <header className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
-          {groups.data && `${groups.data.length} 个任务`}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-semibold tracking-wider text-muted-foreground">
+            批量任务
+          </span>
+          {groups.data && (
+            <span className="rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              {groups.data.length}
+            </span>
+          )}
+        </div>
         {access.manage && (
-          <Button size="sm" variant="outline" onClick={() => setEditing(null)}>
-            <Plus data-icon="inline-start" />
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={() => setEditing(null)}
+          >
+            <Plus className="size-3.5" data-icon="inline-start" />
             新建
           </Button>
         )}

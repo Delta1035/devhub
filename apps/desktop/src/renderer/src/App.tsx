@@ -111,7 +111,7 @@ function App(): React.JSX.Element {
           </Sheet>
         ) : (
           <aside
-            className="relative flex shrink-0 flex-col border-r p-3"
+            className="relative flex shrink-0 flex-col border-r border-border bg-sidebar p-3"
             style={{ width: sidebar.width }}
           >
             {sidebarContent}

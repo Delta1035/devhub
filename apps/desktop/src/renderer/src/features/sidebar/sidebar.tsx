@@ -2,10 +2,12 @@ import { useState } from 'react'
 import type { Run } from '@devhub/shared'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { GroupList } from '@renderer/features/groups/group-list'
-import { RunningGroupsBar } from '@renderer/features/groups/running-groups-bar'
 import { describeActiveGroups, useActiveGroups } from '@renderer/features/groups/use-active-groups'
 import { ProjectList } from '@renderer/features/projects/project-list'
+import { useProjects } from '@renderer/features/projects/use-projects'
+import { useRuns } from '@renderer/features/runs/use-runs'
 import { cn } from '@renderer/lib/utils'
+import { SidebarRunningSection } from './sidebar-running-section'
 
 type SidebarTab = 'projects' | 'groups'
 
@@ -24,7 +26,7 @@ interface SidebarProps {
   onOpenRun: (run: Run) => void
 }
 
-/** Projects and batch groups share the sidebar as tabs, so each gets the full height. */
+/** Projects and batch groups share the sidebar as tabs, with persistent running monitor at the bottom. */
 export function Sidebar({
   narrow,
   selectedGroupId,
@@ -38,6 +40,8 @@ export function Sidebar({
     localStorage.getItem(tabKey) === 'groups' ? 'groups' : 'projects'
   )
   const activeGroups = useActiveGroups()
+  const activeRuns = (useRuns().data ?? []).filter((run) => run.status !== 'exited')
+  const projects = useProjects().data ?? []
 
   const changeTab = (value: string): void => {
     const next: SidebarTab = value === 'groups' ? 'groups' : 'projects'
@@ -46,17 +50,9 @@ export function Sidebar({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      {/* Above the tabs, so active groups stay visible while browsing projects. */}
-      <RunningGroupsBar
-        groups={activeGroups}
-        onSelectGroup={(groupId) => {
-          changeTab('groups')
-          onSelectGroup(groupId)
-        }}
-      />
-      <Tabs value={tab} onValueChange={changeTab} className="min-h-0 flex-1 gap-3">
-        <TabsList className="w-full shrink-0">
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <Tabs value={tab} onValueChange={changeTab} className="flex min-h-0 flex-1 flex-col gap-2">
+        <TabsList className="grid w-full grid-cols-2 shrink-0">
           <TabsTrigger value="projects">项目</TabsTrigger>
           <TabsTrigger value="groups">
             批量
@@ -66,7 +62,7 @@ export function Sidebar({
                 aria-label={`正在运行：${describeActiveGroups(activeGroups)}`}
                 title={`正在运行：${describeActiveGroups(activeGroups)}`}
                 className={cn(
-                  'size-1.5 rounded-full',
+                  'ml-1 size-1.5 rounded-full',
                   activeGroups.some((group) => group.phase === 'starting')
                     ? 'animate-pulse bg-info'
                     : 'bg-success'
@@ -75,7 +71,7 @@ export function Sidebar({
             )}
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="projects" className="min-h-0 overflow-y-auto">
+        <TabsContent value="projects" className="min-h-0 flex-1 overflow-y-auto">
           <ProjectList
             narrow={narrow}
             selectedId={selectedProjectId}
@@ -83,7 +79,7 @@ export function Sidebar({
             onOpenRun={onOpenRun}
           />
         </TabsContent>
-        <TabsContent value="groups" className="min-h-0 overflow-y-auto">
+        <TabsContent value="groups" className="min-h-0 flex-1 overflow-y-auto">
           <GroupList
             selectedGroupId={selectedGroupId}
             onSelectGroup={onSelectGroup}
@@ -92,6 +88,18 @@ export function Sidebar({
           />
         </TabsContent>
       </Tabs>
+
+      {/* Active running tasks monitor (runs & batch groups) */}
+      <SidebarRunningSection
+        activeRuns={activeRuns}
+        activeGroups={activeGroups}
+        projects={projects}
+        onSelectGroup={(groupId) => {
+          changeTab('groups')
+          onSelectGroup(groupId)
+        }}
+        onOpenRun={onOpenRun}
+      />
     </div>
   )
 }
