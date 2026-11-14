@@ -1,4 +1,5 @@
 import {
+  Bell,
   CodeXml,
   Copy,
   Menu,
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react'
 import { shell } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
 import { useAppInfo } from '@renderer/features/app-info/use-app-info'
 import { UpdateBadge } from '@renderer/features/updates/update-badge'
 import { cn } from '@renderer/lib/utils'
@@ -18,6 +20,8 @@ import { useWindowState } from './use-window-state'
 interface TitleBarProps {
   showSettings: boolean
   onToggleSettings: () => void
+  /** Opens the search palette dialog. */
+  onOpenSearch?: () => void
   /** Opens the sidebar drawer; only given on narrow screens, where the sidebar is hidden. */
   onOpenNavigation?: () => void
 }
@@ -29,6 +33,7 @@ interface TitleBarProps {
 export function TitleBar({
   showSettings,
   onToggleSettings,
+  onOpenSearch,
   onOpenNavigation
 }: TitleBarProps): React.JSX.Element {
   const { data: appInfo } = useAppInfo()
@@ -70,17 +75,46 @@ export function TitleBar({
       </div>
 
       <div className="app-no-drag mx-auto flex items-center justify-center px-2">
-        <div className="hidden h-[30px] w-[300px] items-center gap-2 rounded-[7px] border border-border bg-secondary/60 px-2.5 text-muted-foreground transition-colors hover:border-border-strong hover:bg-secondary/90 sm:flex">
+        <button
+          type="button"
+          onClick={onOpenSearch}
+          className="hidden h-[30px] w-[300px] cursor-pointer items-center gap-2 rounded-[7px] border border-border bg-secondary/60 px-2.5 text-muted-foreground transition-colors hover:border-border-strong hover:bg-secondary/90 sm:flex"
+        >
           <Search className="size-3.5 shrink-0" />
           <span className="truncate text-[11px] select-none">搜索项目、脚本或运行记录</span>
           <kbd className="ml-auto rounded border border-border bg-background/50 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground select-none">
             Ctrl K
           </kbd>
-        </div>
+        </button>
       </div>
 
       <div className="app-no-drag ml-auto flex items-center gap-1">
         <UpdateBadge />
+
+        {/* Notifications Popover */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="通知"
+              title="通知"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Bell className="size-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-64 border-border bg-card p-3 shadow-xl">
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-foreground">系统通知</span>
+              <p className="text-[11px] text-muted-foreground">
+                DevHub 服务已就绪，所有模块运行正常。
+              </p>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* GitHub link */}
         <Button variant="ghost" size="icon-sm" asChild>
           <a
             href="https://github.com/Delta1035/devhub"
@@ -94,6 +128,8 @@ export function TitleBar({
             </svg>
           </a>
         </Button>
+
+        {/* Settings button */}
         <Button
           variant={showSettings ? 'secondary' : 'ghost'}
           size="icon-sm"
@@ -105,6 +141,7 @@ export function TitleBar({
           <SettingsIcon />
         </Button>
       </div>
+
       {windowState && !isMac && <WindowButtons maximized={windowState.maximized} />}
     </header>
   )

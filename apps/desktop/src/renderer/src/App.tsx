@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetTitle } from '@renderer/components/ui/sheet'
 import { Sidebar } from '@renderer/features/sidebar/sidebar'
 import { SidebarSkeleton } from '@renderer/features/sidebar/sidebar-skeleton'
 import { useResizableWidth } from '@renderer/features/sidebar/use-resizable-width'
+import { GlobalSearchDialog } from '@renderer/features/search/global-search-dialog'
 import { StatusBar } from '@renderer/features/status-bar/status-bar'
 import { TitleBar } from '@renderer/features/title-bar/title-bar'
 import { useWorkspaceEventsSync, useWorkspaces } from '@renderer/features/workspaces/use-workspaces'
@@ -41,6 +42,7 @@ function App(): React.JSX.Element {
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerReady, setDrawerReady] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
 
   // Choosing a project in the sidebar leaves the settings and batch page.
   const selectProject = (projectId: string): void => {
@@ -106,7 +108,14 @@ function App(): React.JSX.Element {
           setShowSettings(!showSettings)
           setDrawerOpen(false)
         }}
+        onOpenSearch={() => setSearchOpen(true)}
         onOpenNavigation={narrow ? () => setDrawerOpen(true) : undefined}
+      />
+      <GlobalSearchDialog
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        onSelectProject={selectProject}
+        onSelectGroup={(groupId) => selectBatch(groupId)}
       />
       <div className="flex min-h-0 flex-1">
         {narrow ? (

@@ -253,6 +253,16 @@ export function RunDetailPanel({
         >
           <FolderOpen className="size-3.5" />
         </Button>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          onClick={handleCopyLog}
+          title={copied ? '已复制日志' : '分享 / 复制日志'}
+          aria-label="分享"
+          className="size-8 text-muted-foreground hover:text-foreground"
+        >
+          {copied ? <Check className="size-3.5 text-primary" /> : <Copy className="size-3.5" />}
+        </Button>
       </footer>
     </aside>
   )

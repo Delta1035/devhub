@@ -39,13 +39,15 @@ export function ProjectDetail({
   const [terminalMaximized, setTerminalMaximized] = useState(false)
 
   const scriptItems = scripts.data?.scripts ?? []
-  const primaryScript =
-    scriptItems.find((s) => /dev|start|serve/.test(s.name.toLowerCase())) ?? scriptItems[0]
 
-  const handleQuickStart = primaryScript
-    ? () => {
+  const handleStartAll = (): void => {
+    scriptItems.forEach((script) => {
+      const isAlreadyRunning = runs.some(
+        (r) => r.kind === 'script' && r.scriptId === script.id && r.status !== 'exited'
+      )
+      if (!isAlreadyRunning) {
         startScript.mutate(
-          { projectId: project.id, scriptId: primaryScript.id },
+          { projectId: project.id, scriptId: script.id },
           {
             onSuccess: (run) => {
               setActiveRunId(run.id)
@@ -53,7 +55,8 @@ export function ProjectDetail({
           }
         )
       }
-    : undefined
+    })
+  }
 
   return (
     <div className="flex h-full flex-col bg-background text-foreground">
@@ -77,7 +80,7 @@ export function ProjectDetail({
         tasksCount={projectBatchTasks.length}
         filterQuery={filterQuery}
         onFilterChange={setFilterQuery}
-        onQuickStart={handleQuickStart}
+        onQuickStart={scriptItems.length > 0 ? handleStartAll : undefined}
         isStarting={startScript.isPending}
       />
 

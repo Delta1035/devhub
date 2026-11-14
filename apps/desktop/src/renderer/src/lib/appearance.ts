@@ -15,7 +15,7 @@ const listeners = new Set<() => void>()
 
 function readPreference(): ThemePreference {
   const stored = localStorage.getItem(themeKey)
-  return stored === 'light' || stored === 'dark' ? stored : 'system'
+  return stored === 'light' || stored === 'dark' ? stored : 'dark'
 }
 
 function readStyle(): UiStyle {
