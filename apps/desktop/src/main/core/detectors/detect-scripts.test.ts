@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Script, ScriptSource } from '@devhub/shared'
-import { detectScripts } from './detect-scripts'
+import { createDefaultDetectors, detectScripts } from './detect-scripts'
 import type { ScriptDetector } from './types'
 
 const script = (source: ScriptSource, name: string): Script => ({
@@ -54,5 +54,10 @@ describe('detectScripts', () => {
   it('stringifies non-Error rejections', async () => {
     const result = await detectScripts('/repo', [detector('npm', () => Promise.reject('boom'))])
     expect(result.warnings).toEqual([{ source: 'npm', message: 'boom' }])
+  })
+
+  it('provides default detectors including go in order', () => {
+    const detectors = createDefaultDetectors('linux')
+    expect(detectors.map((d) => d.source)).toEqual(['custom', 'npm', 'maven', 'gradle', 'go'])
   })
 })

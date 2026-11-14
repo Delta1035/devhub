@@ -64,3 +64,18 @@ test('runs custom scripts from .devhub.yaml and points at mistakes in it', async
   await page.getByRole('button', { name: '刷新' }).click()
   await expect(main.getByText(/自定义：\.devhub\.yaml 第 \d+ 行不是有效的 YAML/)).toBeVisible()
 })
+
+test('lists detected Go scripts and entrypoints', async ({ launchDevhub, createProject }) => {
+  const dir = await createProject('sample-go', {
+    'go.mod': 'module example.com/sample-go\n\ngo 1.22\n',
+    'main.go': 'package main\n\nfunc main() {}\n'
+  })
+  const { page } = await launchDevhub()
+  await addProjectViaApi(page, dir)
+
+  const main = page.locator('main')
+  await expect(main.getByRole('heading', { level: 3, name: 'Go' })).toBeVisible()
+  await expect(main.getByText('go run .', { exact: true })).toBeVisible()
+  await expect(main.getByText('go build ./...')).toBeVisible()
+  await expect(main.getByText('go test ./...')).toBeVisible()
+})

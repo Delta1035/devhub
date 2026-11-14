@@ -7,8 +7,9 @@ import { readOptionalFile } from '../detectors/fs-utils'
  * the rules stay simple: explicit flags first, then well-known dev-server defaults.
  */
 
-// `--port 3000`, `--port=3000`, `-p 3000`, `PORT=3000`.
-const explicitPort = /(?:--port[= ]|(?:^|\s)-p\s+|\bPORT=)(\d{2,5})\b/
+// `--port 3000`, `--port=3000`, `-p 3000`, `PORT=3000`, `-addr :8080`, `-http :8080`, `-listen :8080`.
+const explicitPort =
+  /(?:--(?:port|addr|http|listen)[= ]|(?:^|\s)-(?:p|port|addr|http|listen)[= ]|\bPORT=)(?::|"[^"]*:|'[^']*:)?(\d{2,5})\b/
 
 /** Default ports of dev servers, keyed by the tool and (optionally) its subcommand. */
 const toolDefaults: { tool: string; subcommands?: string[]; port: number }[] = [
@@ -91,4 +92,15 @@ export async function readSpringPort(projectDir: string): Promise<number> {
     if (fromYaml && validPort(Number(fromYaml))) return Number(fromYaml)
   }
   return springDefaultPort
+}
+
+const goServerPort = /(?:ListenAndServe|Run|Listen|Start)\s*\(\s*["'`][^"'`:]*:(\d{2,5})["'`]/
+
+/** Best-effort extraction of an HTTP listen port from Go source code (net/http, Gin, Fiber, Echo). */
+export function parseGoPort(content: string): number | null {
+  const stripped = content.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
+  const match = goServerPort.exec(stripped)
+  if (!match?.[1]) return null
+  const port = Number(match[1])
+  return validPort(port) ? port : null
 }

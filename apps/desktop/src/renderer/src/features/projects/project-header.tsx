@@ -85,6 +85,7 @@ export function ProjectHeader({
       scripts
         .map((s): string | null => {
           const exe = s.command.split(' ')[0]?.toLowerCase()
+          if (s.source === 'go' || exe === 'go' || exe?.endsWith('go.exe')) return 'go'
           if (exe?.includes('pnpm')) return 'pnpm'
           if (exe?.includes('yarn')) return 'yarn'
           if (exe?.includes('npm')) return 'npm'

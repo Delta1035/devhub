@@ -44,6 +44,8 @@ export const projectMarkers: ReadonlySet<string> = new Set([
   'build.gradle.kts',
   'settings.gradle',
   'settings.gradle.kts',
+  'go.mod',
+  'go.work',
   ...configFileNames
 ])
 

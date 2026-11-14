@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { projectConfigSchema, projectSchema, scriptSchema } from './domain'
+import { projectConfigSchema, projectSchema, scriptSchema, scriptSourceSchema } from './domain'
 
 describe('projectSchema', () => {
   const project = {
@@ -80,5 +80,11 @@ describe('projectConfigSchema', () => {
     [{ script: {} }]
   ])('rejects %j', (config) => {
     expect(projectConfigSchema.safeParse(config).success).toBe(false)
+  })
+})
+
+describe('scriptSourceSchema', () => {
+  it.each(['npm', 'maven', 'gradle', 'custom', 'go'])('accepts %s', (source) => {
+    expect(scriptSourceSchema.parse(source)).toBe(source)
   })
 })

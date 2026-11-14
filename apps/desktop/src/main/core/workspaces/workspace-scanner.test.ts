@@ -29,6 +29,8 @@ describe('scanWorkspace', () => {
     await file('gradle-kts', 'build.gradle.kts')
     await file('multi', 'settings.gradle')
     await file('custom', '.devhub.yaml')
+    await file('go-app', 'go.mod')
+    await file('go-work', 'go.work')
     await file('notes', 'README.md')
     await file('group/nested', 'package.json')
 
@@ -36,7 +38,15 @@ describe('scanWorkspace', () => {
 
     expect(result).toEqual({
       status: 'ok',
-      projects: [at('api'), at('custom'), at('gradle-kts'), at('multi'), at('web')],
+      projects: [
+        at('api'),
+        at('custom'),
+        at('go-app'),
+        at('go-work'),
+        at('gradle-kts'),
+        at('multi'),
+        at('web')
+      ],
       complete: true,
       warnings: []
     })

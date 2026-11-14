@@ -126,7 +126,7 @@ Linux 已打包版本由 `APPIMAGE` 或 electron-builder 写入 `resources/packa
 | -------------- | --------------------------------------------------------------------------------------------------- |
 | Project        | 一个被管理的代码目录（已实现，存于 `projects.json`）；由工作区发现的带 `workspaceId`                |
 | Workspace      | 自动发现并同步其中项目的目录：扫描层数、已排除路径；存于 `workspaces.json`（ADR 0018）              |
-| Script         | 可运行命令，来源：npm / maven / gradle / custom                                                     |
+| Script         | 可运行命令，来源：npm / maven / gradle / custom / go                                                |
 | ProjectScripts | 扫描结果：`status`（ok/missing）、脚本、探测器警告                                                  |
 | Group          | 批量任务：跨项目的脚本列表，并行或串行（带继续条件）；存于 `groups.json`                            |
 | Run            | 终端标签里的一个进程：`script`（识别出的脚本）或 `shell`（交互式终端）；状态、PID、退出码           |
