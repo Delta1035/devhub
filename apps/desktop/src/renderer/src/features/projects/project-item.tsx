@@ -1,4 +1,4 @@
-import { FolderGit2, Pin, X } from 'lucide-react'
+import { Database, FolderGit2, Globe, Pin, Server, X } from 'lucide-react'
 import type { Project, Run, WorkspaceView } from '@devhub/shared'
 import { access } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
@@ -6,6 +6,21 @@ import { EditorButtons } from '@renderer/features/editors/editor-buttons'
 import { cn } from '@renderer/lib/utils'
 import { ProjectContextMenu, ProjectMoreMenu, ProjectMoreMenuLazy } from './project-menu'
 import { useProjectMenuActions } from './use-project-menu-actions'
+
+function ProjectIcon({
+  projectName,
+  className
+}: {
+  projectName: string
+  className?: string
+}): React.JSX.Element {
+  const name = projectName.toLowerCase()
+  if (/web|ui|client|front|app|site|portal|view/.test(name)) return <Globe className={className} />
+  if (/api|server|service|back|gateway|daemon/.test(name)) return <Server className={className} />
+  if (/db|data|sql|cache|store|redis|postgres|mongo/.test(name))
+    return <Database className={className} />
+  return <FolderGit2 className={className} />
+}
 
 interface ProjectItemProps {
   narrow: boolean
@@ -43,7 +58,12 @@ function NarrowProjectItem({
   onError
 }: ProjectItemProps): React.JSX.Element {
   return (
-    <li className={cn('flex items-center gap-1 rounded-lg pr-1', selected && 'bg-muted')}>
+    <li
+      className={cn(
+        'flex items-center gap-1 rounded-lg pr-1 transition-colors',
+        selected ? 'bg-secondary' : 'hover:bg-muted/50'
+      )}
+    >
       <ProjectButton
         project={project}
         subtitle={subtitle}
@@ -83,8 +103,8 @@ function DesktopProjectItem({
   const item = (
     <li
       className={cn(
-        'group flex items-center gap-1 rounded-lg pr-1 hover:bg-muted',
-        selected && 'bg-muted'
+        'group flex items-center gap-1 rounded-lg pr-1 transition-colors',
+        selected ? 'bg-secondary' : 'hover:bg-muted/60'
       )}
     >
       <ProjectButton
@@ -94,26 +114,26 @@ function DesktopProjectItem({
         activeRuns={activeRuns}
         onChoose={onSelect}
       />
-      <EditorButtons
-        projectId={project.id}
-        projectName={project.name}
-        variant="icon"
-        onError={onError}
-        className="opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"
-      />
-      <ProjectMoreMenu {...menu} />
-      {access.manage && (
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={onRemove}
-          title={removeTitle}
-          aria-label={`移除 ${project.name}`}
-          className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-        >
-          <X />
-        </Button>
-      )}
+      <div className="flex shrink-0 items-center opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+        <EditorButtons
+          projectId={project.id}
+          projectName={project.name}
+          variant="icon"
+          onError={onError}
+        />
+        <ProjectMoreMenu {...menu} />
+        {access.manage && (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={onRemove}
+            title={removeTitle}
+            aria-label={`移除 ${project.name}`}
+          >
+            <X className="size-3.5" />
+          </Button>
+        )}
+      </div>
     </li>
   )
   return <ProjectContextMenu {...menu}>{item}</ProjectContextMenu>
@@ -129,27 +149,49 @@ function ProjectButton({
 }: Pick<ProjectItemProps, 'project' | 'subtitle' | 'selected' | 'activeRuns'> & {
   onChoose: () => void
 } & Omit<React.ComponentProps<'button'>, 'onSelect'>): React.JSX.Element {
+  const isRunning = activeRuns.length > 0
+
   return (
     <button
       {...buttonProps}
       type="button"
       onClick={onChoose}
       aria-current={selected ? 'true' : undefined}
-      className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="group/btn flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2.5 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <FolderGit2 className="size-4 shrink-0 text-muted-foreground" />
-      <span className="min-w-0">
+      <div
+        className={cn(
+          'flex size-7 shrink-0 items-center justify-center rounded-md transition-colors',
+          selected
+            ? 'bg-primary/15 text-primary'
+            : isRunning
+              ? 'bg-success/15 text-success'
+              : 'bg-muted/80 text-muted-foreground group-hover/btn:text-foreground'
+        )}
+      >
+        <ProjectIcon projectName={project.name} className="size-3.5" />
+      </div>
+      <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
-          <span className="truncate text-sm font-medium">{project.name}</span>
+          <span
+            className={cn(
+              'truncate text-[13px] font-semibold',
+              selected ? 'text-foreground' : 'text-foreground/90'
+            )}
+          >
+            {project.name}
+          </span>
           {project.pinnedAt && (
             <Pin className="size-3 shrink-0 text-muted-foreground" aria-label="已置顶" />
           )}
-          <ActiveRunsIndicator runs={activeRuns} />
         </span>
         {subtitle !== project.name && (
-          <span className="block truncate text-xs text-muted-foreground">{subtitle}</span>
+          <span className="block truncate font-mono text-[10px] text-muted-foreground">
+            {subtitle}
+          </span>
         )}
       </span>
+      <ActiveRunsIndicator runs={activeRuns} />
     </button>
   )
 }
@@ -163,8 +205,8 @@ export function ActiveRunsIndicator({ runs }: { runs: Run[] }): React.JSX.Elemen
       role="status"
       aria-label={`${runs.length} 个活动终端`}
       className={cn(
-        'flex shrink-0 items-center gap-1 text-[11px] font-medium tabular-nums',
-        stopping ? 'text-warning' : 'text-success'
+        'ml-auto flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[10px] font-medium transition-colors',
+        stopping ? 'bg-warning/15 text-warning' : 'bg-success/15 text-success'
       )}
     >
       <span
@@ -173,7 +215,7 @@ export function ActiveRunsIndicator({ runs }: { runs: Run[] }): React.JSX.Elemen
           stopping ? 'animate-pulse bg-warning' : 'bg-success'
         )}
       />
-      {runs.length}
+      {runs.length === 1 ? '运行中' : runs.length}
     </span>
   )
 }

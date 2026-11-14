@@ -130,16 +130,26 @@ export function ProjectList({
   return (
     <section className="flex flex-col gap-3">
       <header className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
-          {projects.data && `${projects.data.length} 个项目`}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-semibold tracking-wider text-muted-foreground">项目</span>
+          {projects.data && (
+            <span className="rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              {projects.data.length}
+            </span>
+          )}
+        </div>
         {shell && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" disabled={addProject.isPending || addWorkspace.isPending}>
-                <FolderPlus data-icon="inline-start" />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={addProject.isPending || addWorkspace.isPending}
+                className="h-7 gap-1 px-2 text-xs"
+              >
+                <FolderPlus className="size-3.5" data-icon="inline-start" />
                 添加
-                <ChevronDown data-icon="inline-end" />
+                <ChevronDown className="size-3 text-muted-foreground" data-icon="inline-end" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-56">
@@ -202,7 +212,9 @@ export function ProjectList({
       {standalone.length > 0 && (
         <section aria-label="独立项目" className="flex flex-col gap-1">
           {workspaceList.length > 0 && (
-            <h3 className="px-1 py-1 text-xs font-medium text-muted-foreground">独立项目</h3>
+            <h3 className="px-1 py-1 text-[11px] font-semibold tracking-wider text-muted-foreground">
+              独立项目
+            </h3>
           )}
           <ul className="flex flex-col gap-1">
             {standalone.map((project) => renderItem(project))}
