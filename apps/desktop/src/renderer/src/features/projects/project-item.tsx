@@ -1,21 +1,18 @@
-import { useRef, useState } from 'react'
 import { FolderGit2, Pin, X } from 'lucide-react'
 import type { Project, Run, WorkspaceView } from '@devhub/shared'
 import { access } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@renderer/components/ui/hover-card'
 import { EditorButtons } from '@renderer/features/editors/editor-buttons'
 import { cn } from '@renderer/lib/utils'
 import { ProjectContextMenu, ProjectMoreMenu, ProjectMoreMenuLazy } from './project-menu'
 import { useProjectMenuActions } from './use-project-menu-actions'
-import { ProjectSummary } from './project-summary'
 
 interface ProjectItemProps {
   narrow: boolean
   project: Project
   /** The workspace that discovered the project; absent for projects added by hand. */
   workspace?: WorkspaceView
-  /** Second line; the full path is in the hover card. */
+  /** Second line; relative to workspace when inside one, else full path. */
   subtitle: string
   selected: boolean
   /** Scripts and shells of this project that have not exited. */
@@ -67,7 +64,6 @@ function NarrowProjectItem({
 
 function DesktopProjectItem({
   project,
-  workspace,
   subtitle,
   selected,
   activeRuns,
@@ -78,22 +74,11 @@ function DesktopProjectItem({
   onShellStarted,
   onError
 }: ProjectItemProps): React.JSX.Element {
-  const [hoverOpen, setHoverOpen] = useState(false)
-  // The pointer is still over the item while its context menu is open; the card would cover it.
-  const [menuOpen, setMenuOpen] = useState(false)
-  // Radix also opens the card on focus, and menus and dialogs hand focus back to the item
-  // they were opened from: another item's card then popped up over the next menu or dialog.
-  // The card is a hover preview (the context menu has 显示详情), so only the pointer opens it.
-  const pointerOver = useRef(false)
   const menu = {
     project,
     actions: useProjectMenuActions(project, { onShellStarted, onError }),
     onShowDetails,
-    onRemove,
-    onOpenChange: (open: boolean) => {
-      setMenuOpen(open)
-      setHoverOpen(false)
-    }
+    onRemove
   }
   const item = (
     <li
@@ -102,28 +87,13 @@ function DesktopProjectItem({
         selected && 'bg-muted'
       )}
     >
-      <HoverCard
-        open={hoverOpen && !menuOpen}
-        onOpenChange={(open) => setHoverOpen(open && pointerOver.current)}
-        openDelay={600}
-        closeDelay={100}
-      >
-        <HoverCardTrigger asChild>
-          <ProjectButton
-            project={project}
-            subtitle={subtitle}
-            selected={selected}
-            activeRuns={activeRuns}
-            onChoose={onSelect}
-            onPointerEnter={() => (pointerOver.current = true)}
-            onPointerLeave={() => (pointerOver.current = false)}
-          />
-        </HoverCardTrigger>
-        <HoverCardContent side="right" align="start" className="w-80">
-          <ProjectSummary project={project} workspace={workspace} activeRuns={activeRuns} />
-          <p className="mt-2 text-[11px] text-muted-foreground">右键查看更多操作</p>
-        </HoverCardContent>
-      </HoverCard>
+      <ProjectButton
+        project={project}
+        subtitle={subtitle}
+        selected={selected}
+        activeRuns={activeRuns}
+        onChoose={onSelect}
+      />
       <EditorButtons
         projectId={project.id}
         projectName={project.name}

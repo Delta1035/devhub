@@ -1,6 +1,6 @@
 import { addProjectViaApi, packageJson, test, expect } from './fixtures'
 
-test('project hover details, context menu actions and a resizable sidebar', async ({
+test('project item actions, context menu and a resizable sidebar', async ({
   launchDevhub,
   createProject
 }) => {
@@ -11,19 +11,10 @@ test('project hover details, context menu actions and a resizable sidebar', asyn
   await addProjectViaApi(page, dir)
   const item = page.locator('aside').getByRole('button', { name: /^a-project-with/ })
 
-  // Hovering shows the details card.
+  // Hovering does not open a hover card (removed to prevent visual distraction).
   await item.hover()
-  const card = page.locator('[data-slot="hover-card-content"]')
-  await expect(card).toContainText(dir)
-  await expect(card).toContainText('手动添加')
-  await expect(card).toContainText('2 个（npm 2）')
-  await page.mouse.move(600, 400)
-  await expect(card).toBeHidden()
-  // Focus alone does not open it: menus and dialogs return focus to the item they came from,
-  // and a card opening then covered the next menu (seen on Linux).
-  await item.focus()
-  await page.waitForTimeout(1000)
-  await expect(card).toBeHidden()
+  await page.waitForTimeout(700)
+  await expect(page.locator('[data-slot="hover-card-content"]')).toHaveCount(0)
 
   // Context menu → details dialog.
   await item.click({ button: 'right' })
