@@ -1,4 +1,13 @@
-import { Copy, Menu, Minus, Settings as SettingsIcon, Square, X } from 'lucide-react'
+import {
+  CodeXml,
+  Copy,
+  Menu,
+  Minus,
+  Search,
+  Settings as SettingsIcon,
+  Square,
+  X
+} from 'lucide-react'
 import { shell } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
 import { useAppInfo } from '@renderer/features/app-info/use-app-info'
@@ -31,7 +40,7 @@ export function TitleBar({
   return (
     <header
       className={cn(
-        'app-drag flex h-10 shrink-0 items-center gap-2 border-b pl-3',
+        'app-drag flex h-[46px] shrink-0 items-center gap-2.5 border-b border-border bg-card px-3',
         trafficLightGap && 'pl-20',
         (isMac || !windowState) && 'pr-3'
       )}
@@ -48,9 +57,28 @@ export function TitleBar({
           <Menu />
         </Button>
       )}
-      <img src="./favicon.svg" alt="" className="size-5" draggable={false} />
-      <h1 className="font-heading text-sm font-semibold">DevHub</h1>
-      {appInfo && <span className="text-xs text-muted-foreground">v{appInfo.version}</span>}
+      <div className="app-no-drag flex items-center gap-2">
+        <div className="flex size-6 shrink-0 items-center justify-center rounded-[7px] bg-primary text-primary-foreground shadow-xs">
+          <CodeXml className="size-3.5 stroke-[2.5]" />
+        </div>
+        <h1 className="font-heading text-[13px] font-semibold tracking-tight text-foreground">
+          DevHub
+        </h1>
+        {appInfo && (
+          <span className="font-mono text-[10px] text-muted-foreground/80">v{appInfo.version}</span>
+        )}
+      </div>
+
+      <div className="app-no-drag mx-auto flex items-center justify-center px-2">
+        <div className="hidden h-[30px] w-[300px] items-center gap-2 rounded-[7px] border border-border bg-secondary/60 px-2.5 text-muted-foreground transition-colors hover:border-border-strong hover:bg-secondary/90 sm:flex">
+          <Search className="size-3.5 shrink-0" />
+          <span className="truncate text-[11px] select-none">搜索项目、脚本或运行记录</span>
+          <kbd className="ml-auto rounded border border-border bg-background/50 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground select-none">
+            Ctrl K
+          </kbd>
+        </div>
+      </div>
+
       <div className="app-no-drag ml-auto flex items-center gap-1">
         <UpdateBadge />
         <Button variant="ghost" size="icon-sm" asChild>
@@ -61,7 +89,7 @@ export function TitleBar({
             aria-label="DevHub GitHub 仓库"
             title="DevHub GitHub 仓库"
           >
-            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" className="size-4">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.65 7.65 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8" />
             </svg>
           </a>
@@ -84,9 +112,9 @@ export function TitleBar({
 
 function WindowButtons({ maximized }: { maximized: boolean }): React.JSX.Element {
   const button =
-    'app-no-drag flex h-10 w-[46px] items-center justify-center text-foreground/80 transition-colors'
+    'app-no-drag flex h-[46px] w-[46px] items-center justify-center text-foreground/80 transition-colors'
   return (
-    <div className="ml-2 flex self-stretch">
+    <div className="ml-2 -my-2 flex self-stretch">
       <button
         type="button"
         className={cn(button, 'hover:bg-accent')}
