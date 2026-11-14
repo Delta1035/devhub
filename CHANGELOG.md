@@ -4,6 +4,28 @@ User-facing changes in each DevHub release. `pnpm release` generates each sectio
 Conventional Commits since the previous tag (`scripts/changelog.mjs`), and the Release workflow
 uses it as the GitHub Release notes.
 
+## v1.10.0 - 2026-11-14
+
+### Features
+
+- **core:** 支持 Python 语言项目环境嗅探与脚本管理 (Closes #116) (8ce5307)
+- **core:** 支持 Go 语言项目工作区识别、多入口脚本探测与生命周期管理 (Closes #115) (92ecb93)
+- **renderer:** 统一全局消息通知中心、精简外观模式与基于主题翠绿焕新软件图标 (9245f1b)
+- **renderer:** 全局统一滚动条样式（对齐暗色科技原型设计） (Closes #112) (#113) (1717001)
+- **desktop:** 补齐项目设置分栏视图、脚本端口交互与全页面按钮交互反馈 (Closes #110) (#111) (13bc837)
+- 对齐原型科技暗色主题并支持浏览器模式测试 (#109) (e921cd1)
+- 对齐项目工作区与双栏运行历史面板（对齐画板 eM1tc 与 G3SBfh） (#107) (3be0002)
+- 重构主工作区路由与落地两栏式批量任务中心（对齐画板 vQtHE） (#105) (0240fcc)
+- **project:** 重构运行历史与项目设置面板对齐原型设计 (#103) (240d0a7)
+- **groups:** 重构批量任务主面板与步骤时间线对齐原型设计 (#101) (153a5b2)
+- **workspace:** redesign project detail and terminal panel with tabs and command bar (#99) (47fc58f)
+- **sidebar:** redesign project sidebar with modern cards and active runs monitor (#97) (945612f)
+- **desktop:** 重构全局布局骨架与现代顶底栏 (b988964)
+
+### Fixes
+
+- **desktop:** 移除项目条目悬浮详情卡片避免遮挡 (639ccb9)
+
 ## v1.9.0 - 2026-11-10
 
 ### Features
