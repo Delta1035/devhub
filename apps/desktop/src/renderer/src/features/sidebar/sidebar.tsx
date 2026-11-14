@@ -16,6 +16,8 @@ const tabKey = 'devhub.sidebarTab'
 
 interface SidebarProps {
   narrow: boolean
+  activeTab?: SidebarTab
+  onTabChange?: (tab: SidebarTab) => void
   selectedGroupId: string | null
   onSelectGroup: (groupId: string) => void
   /** Highlighted project; null while the settings page is open. */
@@ -31,6 +33,8 @@ interface SidebarProps {
 /** Projects and batch groups share the sidebar as tabs, with persistent running monitor at the bottom. */
 export function Sidebar({
   narrow,
+  activeTab,
+  onTabChange,
   selectedGroupId,
   onSelectGroup,
   selectedProjectId,
@@ -39,17 +43,19 @@ export function Sidebar({
   onOpenRun,
   onToggleSettings
 }: SidebarProps): React.JSX.Element {
-  const [tab, setTab] = useState<SidebarTab>(() =>
+  const [internalTab, setInternalTab] = useState<SidebarTab>(() =>
     localStorage.getItem(tabKey) === 'groups' ? 'groups' : 'projects'
   )
+  const tab = activeTab ?? internalTab
   const activeGroups = useActiveGroups()
   const activeRuns = (useRuns().data ?? []).filter((run) => run.status !== 'exited')
   const projects = useProjects().data ?? []
 
   const changeTab = (value: string): void => {
     const next: SidebarTab = value === 'groups' ? 'groups' : 'projects'
-    setTab(next)
+    setInternalTab(next)
     localStorage.setItem(tabKey, next)
+    onTabChange?.(next)
   }
 
   return (
@@ -83,12 +89,21 @@ export function Sidebar({
           />
         </TabsContent>
         <TabsContent value="groups" className="min-h-0 flex-1 overflow-y-auto">
-          <GroupList
-            selectedGroupId={selectedGroupId}
-            onSelectGroup={onSelectGroup}
-            selectedProjectId={currentProjectId}
-            onSelectProject={onSelectProject}
-          />
+          {narrow ? (
+            <GroupList
+              selectedGroupId={selectedGroupId}
+              onSelectGroup={onSelectGroup}
+              selectedProjectId={currentProjectId}
+              onSelectProject={onSelectProject}
+            />
+          ) : (
+            <ProjectList
+              narrow={narrow}
+              selectedId={selectedProjectId}
+              onSelect={onSelectProject}
+              onOpenRun={onOpenRun}
+            />
+          )}
         </TabsContent>
       </Tabs>
 
