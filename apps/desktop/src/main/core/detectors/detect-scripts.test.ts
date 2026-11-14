@@ -56,8 +56,15 @@ describe('detectScripts', () => {
     expect(result.warnings).toEqual([{ source: 'npm', message: 'boom' }])
   })
 
-  it('provides default detectors including go in order', () => {
+  it('provides default detectors including go and python in order', () => {
     const detectors = createDefaultDetectors('linux')
-    expect(detectors.map((d) => d.source)).toEqual(['custom', 'npm', 'maven', 'gradle', 'go'])
+    expect(detectors.map((d) => d.source)).toEqual([
+      'custom',
+      'npm',
+      'maven',
+      'gradle',
+      'go',
+      'python'
+    ])
   })
 })

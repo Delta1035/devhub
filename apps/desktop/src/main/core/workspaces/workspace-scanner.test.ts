@@ -31,6 +31,8 @@ describe('scanWorkspace', () => {
     await file('custom', '.devhub.yaml')
     await file('go-app', 'go.mod')
     await file('go-work', 'go.work')
+    await file('py-app', 'pyproject.toml')
+    await file('py-reqs', 'requirements.txt')
     await file('notes', 'README.md')
     await file('group/nested', 'package.json')
 
@@ -45,6 +47,8 @@ describe('scanWorkspace', () => {
         at('go-work'),
         at('gradle-kts'),
         at('multi'),
+        at('py-app'),
+        at('py-reqs'),
         at('web')
       ],
       complete: true,
@@ -74,7 +78,17 @@ describe('scanWorkspace', () => {
   })
 
   it('skips hidden, dependency and build output directories', async () => {
-    for (const name of ['.git', '.idea', 'node_modules', 'Target', 'build', 'dist', 'out']) {
+    for (const name of [
+      '.git',
+      '.idea',
+      'node_modules',
+      'Target',
+      'build',
+      'dist',
+      'out',
+      'venv',
+      'site-packages'
+    ]) {
       await file(join(name, 'inner'), 'package.json')
     }
     await file('real/inner', 'package.json')

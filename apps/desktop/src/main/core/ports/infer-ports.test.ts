@@ -30,7 +30,13 @@ describe('inferNpmPorts', () => {
     ['go run . -addr=:8081', [8081]],
     ['go run ./cmd/server -http :9000', [9000]],
     ['go run main.go -port 8888', [8888]],
-    ['go run . -addr "127.0.0.1:3000"', [3000]]
+    ['go run . -addr "127.0.0.1:3000"', [3000]],
+    ['uvicorn main:app --reload', [8000]],
+    ['uvicorn main:app --port 8088', [8088]],
+    ['python manage.py runserver', [8000]],
+    ['python manage.py runserver 9000', [9000]],
+    ['flask run', [5000]],
+    ['streamlit run app.py', [8501]]
   ])('%s → %o', (body, ports) => {
     expect(inferNpmPorts(body)).toEqual(ports)
   })

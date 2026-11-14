@@ -46,6 +46,11 @@ export const projectMarkers: ReadonlySet<string> = new Set([
   'settings.gradle.kts',
   'go.mod',
   'go.work',
+  'pyproject.toml',
+  'requirements.txt',
+  'Pipfile',
+  'setup.py',
+  'manage.py',
   ...configFileNames
 ])
 
@@ -57,6 +62,10 @@ const skippedDirectories: ReadonlySet<string> = new Set([
   'dist',
   'out',
   'vendor',
+  'venv',
+  'env',
+  '__pycache__',
+  'site-packages',
   '$recycle.bin',
   'system volume information'
 ])

@@ -79,3 +79,23 @@ test('lists detected Go scripts and entrypoints', async ({ launchDevhub, createP
   await expect(main.getByText('go build ./...')).toBeVisible()
   await expect(main.getByText('go test ./...')).toBeVisible()
 })
+
+test('lists detected Python scripts and entrypoints', async ({ launchDevhub, createProject }) => {
+  const dir = await createProject('sample-py', {
+    'pyproject.toml': [
+      '[project]',
+      'name = "sample-py"',
+      '',
+      '[project.scripts]',
+      'my-cli = "sample.cli:main"'
+    ].join('\n'),
+    'main.py': 'print("hello")\n'
+  })
+  const { page } = await launchDevhub()
+  await addProjectViaApi(page, dir)
+
+  const main = page.locator('main')
+  await expect(main.getByRole('heading', { level: 3, name: 'Python' })).toBeVisible()
+  await expect(main.getByText('my-cli')).toBeVisible()
+  await expect(main.getByText('run', { exact: true })).toBeVisible()
+})

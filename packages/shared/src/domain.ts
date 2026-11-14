@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { healthPathSchema } from './health'
 
 /** Where a script was discovered. Each source maps to one detector in the desktop main process. */
-export const scriptSourceSchema = z.enum(['npm', 'maven', 'gradle', 'custom', 'go'])
+export const scriptSourceSchema = z.enum(['npm', 'maven', 'gradle', 'custom', 'go', 'python'])
 export type ScriptSource = z.infer<typeof scriptSourceSchema>
 
 /** Whether starting a script may stop processes that already listen on its ports. */

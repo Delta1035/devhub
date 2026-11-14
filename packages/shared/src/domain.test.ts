@@ -84,7 +84,7 @@ describe('projectConfigSchema', () => {
 })
 
 describe('scriptSourceSchema', () => {
-  it.each(['npm', 'maven', 'gradle', 'custom', 'go'])('accepts %s', (source) => {
+  it.each(['npm', 'maven', 'gradle', 'custom', 'go', 'python'])('accepts %s', (source) => {
     expect(scriptSourceSchema.parse(source)).toBe(source)
   })
 })

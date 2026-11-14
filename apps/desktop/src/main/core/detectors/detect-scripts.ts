@@ -4,6 +4,7 @@ import { createGradleDetector } from './gradle-detector'
 import { createMavenDetector } from './maven-detector'
 import { goDetector } from './go-detector'
 import { npmDetector } from './npm-detector'
+import { createPythonDetector } from './python-detector'
 import type { ScriptDetector } from './types'
 
 /** All built-in detectors. Order here is the order scripts are listed in. */
@@ -13,7 +14,8 @@ export const createDefaultDetectors = (platform: NodeJS.Platform): ScriptDetecto
   npmDetector,
   createMavenDetector({ platform }),
   createGradleDetector({ platform }),
-  goDetector
+  goDetector,
+  createPythonDetector({ platform })
 ]
 
 export interface DetectionResult {

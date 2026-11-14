@@ -23,8 +23,16 @@ const toolDefaults: { tool: string; subcommands?: string[]; port: number }[] = [
   { tool: 'webpack', subcommands: ['serve'], port: 8080 },
   { tool: 'webpack-dev-server', port: 8080 },
   { tool: 'ng', subcommands: ['serve'], port: 4200 },
-  { tool: 'astro', subcommands: ['dev', 'preview'], port: 4321 }
+  { tool: 'astro', subcommands: ['dev', 'preview'], port: 4321 },
+  { tool: 'uvicorn', port: 8000 },
+  { tool: 'gunicorn', port: 8000 },
+  { tool: 'flask', subcommands: ['', 'run'], port: 5000 },
+  { tool: 'streamlit', subcommands: ['', 'run'], port: 8501 },
+  { tool: 'gradio', port: 7860 },
+  { tool: 'manage.py', subcommands: ['runserver'], port: 8000 }
 ]
+
+const djangoRunserver = /\bmanage\.py\s+runserver\s+(?:[^\s:]*:)?(\d{2,5})\b/
 
 const validPort = (port: number): boolean => Number.isInteger(port) && port >= 1 && port <= 65535
 
@@ -38,9 +46,14 @@ export function inferNpmPorts(body: string): number[] {
       ports.add(Number(explicit[1]))
       continue
     }
+    const django = djangoRunserver.exec(segment)
+    if (django?.[1] && validPort(Number(django[1]))) {
+      ports.add(Number(django[1]))
+      continue
+    }
     const words = segment.trim().split(/\s+/)
     for (const [index, word] of words.entries()) {
-      const tool = word.split('/').pop() ?? word // node_modules/.bin/vite → vite
+      const tool = word.split(/[/\\]/).pop() ?? word // node_modules/.bin/vite → vite
       const subcommand = words[index + 1]?.startsWith('-') ? '' : (words[index + 1] ?? '')
       const match = toolDefaults.find(
         (entry) =>

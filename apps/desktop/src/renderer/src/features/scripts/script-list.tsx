@@ -128,7 +128,8 @@ export function ScriptList({
       {items.length === 0 && warnings.length === 0 && (
         <p className="rounded-lg border border-dashed border-border/80 p-8 text-center text-sm text-muted-foreground">
           没有识别到脚本。目前支持 package.json（npm / pnpm / yarn）、pom.xml（Maven）、
-          build.gradle（Gradle）、go.mod（Go），以及项目根目录的 .devhub.yaml（自定义脚本）。
+          build.gradle（Gradle）、go.mod（Go）、pyproject.toml /
+          requirements.txt（Python），以及项目根目录的 .devhub.yaml（自定义脚本）。
         </p>
       )}
 

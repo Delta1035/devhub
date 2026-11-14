@@ -86,6 +86,13 @@ export function ProjectHeader({
         .map((s): string | null => {
           const exe = s.command.split(' ')[0]?.toLowerCase()
           if (s.source === 'go' || exe === 'go' || exe?.endsWith('go.exe')) return 'go'
+          if (s.source === 'python') {
+            if (exe?.includes('uv')) return 'uv'
+            if (exe?.includes('poetry')) return 'poetry'
+            if (exe?.includes('pdm')) return 'pdm'
+            if (exe?.includes('pipenv')) return 'pipenv'
+            return 'python'
+          }
           if (exe?.includes('pnpm')) return 'pnpm'
           if (exe?.includes('yarn')) return 'yarn'
           if (exe?.includes('npm')) return 'npm'

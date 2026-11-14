@@ -5,5 +5,6 @@ export const sourceLabels: Record<ScriptSource, string> = {
   maven: 'Maven',
   gradle: 'Gradle',
   go: 'Go',
+  python: 'Python',
   custom: '自定义'
 }
