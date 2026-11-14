@@ -1,8 +1,8 @@
 import { lazy, Suspense, useState } from 'react'
 import { sortProjects, type Run } from '@devhub/shared'
 import { ProjectDetail } from '@renderer/features/projects/project-detail'
-import { GroupDetail } from '@renderer/features/groups/group-detail'
-import { useGroups, useGroupEventsSync } from '@renderer/features/groups/use-groups'
+import { BatchWorkspace } from '@renderer/features/groups/batch-workspace'
+import { useGroupEventsSync } from '@renderer/features/groups/use-groups'
 import { useProjects } from '@renderer/features/projects/use-projects'
 import { OrphansBanner } from '@renderer/features/runs/orphans-banner'
 import { useRunEventsSync, useRuns } from '@renderer/features/runs/use-runs'
@@ -31,6 +31,7 @@ function App(): React.JSX.Element {
   const { data: runs } = useRuns()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [activeView, setActiveView] = useState<'project' | 'batch'>('project')
   // Long project names stay readable when the sidebar is widened (default = Tailwind w-64).
   const sidebar = useResizableWidth('devhub.sidebarWidth', 256, 200)
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
@@ -40,16 +41,25 @@ function App(): React.JSX.Element {
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerReady, setDrawerReady] = useState(false)
-  const groups = useGroups().data ?? []
-  const selectedGroup = groups.find((group) => group.id === selectedGroupId)
-  // Choosing a project in the sidebar leaves the settings page.
+
+  // Choosing a project in the sidebar leaves the settings and batch page.
   const selectProject = (projectId: string): void => {
     setSelectedId(projectId)
     setSelectedGroupId(null)
     setRequestedRunId(null)
     setShowSettings(false)
     setDrawerOpen(false)
+    setActiveView('project')
   }
+
+  // Choosing batch tasks or a group switches to batch workspace.
+  const selectBatch = (groupId?: string | null): void => {
+    setActiveView('batch')
+    if (groupId) setSelectedGroupId(groupId)
+    setShowSettings(false)
+    setDrawerOpen(false)
+  }
+
   // Shows a specific run's terminal tab, e.g. a group step's log or a shell opened from the list.
   const openRun = (run: Run): void => {
     selectProject(run.projectId)
@@ -69,13 +79,14 @@ function App(): React.JSX.Element {
   const sidebarContent = (
     <Sidebar
       narrow={narrow}
-      selectedGroupId={showSettings ? null : selectedGroupId}
-      onSelectGroup={(groupId) => {
-        setSelectedGroupId(groupId)
-        setShowSettings(false)
-        setDrawerOpen(false)
+      activeTab={activeView === 'batch' ? 'groups' : 'projects'}
+      onTabChange={(tab) => {
+        if (tab === 'groups') selectBatch()
+        else setActiveView('project')
       }}
-      selectedProjectId={showSettings || selectedGroup ? null : (selected?.id ?? null)}
+      selectedGroupId={showSettings ? null : selectedGroupId}
+      onSelectGroup={(groupId) => selectBatch(groupId)}
+      selectedProjectId={showSettings || activeView === 'batch' ? null : (selected?.id ?? null)}
       currentProjectId={selected?.id ?? null}
       onSelectProject={selectProject}
       onOpenRun={openRun}
@@ -138,8 +149,12 @@ function App(): React.JSX.Element {
               <Suspense>
                 <SettingsPage onClose={() => setShowSettings(false)} />
               </Suspense>
-            ) : selectedGroup ? (
-              <GroupDetail key={selectedGroup.id} group={selectedGroup} onOpenRun={openRun} />
+            ) : activeView === 'batch' || selectedGroupId ? (
+              <BatchWorkspace
+                selectedGroupId={selectedGroupId}
+                onSelectGroup={(groupId) => setSelectedGroupId(groupId)}
+                onOpenRun={openRun}
+              />
             ) : selected ? (
               <ProjectDetail
                 key={`${selected.id}:${requestedRunId ?? ''}`}
