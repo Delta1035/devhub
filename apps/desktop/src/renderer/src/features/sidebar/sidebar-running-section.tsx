@@ -98,6 +98,7 @@ export function SidebarRunningSection({
                     type="button"
                     onClick={() => onSelectGroup(group.groupId)}
                     className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                    aria-label={`查看运行中的批量任务 ${group.name}`}
                     title={`查看 ${group.name}`}
                   >
                     {group.phase === 'starting' ? (
@@ -123,7 +124,7 @@ export function SidebarRunningSection({
                         onError: (e) => setActionError(e.message)
                       })
                     }
-                    aria-label={`停止 ${group.name}`}
+                    aria-label={`停止运行中的批量任务 ${group.name}`}
                     title="停止全部"
                   >
                     {stopping ? (
@@ -155,6 +156,7 @@ export function SidebarRunningSection({
                   type="button"
                   onClick={() => onOpenRun(run)}
                   className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                  aria-label={`查看运行中的 ${projectName} · ${run.title}`}
                   title={`点击查看 ${projectName} · ${run.title}`}
                 >
                   <span
@@ -181,7 +183,7 @@ export function SidebarRunningSection({
                       onError: (e) => setActionError(e.message)
                     })
                   }
-                  aria-label={`停止 ${run.title}`}
+                  aria-label={`停止运行中的 ${projectName} · ${run.title}`}
                   title="停止运行"
                 >
                   {stopping ? (

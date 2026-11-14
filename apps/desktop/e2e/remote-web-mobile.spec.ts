@@ -107,7 +107,7 @@ test('on a phone-sized screen the web app uses a drawer and still drives scripts
   await expect(web.getByRole('heading', { name: '全部启动' })).toBeVisible()
   await web.screenshot({ path: testInfo.outputPath('phone-group.png') })
 
-  await web.getByRole('button', { name: '设置' }).click()
+  await web.getByRole('button', { name: '设置', exact: true }).click()
   await expect(web.getByRole('region', { name: '外观' })).toBeVisible()
   await web.screenshot({ path: testInfo.outputPath('phone-settings.png'), fullPage: true })
   // Nothing on the page is wider than the screen.

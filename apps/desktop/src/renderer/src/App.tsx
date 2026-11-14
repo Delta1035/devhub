@@ -58,9 +58,11 @@ function App(): React.JSX.Element {
   // Choosing batch tasks or a group switches to batch workspace.
   const selectBatch = (groupId?: string | null): void => {
     setActiveView('batch')
-    if (groupId) setSelectedGroupId(groupId)
+    if (groupId) {
+      setSelectedGroupId(groupId)
+      setDrawerOpen(false)
+    }
     setShowSettings(false)
-    setDrawerOpen(false)
   }
 
   // Shows a specific run's terminal tab, e.g. a group step's log or a shell opened from the list.

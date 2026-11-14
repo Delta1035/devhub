@@ -164,7 +164,7 @@ export function BatchTaskList({
                     : failed
                       ? '失败'
                       : done
-                        ? '成功'
+                        ? '已完成'
                         : group.mode === 'parallel'
                           ? '并行'
                           : '串行'}
@@ -179,9 +179,11 @@ export function BatchTaskList({
                 <span>
                   {running
                     ? '运行中'
-                    : state?.finishedAt
-                      ? formatFinished(state.finishedAt)
-                      : '未运行'}
+                    : failed
+                      ? (state?.steps?.find((s) => s.state === 'failed')?.message ?? '失败')
+                      : state?.finishedAt
+                        ? `已完成 · ${formatFinished(state.finishedAt)}`
+                        : '未运行'}
                 </span>
               </div>
 

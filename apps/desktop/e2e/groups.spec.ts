@@ -47,7 +47,7 @@ test('a serial group across projects waits for each step, then stops everything'
   await addProjectViaApi(page, web)
 
   const groups = await openGroups(page)
-  await groups.getByRole('button', { name: '新建' }).click()
+  await groups.getByRole('button', { name: '新建', exact: true }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('名称').fill('front1')
   await dialog.getByRole('button', { name: /^串行/ }).click()
@@ -87,6 +87,7 @@ test('a serial group across projects waits for each step, then stops everything'
   await expect(
     page.locator('main').getByRole('button', { name: 'serve', exact: true })
   ).toHaveAttribute('aria-current', 'true')
+  await page.getByRole('button', { name: /^脚本/ }).click()
   // The script row tells which batch run started it.
   await expect(page.locator('main').getByText('批量：front1')).toBeVisible()
 
@@ -103,7 +104,11 @@ test('a serial group across projects waits for each step, then stops everything'
   // web may only start after api printed "API ready", 1.5 s after api started.
   expect(startOf('web') - startOf('api')).toBeGreaterThanOrEqual(1000)
 
-  await item.getByRole('button', { name: '停止 front1' }).click()
+  const groupsView = await openGroups(page)
+  await groupsView
+    .getByRole('listitem', { name: '批量任务 front1' })
+    .getByRole('button', { name: '停止 front1' })
+    .click()
   await expect
     .poll(async () => (await listRuns(page)).filter((run) => run.status !== 'exited').length, {
       timeout: 20_000
@@ -125,7 +130,7 @@ test('a failing serial step stops the sequence and explains why', async ({
   await addProjectViaApi(page, dir)
 
   const groups = await openGroups(page)
-  await groups.getByRole('button', { name: '新建' }).click()
+  await groups.getByRole('button', { name: '新建', exact: true }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('名称').fill('broken')
   await dialog.getByRole('button', { name: /^串行/ }).click()
@@ -162,7 +167,7 @@ test('waits for a regex in the output and remembers the result after a restart',
   await addProjectViaApi(page, dir)
 
   const groups = await openGroups(page)
-  await groups.getByRole('button', { name: '新建' }).click()
+  await groups.getByRole('button', { name: '新建', exact: true }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('名称').fill('backend')
   await dialog.getByRole('button', { name: /^串行/ }).click()
@@ -184,6 +189,7 @@ test('waits for a regex in the output and remembers the result after a restart',
 
   await app.close()
   page = (await launchDevhub()).page
+  await openGroups(page)
   await expect(item()).toContainText(/已完成 · \d{2}:\d{2}/)
   await item().getByRole('button', { name: '查看 backend' }).click()
   await expect(detail()).toContainText('日志不可用')

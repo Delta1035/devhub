@@ -29,7 +29,7 @@ export function GlobalSearchDialog({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         onOpenChange(true)
       }

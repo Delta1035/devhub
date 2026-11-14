@@ -21,20 +21,23 @@ declare global {
 const nativeApp = window.Capacitor?.isNativePlatform() === true
 
 /**
- * Checks whether this browser session has an explicit remote token (URL hash or saved in localStorage).
- * If neither is present and we are not in Electron or Capacitor, activate mock demo mode.
+ * Checks whether this browser session should run in standalone mock preview mode.
+ * Active in standalone Vite dev server (port 5173), or when explicitly requested via ?mock=true or localStorage.
  */
-function hasRemoteCredentials(): boolean {
+function isMockMode(): boolean {
   if (typeof window === 'undefined') return false
-  if (window.location.hash.includes('token=')) return true
+  if (window.devhub || nativeApp) return false
+  if (window.location.search.includes('mock=true')) return true
   try {
-    return Boolean(window.localStorage.getItem('devhub.remoteToken'))
+    if (window.localStorage.getItem('devhub.mockPreview') === 'true') return true
   } catch {
-    return false
+    // ignore
   }
+  if (import.meta.env.DEV && window.location.port === '5173') return true
+  return false
 }
 
-const isMockPreview = !window.devhub && !nativeApp && !hasRemoteCredentials()
+const isMockPreview = isMockMode()
 
 const mockInstance = isMockPreview ? createMockApi() : null
 const mockShellInstance = isMockPreview ? createMockShell() : null

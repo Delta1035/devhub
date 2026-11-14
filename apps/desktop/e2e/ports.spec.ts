@@ -3,7 +3,7 @@ import { addProjectViaApi, packageJson, type DevhubWindow } from './fixtures'
 import { canBind, hasExited, httpBody, httpServerScript, test, expect } from './port-fixtures'
 
 const enableTermination = async (page: Page) => {
-  await page.getByRole('button', { name: '设置' }).click()
+  await page.getByRole('button', { name: '设置', exact: true }).click()
   await page.getByLabel('端口被占用时').selectOption({ label: '结束占用进程后启动' })
   await expect
     .poll(() => page.evaluate(() => (window as unknown as DevhubWindow).devhub.getSettings()))

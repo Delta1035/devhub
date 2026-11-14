@@ -46,6 +46,7 @@ export function ProjectSubnav({
         <button
           type="button"
           onClick={() => onTabChange('scripts')}
+          aria-label={scriptsCount > 0 ? `脚本 (${scriptsCount} 个)` : '脚本'}
           aria-current={currentTab === 'scripts' ? 'page' : undefined}
           className={cn(
             'flex items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-xs font-medium transition-colors',
@@ -72,6 +73,7 @@ export function ProjectSubnav({
         <button
           type="button"
           onClick={() => onTabChange('history')}
+          aria-label={historyCount > 0 ? `运行历史 (${historyCount} 项)` : '运行历史'}
           aria-current={currentTab === 'history' ? 'page' : undefined}
           className={cn(
             'flex items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-xs font-medium transition-colors',
@@ -100,6 +102,7 @@ export function ProjectSubnav({
         <button
           type="button"
           onClick={() => onTabChange('terminals')}
+          aria-label={activeTerminalsCount > 0 ? `终端 (${activeTerminalsCount} 个)` : '终端'}
           aria-current={currentTab === 'terminals' ? 'page' : undefined}
           className={cn(
             'flex items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-xs font-medium transition-colors',
@@ -128,6 +131,7 @@ export function ProjectSubnav({
         <button
           type="button"
           onClick={() => onTabChange('tasks')}
+          aria-label={tasksCount > 0 ? `任务 (${tasksCount} 个)` : '任务'}
           aria-current={currentTab === 'tasks' ? 'page' : undefined}
           className={cn(
             'flex items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-xs font-medium transition-colors',

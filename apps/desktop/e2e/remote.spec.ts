@@ -107,7 +107,7 @@ test('remote access is set up in settings and serves the API with its token', as
 }) => {
   const { app, page } = await launchDevhub()
   const port = await freePort()
-  await page.getByRole('button', { name: '设置' }).click()
+  await page.getByRole('button', { name: '设置', exact: true }).click()
   const section = page.getByRole('region', { name: '远程访问' })
   await expect(section.getByRole('status')).toHaveText('关闭时不监听任何端口')
 
