@@ -79,6 +79,10 @@ function App(): React.JSX.Element {
       currentProjectId={selected?.id ?? null}
       onSelectProject={selectProject}
       onOpenRun={openRun}
+      onToggleSettings={() => {
+        setShowSettings((prev) => !prev)
+        setDrawerOpen(false)
+      }}
     />
   )
 
