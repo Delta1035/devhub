@@ -119,11 +119,11 @@ export class TerminalSession {
       this.opened = true
       // Padding on xterm's own element: the fit addon subtracts it when measuring.
       if (this.terminal.element) this.terminal.element.style.padding = '6px 8px'
-      // The constructor's snapshot can predate output produced before the remote client's SSE
-      // stream was ready (ADR 0022 has no replay). Re-read now that the terminal is visible;
-      // OutputCursor drops anything already written, so this only adds the missing output.
-      this.loadSnapshot()
     }
+    // The snapshot taken at construction can predate output produced before the remote client's
+    // SSE stream was ready (ADR 0022 has no replay). Re-read every time the terminal becomes
+    // visible; OutputCursor drops anything already written, so this only adds missing output.
+    this.loadSnapshot()
     this.applyPrefs()
 
     this.observer = new ResizeObserver(() => {
