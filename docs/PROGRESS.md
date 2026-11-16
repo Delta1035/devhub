@@ -89,6 +89,7 @@ M4-3 Android：
 - #121 已发布（v1.10.8）：修复批量任务页面全局溢出滚动、移除项目列表条目编辑器图标；`pnpm check` 与 Playwright E2E 通过。
 - #122 已发布（v1.10.8）：运行态主窗口与系统任务栏/Dock 图标随深浅色模式动态同步；`pnpm check` 通过。
 - #123 已发布（v1.10.8）：支持在设置页「外观」栏一键切换 Windows 桌面快捷方式图标风格（深色/浅色）；`pnpm check` 通过。
+- #124 待验证：修复慢速 Windows CI 上手机端终端输出为空导致 E2E 失败（终端懒挂载后，构造时的快照早于首批输出，SSE 窗口期输出丢失且无重取）；终端首次显示时重取 `getRunOutput` 快照并用 `OutputCursor` 幂等拼接。`pnpm check` 与本地 `remote-web-mobile` 单用例通过，待 CI Windows 全量 E2E 验证。
 
 桌面 MVP 发布：
 
