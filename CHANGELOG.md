@@ -4,6 +4,18 @@ User-facing changes in each DevHub release. `pnpm release` generates each sectio
 Conventional Commits since the previous tag (`scripts/changelog.mjs`), and the Release workflow
 uses it as the GitHub Release notes.
 
+## v1.10.8 - 2026-11-17
+
+### Features
+
+- 标题栏采用品牌图标，支持运行态任务栏与桌面快捷方式图标风格切换 (Closes #122, Closes #123) (33b2532)
+- 全局搜索浅色适配、紧凑功能导航栏与项目列表宽度可调 (d7a0cc9)
+
+### Fixes
+
+- 消除批量任务绝对定位元素穿透引起的视口滚动 (0225d13)
+- 修复批量任务页面全局溢出滚动并移除项目条目悬停编辑器图标 (38bbff3)
+
 ## v1.10.7 - 2026-11-16
 
 ### Fixes
