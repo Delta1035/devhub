@@ -63,10 +63,16 @@ test('a serial group across projects waits for each step, then stops everything'
   const detail = page.getByRole('region', { name: '任务运行 front1' })
   await expect(detail).toContainText('输出出现文字「API ready」')
   // Batch workspace does not cause window-level page scrolling.
-  const windowScrolls = await page.evaluate(
-    () => document.documentElement.scrollHeight > window.innerHeight
-  )
-  expect(windowScrolls).toBe(false)
+  await page.mouse.move(500, 60)
+  await page.mouse.wheel(0, 500)
+  const windowScrolls = await page.evaluate(() => ({
+    overflows: document.documentElement.scrollHeight > window.innerHeight,
+    scrollY: window.scrollY,
+    scrollTop: document.documentElement.scrollTop
+  }))
+  expect(windowScrolls.overflows).toBe(false)
+  expect(windowScrolls.scrollY).toBe(0)
+  expect(windowScrolls.scrollTop).toBe(0)
   await item.getByRole('button', { name: '执行 front1' }).click()
   // The feature navigation and the persistent bar name the group while it starts.
   const running = page.getByRole('button', { name: '运行中', exact: true }).getByRole('status')

@@ -101,7 +101,7 @@ export function GroupOutputPanel({
   return (
     <div
       data-theme-surface="group-output"
-      className="flex flex-col border-t border-terminal-border bg-terminal"
+      className="flex shrink-0 flex-col border-t border-terminal-border bg-terminal"
     >
       {/* Header */}
       <div className="flex h-8 items-center gap-2 border-b border-terminal-border bg-terminal-header px-4 text-xs md:px-6">

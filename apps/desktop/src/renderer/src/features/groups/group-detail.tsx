@@ -217,7 +217,7 @@ export function GroupDetail({
       />
 
       {/* Main body scrollable area */}
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 md:px-6">
+      <div className="relative min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 md:px-6">
         {error && (
           <p
             role="alert"

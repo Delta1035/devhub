@@ -86,7 +86,7 @@ export function GroupStepCard({
   const conditionBadge = getConditionBadge(step.continueWhen)
 
   return (
-    <li aria-label={`运行步骤 ${index + 1}`} className="flex items-stretch gap-3 md:gap-4">
+    <li aria-label={`运行步骤 ${index + 1}`} className="relative flex items-stretch gap-3 md:gap-4">
       {/* Left timeline connector and circular step number */}
       <div className="flex flex-col items-center">
         <div
@@ -116,7 +116,7 @@ export function GroupStepCard({
       {/* Right step card container */}
       <div
         className={cn(
-          'mb-2 flex min-w-0 flex-1 flex-col gap-2 rounded-lg border p-3.5 transition-colors',
+          'relative mb-2 flex min-w-0 flex-1 flex-col gap-2 rounded-lg border p-3.5 transition-colors',
           state === 'running' && 'border-primary/40 bg-primary/5 dark:bg-primary/10 shadow-xs',
           state === 'failed' && 'border-destructive/40 bg-destructive/5 dark:bg-destructive/10',
           state === 'done' && 'border-border/80 bg-card',
