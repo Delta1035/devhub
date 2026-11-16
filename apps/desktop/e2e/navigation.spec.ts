@@ -51,3 +51,32 @@ test('switches feature navigation and manages a running script from the running 
   await page.getByRole('button', { name: '停止运行中的 navigation-app · tick' }).click()
   await expect(page.getByRole('status', { name: '运行中空状态' })).toBeVisible()
 })
+
+test('keeps project heading and script commands visible in 1024x768 desktop layout', async ({
+  launchDevhub,
+  createProject
+}) => {
+  const dir = await createProject('desktop-layout-app', {
+    'package.json': packageJson({ dev: 'vite --port 5173', build: 'vite build' }),
+    'pnpm-lock.yaml': ''
+  })
+  const { app, page } = await launchDevhub()
+  await addProjectViaApi(page, dir)
+
+  // Emulate GitHub Actions Windows runner resolution (1024x768)
+  await app.evaluate(({ BrowserWindow }) => {
+    const win = BrowserWindow.getAllWindows()[0]
+    win?.setSize(1024, 768)
+  })
+
+  const main = page.locator('main')
+  const heading = main.getByRole('heading', { name: 'desktop-layout-app' })
+  await expect(heading).toBeVisible()
+  const headingBox = await heading.boundingBox()
+  expect(headingBox?.width).toBeGreaterThan(0)
+
+  const code = main.getByText('pnpm run dev')
+  await expect(code).toBeVisible()
+  const codeBox = await code.boundingBox()
+  expect(codeBox?.width).toBeGreaterThan(0)
+})

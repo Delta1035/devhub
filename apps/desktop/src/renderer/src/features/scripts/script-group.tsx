@@ -113,7 +113,7 @@ export function ScriptGroup({
                 <div className="min-w-0 flex-1">
                   <span className="flex min-w-0 items-center gap-2">
                     <code
-                      className="truncate font-mono text-xs text-foreground/80"
+                      className="min-w-16 truncate font-mono text-xs text-foreground/80"
                       title={script.command}
                     >
                       {script.command}

@@ -114,9 +114,9 @@ export function ProjectHeader({
   return (
     <header className="flex flex-col gap-2 border-b border-border bg-card/40 px-4 py-3 md:px-6 md:py-3.5">
       {/* Title Row */}
-      <div className="flex items-center gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <h2 className="truncate font-heading text-lg font-semibold text-foreground md:text-xl">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <h2 className="min-w-16 truncate font-heading text-lg font-semibold text-foreground md:text-xl">
             {project.name}
           </h2>
           <span
@@ -136,84 +136,84 @@ export function ProjectHeader({
           </span>
         </div>
 
-        <div className="flex-1" />
+        <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
+          {/* VS Code & IDEA Buttons */}
+          <EditorButtons
+            projectId={project.id}
+            projectName={project.name}
+            variant="labeled"
+            onError={onEditorError}
+          />
 
-        {/* VS Code & IDEA Buttons */}
-        <EditorButtons
-          projectId={project.id}
-          projectName={project.name}
-          variant="labeled"
-          onError={onEditorError}
-        />
+          {/* Pin Button */}
+          <Button
+            variant="outline"
+            size="icon-xs"
+            onClick={handleTogglePin}
+            title={isPinned ? '取消置顶' : '置顶此项目'}
+            aria-label={isPinned ? '取消置顶' : '置顶此项目'}
+            className={cn(
+              'size-8 border-border bg-secondary/80 text-muted-foreground hover:text-foreground',
+              isPinned && 'text-primary border-primary/40 bg-primary/10'
+            )}
+          >
+            {isPinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
+          </Button>
 
-        {/* Pin Button */}
-        <Button
-          variant="outline"
-          size="icon-xs"
-          onClick={handleTogglePin}
-          title={isPinned ? '取消置顶' : '置顶此项目'}
-          aria-label={isPinned ? '取消置顶' : '置顶此项目'}
-          className={cn(
-            'size-8 border-border bg-secondary/80 text-muted-foreground hover:text-foreground',
-            isPinned && 'text-primary border-primary/40 bg-primary/10'
-          )}
-        >
-          {isPinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
-        </Button>
+          {/* 刷新 */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isFetching}
+            title="重新扫描项目目录"
+            className="h-8 gap-1.5 border-border bg-secondary/80 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <RefreshCw className={cn('size-3.5', isFetching && 'animate-spin')} />
+            刷新
+          </Button>
 
-        {/* 刷新 */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={isFetching}
-          title="重新扫描项目目录"
-          className="h-8 gap-1.5 border-border bg-secondary/80 px-2.5 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <RefreshCw className={cn('size-3.5', isFetching && 'animate-spin')} />
-          刷新
-        </Button>
-
-        {/* 更多 */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon-xs"
-              className="size-8 border-border bg-secondary/80 text-muted-foreground hover:text-foreground"
-              aria-label="更多操作"
-              title="更多操作"
-            >
-              <Ellipsis className="size-3.5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() =>
-                openFolder.mutate(project.id, {
-                  onSuccess: () => toast.info('已请求在文件资源管理器中打开项目')
-                })
-              }
-            >
-              <FolderOpen className="size-3.5" />
-              打开所在目录
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                openTerminal.mutate(project.id, {
-                  onSuccess: () => toast.success('已在系统终端中打开项目')
-                })
-              }
-            >
-              <SquareTerminal className="size-3.5" />
-              在系统终端中打开
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleCopyPath}>
-              <Copy className="size-3.5" />
-              复制完整路径
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          {/* 更多 */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon-xs"
+                className="size-8 border-border bg-secondary/80 text-muted-foreground hover:text-foreground"
+                aria-label="更多操作"
+                title="更多操作"
+              >
+                <Ellipsis className="size-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() =>
+                  openFolder.mutate(project.id, {
+                    onSuccess: () => toast.info('已请求在文件资源管理器中打开项目')
+                  })
+                }
+              >
+                <FolderOpen className="size-3.5" />
+                打开所在目录
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  openTerminal.mutate(project.id, {
+                    onSuccess: () => toast.success('已在系统终端中打开项目')
+                  })
+                }
+              >
+                <SquareTerminal className="size-3.5" />
+                在系统终端中打开
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCopyPath}>
+                <Copy className="size-3.5" />
+                复制完整路径
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Meta Row: Path, Tech Tags, Git Branch & Last Run */}
