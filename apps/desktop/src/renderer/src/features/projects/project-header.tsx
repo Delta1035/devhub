@@ -186,7 +186,7 @@ export function ProjectHeader({
                 <Ellipsis className="size-3.5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-40 min-w-40">
               <DropdownMenuItem
                 onClick={() =>
                   openFolder.mutate(project.id, {
@@ -205,7 +205,7 @@ export function ProjectHeader({
                 }
               >
                 <SquareTerminal className="size-3.5" />
-                在系统终端中打开
+                在终端打开
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleCopyPath}>
                 <Copy className="size-3.5" />

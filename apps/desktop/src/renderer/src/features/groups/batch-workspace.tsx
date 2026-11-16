@@ -28,7 +28,7 @@ export function BatchWorkspace({
   const selectedGroup = groups.find((g) => g.id === activeGroupId)
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
       {/* 批量任务主头部 */}
       <BatchHeader onNewGroup={() => setEditingGroup(null)} />
 
@@ -43,7 +43,7 @@ export function BatchWorkspace({
         />
 
         {/* 右栏：任务运行详情 */}
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {selectedGroup ? (
             <GroupDetail key={selectedGroup.id} group={selectedGroup} onOpenRun={onOpenRun} />
           ) : groups.length === 0 ? (

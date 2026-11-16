@@ -2,7 +2,6 @@ import { Database, FolderGit2, Globe, Pin, Server, X } from 'lucide-react'
 import type { Project, Run, WorkspaceView } from '@devhub/shared'
 import { access } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
-import { EditorButtons } from '@renderer/features/editors/editor-buttons'
 import { cn } from '@renderer/lib/utils'
 import { ProjectContextMenu, ProjectMoreMenu, ProjectMoreMenuLazy } from './project-menu'
 import { useProjectMenuActions } from './use-project-menu-actions'
@@ -115,12 +114,6 @@ function DesktopProjectItem({
         onChoose={onSelect}
       />
       <div className="flex shrink-0 items-center opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
-        <EditorButtons
-          projectId={project.id}
-          projectName={project.name}
-          variant="icon"
-          onError={onError}
-        />
         <ProjectMoreMenu {...menu} />
         {access.manage && (
           <Button

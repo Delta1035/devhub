@@ -20,7 +20,7 @@ export function RunningWorkspace({
   const totalCount = activeGroups.length + activeRuns.length
 
   return (
-    <div className="flex h-full flex-col bg-background px-4 py-5 md:px-6 md:py-6">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background px-4 py-5 md:px-6 md:py-6">
       <header className="flex shrink-0 items-start gap-3 border-b border-border pb-5">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success">
           <Activity className="size-5" />

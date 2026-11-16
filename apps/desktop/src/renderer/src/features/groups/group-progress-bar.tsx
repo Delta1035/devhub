@@ -17,7 +17,7 @@ export function GroupProgressBar({
   statusHint
 }: GroupProgressBarProps): React.JSX.Element {
   return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-border bg-card/30 px-4 py-2.5 text-xs md:px-6">
+    <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-border bg-card/30 px-4 py-2.5 text-xs md:px-6">
       <span className="font-semibold text-foreground">
         {completedCount} / {totalCount} 步完成
       </span>

@@ -12,10 +12,13 @@ test('project item actions, context menu and a resizable project list', async ({
   const projectList = page.getByRole('region', { name: '项目列表' })
   const item = projectList.getByRole('button', { name: /^a-project-with/ })
 
-  // Hovering does not open a hover card (removed to prevent visual distraction).
+  // Hovering does not open a hover card (removed to prevent visual distraction)
+  // and does not show VS Code / IDEA quick-open icons on the item row.
   await item.hover()
   await page.waitForTimeout(700)
   await expect(page.locator('[data-slot="hover-card-content"]')).toHaveCount(0)
+  await expect(projectList.getByRole('button', { name: /在 VS Code 中打开/ })).toHaveCount(0)
+  await expect(projectList.getByRole('button', { name: /在 IntelliJ IDEA 中打开/ })).toHaveCount(0)
 
   // Context menu → details dialog.
   await item.click({ button: 'right' })

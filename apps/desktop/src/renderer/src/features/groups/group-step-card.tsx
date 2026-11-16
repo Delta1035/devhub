@@ -92,9 +92,9 @@ export function GroupStepCard({
         <div
           className={cn(
             'flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-all',
-            state === 'done' && 'bg-accent text-[#06130D]',
+            state === 'done' && 'bg-primary text-primary-foreground',
             state === 'running' &&
-              'bg-accent text-[#06130D] shadow-[0_0_8px_rgba(62,213,152,0.6)] animate-pulse',
+              'bg-primary text-primary-foreground shadow-[0_0_8px_rgba(62,213,152,0.6)] animate-pulse',
             state === 'failed' && 'bg-destructive text-destructive-foreground',
             state === 'cancelled' && 'bg-secondary text-muted-foreground',
             state === 'pending' && 'border border-border/80 bg-secondary/80 text-muted-foreground'
@@ -117,10 +117,10 @@ export function GroupStepCard({
       <div
         className={cn(
           'mb-2 flex min-w-0 flex-1 flex-col gap-2 rounded-lg border p-3.5 transition-colors',
-          state === 'running' && 'border-accent/40 bg-[#0F1519] shadow-sm',
-          state === 'failed' && 'border-destructive/40 bg-[#1A1214]',
-          state === 'done' && 'border-border/80 bg-[#0E1217]',
-          state === 'pending' && 'border-border/50 bg-[#0D1116]/80'
+          state === 'running' && 'border-primary/40 bg-primary/5 dark:bg-primary/10 shadow-xs',
+          state === 'failed' && 'border-destructive/40 bg-destructive/5 dark:bg-destructive/10',
+          state === 'done' && 'border-border/80 bg-card',
+          state === 'pending' && 'border-border/60 bg-card/60 dark:bg-card/40'
         )}
       >
         {/* Main top row: project badge, script name, duration, status badge */}
@@ -153,7 +153,7 @@ export function GroupStepCard({
             className={cn(
               'h-5 px-2 text-[10px]',
               (state === 'done' || state === 'running') &&
-                'border-transparent bg-accent/15 text-accent hover:bg-accent/20'
+                'border-transparent bg-primary/15 text-primary hover:bg-primary/20'
             )}
           >
             {statusBadgeLabel}
@@ -166,7 +166,7 @@ export function GroupStepCard({
             {isSerial ? '等待' : '执行模式'}
           </span>
           {isSerial ? (
-            <div className="flex items-center gap-1.5 rounded border border-border/80 bg-[#12171E] px-2 py-0.5 font-mono text-[11px] text-info">
+            <div className="flex items-center gap-1.5 rounded border border-border/80 bg-secondary/80 px-2 py-0.5 font-mono text-[11px] text-info">
               <span>{conditionBadge.text}</span>
             </div>
           ) : (

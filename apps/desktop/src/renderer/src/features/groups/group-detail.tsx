@@ -77,9 +77,12 @@ export function GroupDetail({
   const currentStepNum = Math.min(completed + 1, execution.steps.length)
 
   return (
-    <section aria-label={`任务运行 ${group.name}`} className="flex h-full flex-col">
+    <section
+      aria-label={`任务运行 ${group.name}`}
+      className="flex h-full min-h-0 flex-col overflow-hidden"
+    >
       {/* Redesigned modern header aligned with prototype */}
-      <header className="flex flex-wrap items-center gap-3 border-b border-border bg-card/40 px-4 py-3 md:px-6 md:py-4">
+      <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-border bg-card/40 px-4 py-3 md:px-6 md:py-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2.5">
             <h2 className="truncate font-heading text-base font-semibold text-foreground md:text-lg">
@@ -143,7 +146,7 @@ export function GroupDetail({
             onClick={() =>
               start.mutate(group.id, { onError: (failure) => setError(failure.message) })
             }
-            className="h-8 gap-1.5 bg-accent text-[#06130D] hover:bg-accent/90"
+            className="h-8 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Play className="size-3.5 fill-current" />
             执行
@@ -159,7 +162,7 @@ export function GroupDetail({
             className={cn(
               'h-8 gap-1.5',
               running || activeRuns.length > 0
-                ? 'border-[#4A2A2F] bg-[#2A1A1D] text-destructive hover:bg-[#382025] hover:text-destructive'
+                ? 'border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20'
                 : 'border-border'
             )}
           >

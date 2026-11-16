@@ -287,7 +287,7 @@ export function ProjectSettingsTab({
                         决定再次启动时是覆盖当前进程还是并行再开一个
                       </span>
                     </div>
-                    <div className="flex rounded-md border border-border bg-[#171C23] p-0.5">
+                    <div className="flex rounded-md border border-border bg-secondary/60 p-0.5">
                       <button
                         type="button"
                         onClick={() => {
@@ -297,7 +297,7 @@ export function ProjectSettingsTab({
                         className={cn(
                           'rounded px-2.5 py-1 text-xs transition-colors',
                           duplicatePolicy === 'replace'
-                            ? 'bg-[#1A2028] font-medium text-foreground shadow-xs'
+                            ? 'bg-card font-medium text-foreground shadow-xs'
                             : 'text-muted-foreground hover:text-foreground'
                         )}
                       >
@@ -312,7 +312,7 @@ export function ProjectSettingsTab({
                         className={cn(
                           'rounded px-2.5 py-1 text-xs transition-colors',
                           duplicatePolicy === 'parallel'
-                            ? 'bg-[#1A2028] font-medium text-foreground shadow-xs'
+                            ? 'bg-card font-medium text-foreground shadow-xs'
                             : 'text-muted-foreground hover:text-foreground'
                         )}
                       >

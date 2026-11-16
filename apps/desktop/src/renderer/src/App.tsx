@@ -97,7 +97,7 @@ function App(): React.JSX.Element {
 
   return (
     // dvh: on phones the browser's address bar would otherwise cover the bottom of the page.
-    <div className="flex h-dvh flex-col bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-foreground">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-foreground">
       <TitleBar
         showSettings={showSettings}
         onOpenSettings={openSettings}
@@ -110,7 +110,7 @@ function App(): React.JSX.Element {
         onSelectProject={selectProject}
         onSelectGroup={(groupId) => selectBatch(groupId)}
       />
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         {narrow ? (
           <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
             <SheetContent
@@ -145,9 +145,9 @@ function App(): React.JSX.Element {
             />
           </aside>
         )}
-        <main className="flex min-w-0 flex-1 flex-col">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <OrphansBanner />
-          <div className="min-h-0 flex-1">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {showSettings ? (
               <Suspense>
                 <SettingsPage onClose={() => setShowSettings(false)} />
