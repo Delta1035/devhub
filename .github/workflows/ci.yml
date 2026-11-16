@@ -3,7 +3,19 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'pen/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'apps/website/**'
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'pen/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'apps/website/**'
 
 permissions:
   contents: read
@@ -101,7 +113,14 @@ jobs:
           key: electron-${{ github.job }}-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: electron-${{ github.job }}-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
-      - run: pnpm check
+      # Full check (formatting, linting, typecheck, tests) runs on Linux; Windows skips
+      # the OS-independent static checks to save ~1m and only runs tests.
+      - name: Full check (Linux)
+        if: runner.os == 'Linux'
+        run: pnpm check
+      - name: Tests (Windows)
+        if: runner.os == 'Windows'
+        run: pnpm test
       - name: E2E (Windows)
         if: runner.os == 'Windows'
         run: pnpm e2e
@@ -118,7 +137,9 @@ jobs:
 
   # Builds the real installers so packaging problems (native modules with
   # npmRebuild: false, installer metadata) show up before a release.
+  # Runs on every push to main to ensure release-readiness, or on PRs with 'full-ci' label.
   package:
+    if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'full-ci')
     strategy:
       fail-fast: false
       matrix:
@@ -176,7 +197,9 @@ jobs:
 
   # Builds the Android APK (unsigned: secrets are not available to pull requests) so Gradle and
   # Capacitor problems show up before a release.
+  # Runs on every push to main to ensure release-readiness, or on PRs with 'full-ci' label.
   android:
+    if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'full-ci')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
