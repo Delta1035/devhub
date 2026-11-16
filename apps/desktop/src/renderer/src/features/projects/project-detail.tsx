@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { TriangleAlert, Workflow, X } from 'lucide-react'
 import type { Project } from '@devhub/shared'
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
@@ -15,10 +15,13 @@ import { ProjectSubnav, type ProjectViewTab } from './project-subnav'
 
 export function ProjectDetail({
   project,
-  initialRunId = null
+  initialRunId = null,
+  onTerminalViewChange
 }: {
   project: Project
   initialRunId?: string | null
+  /** Lets a narrow workspace hide the project list while the terminal owns the screen. */
+  onTerminalViewChange?: (active: boolean) => void
 }): React.JSX.Element {
   const scripts = useProjectScripts(project.id)
   const runs = (useRuns().data ?? []).filter((r) => r.projectId === project.id)
@@ -35,6 +38,11 @@ export function ProjectDetail({
   const [filterQuery, setFilterQuery] = useState('')
   const [activeRunId, setActiveRunId] = useState<string | null>(initialRunId)
   const [editorError, setEditorError] = useState<Error | null>(null)
+
+  useEffect(() => {
+    onTerminalViewChange?.(currentTab === 'terminals')
+    return () => onTerminalViewChange?.(false)
+  }, [currentTab, onTerminalViewChange])
 
   const scriptItems = scripts.data?.scripts ?? []
 

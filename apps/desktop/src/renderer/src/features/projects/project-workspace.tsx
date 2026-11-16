@@ -1,5 +1,7 @@
+import { useCallback, useState } from 'react'
 import type { Project, Run } from '@devhub/shared'
 import { useResizableWidth } from '@renderer/features/sidebar/use-resizable-width'
+import { cn } from '@renderer/lib/utils'
 import { ProjectDetail } from './project-detail'
 import { ProjectList } from './project-list'
 
@@ -20,6 +22,8 @@ export function ProjectWorkspace({
   onOpenRun
 }: ProjectWorkspaceProps): React.JSX.Element {
   const projectList = useResizableWidth('devhub.projectListWidth', 260, 200, 'devhub.sidebarWidth')
+  const [terminalView, setTerminalView] = useState(false)
+  const handleTerminalViewChange = useCallback((active: boolean) => setTerminalView(active), [])
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
@@ -33,7 +37,11 @@ export function ProjectWorkspace({
         <section
           aria-label="项目列表"
           style={narrow ? undefined : { width: projectList.width }}
-          className="relative flex min-h-[13rem] w-full shrink-0 flex-col border-b border-border sm:min-h-0 sm:border-b-0 sm:border-r"
+          className={cn(
+            'relative flex min-h-[13rem] w-full shrink-0 flex-col border-b border-border sm:min-h-0 sm:border-b-0 sm:border-r',
+            // On a phone the terminal tab needs the whole height; the list returns on other tabs.
+            narrow && terminalView && 'hidden'
+          )}
         >
           <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-5">
             <ProjectList
@@ -62,6 +70,7 @@ export function ProjectWorkspace({
               key={`${selectedProject.id}:${requestedRunId ?? ''}`}
               project={selectedProject}
               initialRunId={requestedRunId}
+              onTerminalViewChange={handleTerminalViewChange}
             />
           ) : (
             <div className="flex h-full items-center justify-center p-8 text-center text-sm text-muted-foreground">
