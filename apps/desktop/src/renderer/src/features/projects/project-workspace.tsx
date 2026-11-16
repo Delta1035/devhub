@@ -26,10 +26,10 @@ export function ProjectWorkspace({
           <p className="mt-0.5 text-xs text-muted-foreground">选择项目查看脚本、终端与运行历史</p>
         </div>
       </header>
-      <div className="flex min-h-0 flex-1 flex-col min-[480px]:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col min-[400px]:flex-row">
         <section
           aria-label="项目列表"
-          className="min-h-[13rem] w-full shrink-0 overflow-y-auto border-b border-border p-4 min-[480px]:min-h-0 min-[480px]:w-[18rem] min-[480px]:border-b-0 min-[480px]:border-r md:p-5"
+          className="min-h-[13rem] w-full shrink-0 overflow-y-auto border-b border-border p-4 min-[400px]:min-h-0 min-[400px]:w-[18rem] min-[400px]:border-b-0 min-[400px]:border-r md:p-5"
         >
           <ProjectList
             narrow={narrow}
