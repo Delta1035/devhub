@@ -4,6 +4,13 @@ User-facing changes in each DevHub release. `pnpm release` generates each sectio
 Conventional Commits since the previous tag (`scripts/changelog.mjs`), and the Release workflow
 uses it as the GitHub Release notes.
 
+## v1.10.6 - 2026-11-16
+
+### Fixes
+
+- 适配 Windows 高 DPI 最小桌面宽度 (Refs #117) (edcc203)
+- 适配 Windows 高 DPI 最小桌面宽度 (Refs #117) (83bb9d8)
+
 ## v1.10.5 - 2026-11-16
 
 ### Fixes
