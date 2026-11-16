@@ -38,7 +38,9 @@ test('the web app connects with the QR link and drives scripts, without desktop-
   await expect(
     desktop.page.locator('main li', { hasText: 'npm run tick' }).getByText('运行中')
   ).toBeVisible()
+  await web.getByRole('button', { name: '查看 tick 终端' }).click()
   await expect(web.locator('.xterm-rows')).toContainText('tick 2')
+  await web.getByRole('button', { name: /^脚本/ }).click()
 
   // Actions that change what runs on the host are not offered.
   await expect(web.getByRole('button', { name: '移除 app' })).toHaveCount(0)

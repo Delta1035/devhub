@@ -1,14 +1,18 @@
 import { BrowserWindow, ipcMain } from 'electron'
 import { shellChannel, type WindowState } from '@devhub/shared'
 import { toIpcResult } from './core/api-result'
+import { applyWindowThemeIcon } from './window-theme'
 
 /** Handlers behind the renderer's own title bar buttons (ADR 0010); each acts on the caller's window. */
 export function registerWindowControls(): void {
-  const handle = (channel: string, run: (window: BrowserWindow) => unknown): void => {
-    ipcMain.handle(channel, (event) =>
+  const handle = (
+    channel: string,
+    run: (window: BrowserWindow, ...args: unknown[]) => unknown
+  ): void => {
+    ipcMain.handle(channel, (event, ...args: unknown[]) =>
       toIpcResult(channel, async () => {
         const window = BrowserWindow.fromWebContents(event.sender)
-        return window ? run(window) : undefined
+        return window ? run(window, ...args) : undefined
       })
     )
   }
@@ -20,6 +24,11 @@ export function registerWindowControls(): void {
   )
   // Goes through the window's 'close' handler, so "keep in tray" / "quit" still applies.
   handle(shellChannel.closeWindow, (window) => window.close())
+  handle(shellChannel.setWindowTheme, (window, theme) => {
+    if (theme === 'light' || theme === 'dark') {
+      applyWindowThemeIcon(window, theme)
+    }
+  })
 }
 
 /** Pushes the window's state to its renderer whenever it changes. */

@@ -36,6 +36,7 @@ test('after a crash, the next launch offers to stop the processes left behind', 
   })
   const first = await launchDevhub()
   await addProjectViaApi(first.page, dir)
+  await first.page.getByRole('button', { name: /^终端/ }).click()
   await first.page.getByRole('button', { name: '新建终端' }).click()
   await expect(first.page.locator('.xterm-rows')).toContainText('$')
   await first.page.locator('.xterm').click()

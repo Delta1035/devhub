@@ -4,7 +4,6 @@ import {
   Bell,
   BellOff,
   CheckCircle2,
-  CodeXml,
   Copy,
   Info,
   Menu,
@@ -17,6 +16,7 @@ import {
 } from 'lucide-react'
 import { shell } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
+import { DevHubLogo } from '@renderer/components/ui/devhub-logo'
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
 import { useAppInfo } from '@renderer/features/app-info/use-app-info'
 import { UpdateBadge } from '@renderer/features/updates/update-badge'
@@ -78,9 +78,7 @@ export function TitleBar({
         </Button>
       )}
       <div className="app-no-drag flex items-center gap-2">
-        <div className="flex size-6 shrink-0 items-center justify-center rounded-[7px] bg-primary text-primary-foreground shadow-xs">
-          <CodeXml className="size-3.5 stroke-[2.5]" />
-        </div>
+        <DevHubLogo className="size-6 shrink-0 shadow-xs" />
         <h1 className="font-heading text-[13px] font-semibold tracking-tight text-foreground">
           DevHub
         </h1>

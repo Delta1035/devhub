@@ -4,6 +4,7 @@ import {
   devhubEventChannel,
   ipcChannel,
   shellChannel,
+  type DesktopShortcutResult,
   type DevhubApi,
   type DevhubEvent,
   type DevhubEvents,
@@ -68,7 +69,12 @@ const shell: ShellApi = {
   },
   closeWindow: async () => {
     await invoke(shellChannel.closeWindow)
-  }
+  },
+  setWindowTheme: async (theme) => {
+    await invoke(shellChannel.setWindowTheme, theme)
+  },
+  setDesktopShortcutStyle: (style) =>
+    invoke(shellChannel.setDesktopShortcutStyle, style) as Promise<DesktopShortcutResult>
 }
 
 const events: DevhubEvents = {

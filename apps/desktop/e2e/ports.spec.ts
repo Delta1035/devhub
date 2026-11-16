@@ -39,6 +39,7 @@ test('warns before starting a script whose port is taken, and can start it anywa
   await alert.getByRole('button', { name: '仍然启动' }).click()
   await expect(alert).toBeHidden()
   await expect(row.getByRole('button', { name: '停止 dev' })).toBeVisible()
+  await page.getByRole('button', { name: '查看 dev 终端' }).click()
   await expect(page.locator('.xterm-rows')).toContainText('started anyway')
   expect(hasExited(blocker)).toBe(false)
   expect(await httpBody(port)).toBe('original server')

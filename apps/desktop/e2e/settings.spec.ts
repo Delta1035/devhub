@@ -71,6 +71,7 @@ test('settings apply at once and survive a restart', async ({ launchDevhub, crea
 
   // Back to the project: "+" now opens the chosen shell, at the chosen font size.
   await page.getByRole('button', { name: '返回' }).click()
+  await page.getByRole('button', { name: /^终端/ }).click()
   await page.getByRole('button', { name: '新建终端' }).click()
   await expect
     .poll(async () =>
@@ -152,6 +153,7 @@ test('a custom shell can be added and opened from the terminal menu', async ({
   await expect(section.getByRole('button', { name: '保存' })).toBeHidden()
 
   await page.getByRole('button', { name: '返回' }).click()
+  await page.getByRole('button', { name: /^终端/ }).click()
   await page.getByRole('button', { name: '选择终端类型' }).click()
   await page.getByRole('menuitem', { name: 'Node REPL' }).click()
   await expect(page.getByRole('button', { name: '终端 1', exact: true }).last()).toBeVisible()

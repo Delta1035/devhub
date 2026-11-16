@@ -1,4 +1,4 @@
-import type { ShellApi, UpdateStatus, WindowState } from '@devhub/shared'
+import type { DesktopShortcutResult, ShellApi, UpdateStatus, WindowState } from '@devhub/shared'
 
 export function createMockShell(): ShellApi {
   return {
@@ -44,6 +44,15 @@ export function createMockShell(): ShellApi {
     },
     async closeWindow(): Promise<void> {
       await Promise.resolve()
+    },
+    async setWindowTheme(): Promise<void> {
+      await Promise.resolve()
+    },
+    async setDesktopShortcutStyle(style: 'light' | 'dark'): Promise<DesktopShortcutResult> {
+      return {
+        success: true,
+        message: `[Mock] 已将快捷方式切换为${style === 'light' ? '浅色' : '深色'}图标`
+      }
     }
   }
 }

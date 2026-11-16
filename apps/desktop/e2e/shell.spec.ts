@@ -29,6 +29,7 @@ test('opens a terminal in the project, runs commands, and closing it stops them'
   const { page } = await launchDevhub()
   await addProjectViaApi(page, dir)
 
+  await page.getByRole('button', { name: /^终端/ }).click()
   await page.getByRole('button', { name: '新建终端' }).click()
   await expect(page.getByRole('button', { name: '终端 1', exact: true })).toBeVisible()
   // The project list shows that this project now has a live terminal.

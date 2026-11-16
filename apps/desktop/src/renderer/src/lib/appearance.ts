@@ -1,3 +1,5 @@
+import { shell } from '@renderer/api'
+
 /** Light/dark mode: follow the OS by default, or a fixed choice stored per device. */
 export type ThemePreference = 'system' | 'light' | 'dark'
 
@@ -12,9 +14,15 @@ function readPreference(): ThemePreference {
 
 function apply(): void {
   const root = document.documentElement
-  root.classList.toggle('dark', appearance.isDark())
+  const isDark = appearance.isDark()
+  root.classList.toggle('dark', isDark)
   delete root.dataset.style
   listeners.forEach((listener) => listener())
+  if (shell?.setWindowTheme) {
+    void shell.setWindowTheme(isDark ? 'dark' : 'light').catch(() => {
+      // Ignored if window is closing or not supported
+    })
+  }
 }
 
 export const appearance = {

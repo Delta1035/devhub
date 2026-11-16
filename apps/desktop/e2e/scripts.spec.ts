@@ -58,7 +58,9 @@ test('runs custom scripts from .devhub.yaml and points at mistakes in it', async
   await expect(main.getByRole('heading', { name: '自定义' })).toBeVisible()
   await expect(main.getByText('本地 mock 服务')).toBeVisible()
   await page.getByRole('button', { name: '运行 mock' }).click()
+  await page.getByRole('button', { name: '查看 mock 终端' }).click()
   await expect(page.locator('.xterm-rows')).toContainText('mock from tools')
+  await page.getByRole('button', { name: /^脚本/ }).click()
 
   await writeFile(join(dir, '.devhub.yaml'), 'scripts:\n  mock:\n    command: "oops\n')
   await page.getByRole('button', { name: '刷新' }).click()

@@ -8,7 +8,6 @@ import { useRuns, useStartScript } from '@renderer/features/runs/use-runs'
 import { ScriptList } from '@renderer/features/scripts/script-list'
 import { useProjectScripts } from '@renderer/features/scripts/use-scripts'
 import { TerminalPanel } from '@renderer/features/terminal/terminal-panel'
-import { cn } from '@renderer/lib/utils'
 import { ProjectHeader } from './project-header'
 import { ProjectHistoryTab } from './project-history-tab'
 import { ProjectSettingsTab } from './project-settings-tab'
@@ -36,7 +35,6 @@ export function ProjectDetail({
   const [filterQuery, setFilterQuery] = useState('')
   const [activeRunId, setActiveRunId] = useState<string | null>(initialRunId)
   const [editorError, setEditorError] = useState<Error | null>(null)
-  const [terminalMaximized, setTerminalMaximized] = useState(false)
 
   const scriptItems = scripts.data?.scripts ?? []
 
@@ -102,30 +100,20 @@ export function ProjectDetail({
         </Alert>
       )}
 
-      {/* Tab 1: Scripts View (Split view with TerminalPanel at bottom) */}
+      {/* Tab 1: Scripts View (Pure list view, no split terminal) */}
       {currentTab === 'scripts' && (
-        <>
-          <div
-            className={cn(
-              'min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6',
-              terminalMaximized && 'hidden'
-            )}
-          >
-            <ScriptList
-              project={project}
-              filterQuery={filterQuery}
-              onRunStarted={(run) => setActiveRunId(run.id)}
-              onOpenSettings={() => setCurrentTab('settings')}
-            />
-          </div>
-          <TerminalPanel
-            projectId={project.id}
-            activeRunId={activeRunId}
-            onActiveRunChange={setActiveRunId}
-            maximized={terminalMaximized}
-            onToggleMaximized={() => setTerminalMaximized(!terminalMaximized)}
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6">
+          <ScriptList
+            project={project}
+            filterQuery={filterQuery}
+            onRunStarted={(run) => setActiveRunId(run.id)}
+            onViewTerminal={(runId) => {
+              setActiveRunId(runId)
+              setCurrentTab('terminals')
+            }}
+            onOpenSettings={() => setCurrentTab('settings')}
           />
-        </>
+        </div>
       )}
 
       {/* Tab 2: Terminals View (Terminal Panel takes full area) */}

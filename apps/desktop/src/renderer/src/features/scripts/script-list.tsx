@@ -15,6 +15,7 @@ interface ScriptListProps {
   filterQuery?: string
   /** Called with a freshly started run so the terminal panel can switch to it. */
   onRunStarted: (run: Run) => void
+  onViewTerminal?: (runId: string) => void
   onOpenSettings?: () => void
 }
 
@@ -22,6 +23,7 @@ export function ScriptList({
   project,
   filterQuery = '',
   onRunStarted,
+  onViewTerminal,
   onOpenSettings
 }: ScriptListProps): React.JSX.Element {
   const scripts = useProjectScripts(project.id)
@@ -149,6 +151,7 @@ export function ScriptList({
           activeGroups={activeGroups}
           onRunError={(error, retry) => setRunError({ error, retry })}
           onRunStarted={onRunStarted}
+          onViewTerminal={onViewTerminal}
           onOpenSettings={onOpenSettings}
         />
       ))}

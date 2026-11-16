@@ -35,6 +35,7 @@ test('quitting DevHub stops the whole process tree of running scripts', async ({
   await addProjectViaApi(page, dir)
 
   await page.getByRole('button', { name: '运行 serve' }).click()
+  await page.getByRole('button', { name: '查看 serve 终端' }).click()
   await expect(page.locator('.xterm-rows')).toContainText('serving')
 
   const pids = pidsSchema.parse(JSON.parse(await readFile(join(dir, 'pids.json'), 'utf8')))
@@ -72,6 +73,7 @@ test.describe('SIGTERM', () => {
     const { app, page } = await launchDevhub()
     await addProjectViaApi(page, dir)
     await page.getByRole('button', { name: '运行 serve' }).click()
+    await page.getByRole('button', { name: '查看 serve 终端' }).click()
     await expect(page.locator('.xterm-rows')).toContainText('serving')
     const pids = pidsSchema.parse(JSON.parse(await readFile(join(dir, 'pids.json'), 'utf8')))
     const tree = [pids.parent, pids.child]

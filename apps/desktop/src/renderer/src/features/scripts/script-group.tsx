@@ -7,7 +7,8 @@ import {
   MoreHorizontal,
   Package,
   Play,
-  ShieldCheck
+  ShieldCheck,
+  SquareTerminal
 } from 'lucide-react'
 import type { Run, Script, ScriptSource } from '@devhub/shared'
 import { Badge } from '@renderer/components/ui/badge'
@@ -48,6 +49,7 @@ export interface ScriptGroupProps {
   activeGroups: ActiveGroupView[]
   onRunError: (error: Error, retry?: () => void) => void
   onRunStarted: (run: Run) => void
+  onViewTerminal?: (runId: string) => void
   onOpenSettings?: () => void
 }
 
@@ -59,6 +61,7 @@ export function ScriptGroup({
   activeGroups,
   onRunError,
   onRunStarted,
+  onViewTerminal,
   onOpenSettings
 }: ScriptGroupProps): React.JSX.Element {
   // All scripts of one source share the executable, e.g. "pnpm" or "mvnw.cmd".
@@ -158,6 +161,18 @@ export function ScriptGroup({
                 onError={onRunError}
                 onStarted={onRunStarted}
               />
+              {run && onViewTerminal && (
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={() => onViewTerminal(run.id)}
+                  title="查看终端"
+                  aria-label={`查看 ${script.name} 终端`}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <SquareTerminal className="size-3.5" />
+                </Button>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -171,6 +186,12 @@ export function ScriptGroup({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-36">
+                  {run && onViewTerminal && (
+                    <DropdownMenuItem onClick={() => onViewTerminal(run.id)}>
+                      <SquareTerminal className="size-3.5 mr-1.5" />
+                      查看终端
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     onClick={() => {
                       navigator.clipboard

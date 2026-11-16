@@ -212,6 +212,15 @@ export interface ShellApi {
   toggleMaximizeWindow(): Promise<void>
   /** Same as the system close button: hides to the tray or quits, per settings. */
   closeWindow(): Promise<void>
+  /** Sets the runtime window and taskbar / Dock icon according to current theme ('light' | 'dark'). */
+  setWindowTheme(theme: 'light' | 'dark'): Promise<void>
+  /** Updates the Windows desktop shortcut icon to light or dark style. */
+  setDesktopShortcutStyle(style: 'light' | 'dark'): Promise<DesktopShortcutResult>
+}
+
+export interface DesktopShortcutResult {
+  success: boolean
+  message: string
 }
 
 export interface WindowState {
@@ -251,5 +260,7 @@ export const shellChannel = {
   windowState: 'shell:windowState',
   minimizeWindow: 'shell:minimizeWindow',
   toggleMaximizeWindow: 'shell:toggleMaximizeWindow',
-  closeWindow: 'shell:closeWindow'
+  closeWindow: 'shell:closeWindow',
+  setWindowTheme: 'shell:setWindowTheme',
+  setDesktopShortcutStyle: 'shell:setDesktopShortcutStyle'
 } as const

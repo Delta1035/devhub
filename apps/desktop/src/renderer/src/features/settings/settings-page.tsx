@@ -17,6 +17,7 @@ import {
   terminalPrefs
 } from '@renderer/features/terminal/terminal-prefs'
 import { appearance, type ThemePreference } from '@renderer/lib/appearance'
+import { notify } from '@renderer/lib/notifications'
 import { CustomShellsEditor } from './custom-shells-editor'
 import { RemoteSection } from './remote-section'
 import { UpdatesSection } from './updates-section'
@@ -80,6 +81,26 @@ export function SettingsPage({ onClose }: { onClose: () => void }): React.JSX.El
 
 function AppearanceSection(): React.JSX.Element {
   const theme = usePreference(appearance, appearance.preference)
+  const [isUpdatingShortcut, setIsUpdatingShortcut] = useState(false)
+
+  const handleShortcutStyle = async (style: 'light' | 'dark'): Promise<void> => {
+    if (!shell?.setDesktopShortcutStyle) return
+    setIsUpdatingShortcut(true)
+    try {
+      const res = await shell.setDesktopShortcutStyle(style)
+      if (res.success) {
+        notify.success(res.message)
+      } else {
+        notify.error(res.message)
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      notify.error(`更改快捷方式图标失败：${message}`)
+    } finally {
+      setIsUpdatingShortcut(false)
+    }
+  }
+
   return (
     <SettingsSection title="外观">
       <SettingRow label="模式" description="只影响当前设备">
@@ -94,6 +115,34 @@ function AppearanceSection(): React.JSX.Element {
           ]}
         />
       </SettingRow>
+
+      {shell?.setDesktopShortcutStyle && (
+        <SettingRow
+          label="桌面快捷方式图标"
+          description="更新 Windows 桌面上的 DevHub 快捷方式图标风格"
+        >
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isUpdatingShortcut}
+              onClick={() => void handleShortcutStyle('light')}
+            >
+              应用浅色图标
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isUpdatingShortcut}
+              onClick={() => void handleShortcutStyle('dark')}
+            >
+              应用深色图标
+            </Button>
+          </div>
+        </SettingRow>
+      )}
     </SettingsSection>
   )
 }

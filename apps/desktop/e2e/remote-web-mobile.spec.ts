@@ -97,8 +97,10 @@ test('on a phone-sized screen the web app uses a drawer and still drives scripts
 
   await web.getByRole('button', { name: '运行 tick' }).click()
   await expect(tickRow.getByText('运行中')).toBeVisible()
+  await web.getByRole('button', { name: '查看 tick 终端' }).click()
   await expect(web.locator('.xterm-rows')).toContainText('tick 2')
   await web.screenshot({ path: testInfo.outputPath('phone-running.png') })
+  await web.getByRole('button', { name: /^脚本/ }).click()
   await web.getByRole('button', { name: '停止 tick' }).click()
   await expect(tickRow.getByText('已停止')).toBeVisible()
 
