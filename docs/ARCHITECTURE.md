@@ -74,6 +74,7 @@ React UI ──> @renderer/api ──> DevhubApi (packages/shared)
 - 远程 HTTP（`core/remote/`，ADR 0022）：`remote-server.ts` 用 `node:http` 把 `devhubApiMethods` 映射为 `POST /api/v1/<method>`（请求体 `{ args }`，上限 1 MB），依次检查失败次数限速、Bearer Token、shared 的 `remoteAccess` 分级与 JSON 类型，再调用与 IPC 相同的 `api` 对象，返回同一 `IpcResult` 信封（`api-result.ts`）。`GET /api/v1/events`（`event-stream.ts`）以 SSE 推送全部 core 事件：订阅后先发 `ready`，15 秒心跳，单连接积压超过 4 MB 即断开；服务关闭时主动结束所有事件流并取消订阅。`remote-host.ts` 由 `createDevhubCore` 创建，按 `remote.json`（`remote-config.ts`，首次读取时生成 Token）决定是否监听，启动失败只记录日志；`dispose` 时最先关闭。远程配置经 `getRemoteState` / `updateRemoteConfig` / `regenerateRemoteToken`（级别 `local`）读写：`remote-host.ts` 串行执行，每次修改校验后保存并重启服务（新 Token 因此断开旧连接），监听失败（端口占用、地址不可用）记为状态而不抛出；监听地址只能是本机网卡地址（`network-addresses.ts`，排序：Tailscale → 局域网私有地址 → 其他 → 代理虚拟网卡 `198.18.0.0/15`，各组内 IPv4 在前；虚拟网卡在设置页标注手机通常无法访问）、`127.0.0.1` 或 `0.0.0.0`。设置页「远程访问」（`features/settings/remote-section.tsx`）只在桌面端显示（`shell` 非空），二维码内容为 shared `remoteConnectUrl`（Token 在 `#` 片段中，ADR 0023），由 `uqr` 编码、React 绘制 SVG。
 - 移动端导航：`App` 挂载时订阅工作区查询；返回前台时重扫，打开窄屏抽屉时不重复重扫。窄屏项目行只挂载按钮与更多菜单入口，菜单操作在打开时才挂载；宽屏保留右键菜单、更多操作和编辑器按钮（已移除悬浮卡片以避免遮挡与误触）。
 - 窄屏侧栏首次展开时先显示静态骨架，Sheet 的进入动画结束后才挂载真实侧栏；取消展开后仍保留骨架状态，再次打开可继续等待动画。真实侧栏挂载过一次后，后续打开直接显示内容；偏好减少动态效果时立即显示内容。
+- 功能导航布局（#117）：`features/sidebar/sidebar.tsx` 只承载「项目」「批量」「运行中」三个稳定入口及选中态/运行数量提示；项目列表与详情由 `features/projects/project-workspace.tsx` 在右侧内容区组合，批量由 `BatchWorkspace` 自持列表与详情，运行中由 `features/runs/running-workspace.tsx` 展示脚本和批量任务。窄屏抽屉只挂载功能导航，选择入口后关闭，桌面端与远程网页共用同一布局。
 
 这些边界由 ESLint 强制（见根目录 `eslint.config.mjs`）。
 
@@ -154,7 +155,7 @@ Linux 已打包版本由 `APPIMAGE` 或 electron-builder 写入 `resources/packa
 - `workspace-sync.ts`：纯函数，根据扫描结果规划增删。扫描不完整、根目录不可用、项目运行中或路径状态因权限 / I/O 错误无法确认时不移除；完整扫描后可移除已删除或不再符合项目条件的路径，已排除路径始终移除。
 - `workspace-service.ts`：工作区存储与 API 实现；所有操作排队串行，并发重扫合并；通过 `ProjectService.addDiscovered` / `removeMany` 一次写入，移除的项目经注入的 `forgetProject` 清理历史。重扫也会校验手动添加项目的路径，确认不存在且没有运行中进程时移除，权限 / I/O 错误时保留。`removeProject`（DevhubApi）也由它实现，以便把被移除的工作区内项目记入 `excluded`。
 - 路径比较统一用 `core/fs/path-compare.ts`（Windows 不区分大小写；`isWithin` 只把 `..` 段视为越界）。
-- renderer：`features/workspaces/` 提供查询（查询即重扫，挂载与窗口聚焦时触发）、`projects-updated` 事件同步、侧栏分组与设置对话框；项目条目在 `features/projects/project-item.tsx`（悬停详情 `project-summary.tsx`、右键菜单与触屏「⋯」菜单 `project-menu.tsx`（共用菜单项，动作在 `use-project-menu-actions.ts`）、移除确认与详情对话框 `project-dialogs.tsx`，对话框状态由 `project-list.tsx` 统一持有）。侧栏宽度由 `features/sidebar/use-resizable-width.ts` 管理（拖动 / 方向键 / 双击复位，存 localStorage）。
+- renderer：`features/workspaces/` 提供查询（查询即重扫，挂载与窗口聚焦时触发）、`projects-updated` 事件同步、项目列表与工作区设置对话框；项目条目在 `features/projects/project-item.tsx`（悬停详情 `project-summary.tsx`、右键菜单与触屏「⋯」菜单 `project-menu.tsx`（共用菜单项，动作在 `use-project-menu-actions.ts`）、移除确认与详情对话框 `project-dialogs.tsx`，对话框状态由 `project-list.tsx` 统一持有），由 `project-workspace.tsx` 与项目详情并列呈现。功能入口由 `features/sidebar/sidebar.tsx` 管理，侧栏宽度由 `features/sidebar/use-resizable-width.ts` 管理（拖动 / 方向键 / 双击复位，存 localStorage）。
 
 ## 进程管理（`core/process/`，见 ADR 0003）
 
@@ -192,7 +193,7 @@ Linux 已打包版本由 `APPIMAGE` 或 electron-builder 写入 `resources/packa
 
 - `features/groups/group-detail.tsx` 展示任务运行详情（包含 `GroupProgressBar` 分段进度条、`GroupStepCard` 步骤时间线卡片与 `GroupOutputPanel` 嵌入式任务输出面板，纯逻辑与时间/条件格式化由 `packages/shared/src/group-format.ts` 提供），App 管理项目与任务选择；日志入口携带具体 `runId` 切换到项目终端。
 - `GroupRunState` 可选保存执行配置快照与每步 `reused` 标志，随最近结果持久化。流程状态与实时 Run / RunHealth 独立，停止使用最近执行配置，兼容旧历史（ADR 0006 补充）。
-- 「正在运行的批量任务」由 shared 的 `activeGroups(states, runs)` 从最近执行状态与实时 Run 推导（执行中，或执行结束但步骤的 `runId` 仍未退出），不新增 API；renderer 经 `features/groups/use-active-groups.ts` 用于侧栏常驻条、「批量」标签、标题栏与脚本行徽标。
+- 「正在运行的批量任务」由 shared 的 `activeGroups(states, runs)` 从最近执行状态与实时 Run 推导（执行中，或执行结束但步骤的 `runId` 仍未退出），不新增 API；renderer 经 `features/groups/use-active-groups.ts` 用于功能导航运行数量、运行中工作区与脚本行徽标。
 - Windows 使用 NSIS 安装向导，`build/installer.nsh` 的 nsDialogs 目录页在浏览选择时更新输入框、手动输入时预览最终路径，统一规范新选目录为 `devhub` 尾目录，并保留原安装位置及静默升级路径（ADR 0014）。
 
 ## 安全

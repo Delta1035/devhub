@@ -200,7 +200,10 @@ export function TerminalPanel({
         </Button>
       </header>
       {terminalSearchOpen && (
-        <div className="flex items-center gap-2 border-b border-border bg-[#171C23] px-3 py-1.5 text-xs">
+        <div
+          data-theme-surface="terminal-search-bar"
+          className="flex items-center gap-2 border-b border-terminal-border bg-terminal-header px-3 py-1.5 text-xs"
+        >
           <Search className="size-3.5 text-muted-foreground shrink-0" />
           <input
             type="text"

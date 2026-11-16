@@ -1,7 +1,8 @@
 import type { Page } from '@playwright/test'
 import { addProjectViaApi, expect, packageJson, test, type DevhubWindow } from './fixtures'
 
-const projectItems = (page: Page) => page.locator('aside section[aria-label="独立项目"] li')
+const projectList = (page: Page) => page.getByRole('region', { name: '项目列表' })
+const projectItems = (page: Page) => projectList(page).locator('section[aria-label="独立项目"] li')
 
 test('pins a project above active projects and keeps the pin after restart', async ({
   launchDevhub,
@@ -25,13 +26,13 @@ test('pins a project above active projects and keeps the pin after restart', asy
   await addProjectViaApi(page, charlie)
 
   await page
-    .locator('aside')
+    .getByRole('region', { name: '项目列表' })
     .getByRole('button', { name: /^beta-app/ })
     .click()
   await page.getByRole('button', { name: '运行 serve' }).click()
   await expect(projectItems(page).first()).toContainText('beta-app')
 
-  const charlieButton = page.locator('aside').getByRole('button', { name: /^charlie-app/ })
+  const charlieButton = projectList(page).getByRole('button', { name: /^charlie-app/ })
   await charlieButton.click({ button: 'right' })
   await page.getByRole('menuitem', { name: '置顶', exact: true }).click()
   await expect(projectItems(page).first()).toContainText('charlie-app')
@@ -43,7 +44,7 @@ test('pins a project above active projects and keeps the pin after restart', asy
   await expect(projectItems(page).first().getByLabel('已置顶')).toBeVisible()
 
   await page
-    .locator('aside')
+    .getByRole('region', { name: '项目列表' })
     .getByRole('button', { name: /^charlie-app/ })
     .click({ button: 'right' })
   await page.getByRole('menuitem', { name: '取消置顶' }).click()
@@ -73,7 +74,7 @@ test('pins a batch task from its operations menu and keeps the pin after restart
     await api.saveGroup({ name: 'alpha-task', mode: 'parallel', steps: [step] })
     await api.saveGroup({ name: 'beta-task', mode: 'parallel', steps: [step] })
   })
-  await page.getByRole('tab', { name: '批量' }).click()
+  await page.getByRole('button', { name: '批量', exact: true }).click()
   const groupItems = () => page.getByRole('region', { name: '批量任务' }).getByRole('listitem')
   await expect(groupItems().first()).toContainText('alpha-task')
 
@@ -84,7 +85,7 @@ test('pins a batch task from its operations menu and keeps the pin after restart
 
   await app.close()
   page = (await launchDevhub()).page
-  await page.getByRole('tab', { name: '批量' }).click()
+  await page.getByRole('button', { name: '批量', exact: true }).click()
   await expect(groupItems().first()).toContainText('beta-task')
   await expect(groupItems().first().getByLabel('已置顶')).toBeVisible()
 

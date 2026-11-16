@@ -1,126 +1,77 @@
-import { useState } from 'react'
-import type { Run } from '@devhub/shared'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
-import { GroupList } from '@renderer/features/groups/group-list'
-import { describeActiveGroups, useActiveGroups } from '@renderer/features/groups/use-active-groups'
-import { ProjectList } from '@renderer/features/projects/project-list'
-import { useProjects } from '@renderer/features/projects/use-projects'
-import { useRuns } from '@renderer/features/runs/use-runs'
+import { Activity, FolderKanban, Layers3 } from 'lucide-react'
 import { cn } from '@renderer/lib/utils'
-import { SidebarBottom } from './sidebar-bottom'
-import { SidebarRunningSection } from './sidebar-running-section'
 
-type SidebarTab = 'projects' | 'groups'
-
-const tabKey = 'devhub.sidebarTab'
+export type SidebarView = 'projects' | 'groups' | 'running'
 
 interface SidebarProps {
-  narrow: boolean
-  activeTab?: SidebarTab
-  onTabChange?: (tab: SidebarTab) => void
-  selectedGroupId: string | null
-  onSelectGroup: (groupId: string) => void
-  /** Highlighted project; null while the settings page is open. */
-  selectedProjectId: string | null
-  /** Project new groups start from. */
-  currentProjectId: string | null
-  onSelectProject: (projectId: string) => void
-  /** Selects the run's project and shows its terminal tab. */
-  onOpenRun: (run: Run) => void
-  onToggleSettings?: () => void
+  activeView: SidebarView
+  activeCount: number
+  onViewChange: (view: SidebarView) => void
 }
 
-/** Projects and batch groups share the sidebar as tabs, with persistent running monitor at the bottom. */
+const navigationItems: { view: SidebarView; label: string; icon: typeof FolderKanban }[] = [
+  { view: 'projects', label: '项目', icon: FolderKanban },
+  { view: 'groups', label: '批量', icon: Layers3 },
+  { view: 'running', label: '运行中', icon: Activity }
+]
+
+/** Stable feature navigation; feature-specific lists belong in the content area. */
 export function Sidebar({
-  narrow,
-  activeTab,
-  onTabChange,
-  selectedGroupId,
-  onSelectGroup,
-  selectedProjectId,
-  currentProjectId,
-  onSelectProject,
-  onOpenRun,
-  onToggleSettings
+  activeView,
+  activeCount,
+  onViewChange
 }: SidebarProps): React.JSX.Element {
-  const [internalTab, setInternalTab] = useState<SidebarTab>(() =>
-    localStorage.getItem(tabKey) === 'groups' ? 'groups' : 'projects'
-  )
-  const tab = activeTab ?? internalTab
-  const activeGroups = useActiveGroups()
-  const activeRuns = (useRuns().data ?? []).filter((run) => run.status !== 'exited')
-  const projects = useProjects().data ?? []
-
-  const changeTab = (value: string): void => {
-    const next: SidebarTab = value === 'groups' ? 'groups' : 'projects'
-    setInternalTab(next)
-    localStorage.setItem(tabKey, next)
-    onTabChange?.(next)
-  }
-
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
-      <Tabs value={tab} onValueChange={changeTab} className="flex min-h-0 flex-1 flex-col gap-2">
-        <TabsList className="grid w-full grid-cols-2 shrink-0">
-          <TabsTrigger value="projects">项目</TabsTrigger>
-          <TabsTrigger value="groups">
-            批量
-            {activeGroups.length > 0 && (
-              <span
-                role="status"
-                aria-label={`正在运行：${describeActiveGroups(activeGroups)}`}
-                title={`正在运行：${describeActiveGroups(activeGroups)}`}
+      <nav aria-label="功能导航" className="flex flex-col gap-1">
+        <p className="px-2 py-1 text-[10px] font-semibold tracking-[0.18em] text-muted-foreground/70">
+          功能
+        </p>
+        {navigationItems.map(({ view, label, icon: Icon }) => {
+          const selected = activeView === view
+          return (
+            <button
+              key={view}
+              type="button"
+              aria-label={label}
+              aria-current={selected ? 'page' : undefined}
+              onClick={() => onViewChange(view)}
+              className={cn(
+                'group flex h-9 w-full items-center gap-2 rounded-md px-2.5 text-left text-xs transition-colors',
+                selected
+                  ? 'bg-primary font-semibold text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
+              )}
+            >
+              <Icon
                 className={cn(
-                  'ml-1 size-1.5 rounded-full',
-                  activeGroups.some((group) => group.phase === 'starting')
-                    ? 'animate-pulse bg-info'
-                    : 'bg-success'
+                  'size-4 shrink-0',
+                  selected
+                    ? 'text-primary-foreground'
+                    : 'text-muted-foreground group-hover:text-foreground'
                 )}
               />
-            )}
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="projects" className="min-h-0 flex-1 overflow-y-auto">
-          <ProjectList
-            narrow={narrow}
-            selectedId={selectedProjectId}
-            onSelect={onSelectProject}
-            onOpenRun={onOpenRun}
-          />
-        </TabsContent>
-        <TabsContent value="groups" className="min-h-0 flex-1 overflow-y-auto">
-          {narrow ? (
-            <GroupList
-              selectedGroupId={selectedGroupId}
-              onSelectGroup={onSelectGroup}
-              selectedProjectId={currentProjectId}
-              onSelectProject={onSelectProject}
-            />
-          ) : (
-            <ProjectList
-              narrow={narrow}
-              selectedId={selectedProjectId}
-              onSelect={onSelectProject}
-              onOpenRun={onOpenRun}
-            />
-          )}
-        </TabsContent>
-      </Tabs>
+              <span className="min-w-0 flex-1 truncate">{label}</span>
+              {view === 'running' && activeCount > 0 && (
+                <span
+                  role="status"
+                  aria-label={`运行中 ${activeCount} 项`}
+                  className={cn(
+                    'rounded px-1.5 py-0.5 font-mono text-[10px] font-medium',
+                    selected
+                      ? 'bg-primary-foreground/20 text-primary-foreground'
+                      : 'bg-success/15 text-success'
+                  )}
+                >
+                  {activeCount}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </nav>
 
-      {/* Active running tasks monitor (runs & batch groups) */}
-      <SidebarRunningSection
-        activeRuns={activeRuns}
-        activeGroups={activeGroups}
-        projects={projects}
-        onSelectGroup={(groupId) => {
-          changeTab('groups')
-          onSelectGroup(groupId)
-        }}
-        onOpenRun={onOpenRun}
-      />
-
-      {/* Persistent sidebar bottom navigation aligned with prototype */}
-      <SidebarBottom currentTab={tab} onSelectTab={changeTab} onToggleSettings={onToggleSettings} />
+      <div className="min-h-0 flex-1" />
     </div>
   )
 }

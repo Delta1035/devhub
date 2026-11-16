@@ -58,16 +58,19 @@ export function ProjectSettingsEditor({
   return (
     <div className="space-y-3">
       {/* Code Editor Box */}
-      <div className="overflow-hidden rounded-lg border border-border bg-[#08090C]">
+      <div
+        data-theme-surface="code-editor"
+        className="overflow-hidden rounded-lg border border-terminal-border bg-terminal"
+      >
         {/* Editor Header */}
-        <div className="flex items-center justify-between border-b border-border bg-[#0C0F13] px-3 py-1.5 text-xs">
+        <div className="flex items-center justify-between border-b border-terminal-border bg-terminal-header px-3 py-1.5 text-xs">
           <div className="flex items-center gap-2">
             <FileCode className="size-3.5 text-primary" />
             <span className="font-mono text-[11px] text-foreground font-medium">.devhub.yaml</span>
             {isDirty ? (
               <Badge
                 variant="secondary"
-                className="bg-[#2A2118] text-[#F5C451] border-0 text-[10px]"
+                className="border-0 bg-terminal-warning/15 text-terminal-warning text-[10px]"
               >
                 未保存的更改
               </Badge>
@@ -104,7 +107,7 @@ export function ProjectSettingsEditor({
 
         {/* Code Area with Line Numbers */}
         <div className="flex min-h-[180px] font-mono text-xs">
-          <div className="select-none bg-[#0A0D10] py-2 px-2.5 text-right text-[11px] text-[#6F7A8B] border-r border-[#212731]">
+          <div className="select-none border-r border-terminal-border bg-terminal-gutter py-2 px-2.5 text-right text-[11px] text-terminal-muted">
             {Array.from({ length: Math.max(lineCount, 6) }).map((_, i) => (
               <div key={i} className="leading-5">
                 {i + 1}
@@ -114,7 +117,7 @@ export function ProjectSettingsEditor({
           <textarea
             value={yamlContent}
             onChange={(e) => onYamlChange(e.target.value)}
-            className="flex-1 resize-none bg-transparent p-2 leading-5 text-[#E8ECF2] placeholder:text-muted-foreground outline-none font-mono selection:bg-primary/20"
+            className="flex-1 resize-none bg-transparent p-2 leading-5 text-terminal-foreground placeholder:text-muted-foreground outline-none font-mono selection:bg-primary/20"
             rows={Math.max(lineCount, 6)}
             spellCheck={false}
           />
@@ -132,7 +135,7 @@ export function ProjectSettingsEditor({
           {parsedItems.map((item) => (
             <span
               key={item.name}
-              className="rounded border border-border-strong bg-[#171C23] px-2 py-0.5 font-mono text-[11px] text-[#7FB2FF]"
+              className="rounded border border-terminal-border bg-terminal-chip px-2 py-0.5 font-mono text-[11px] text-terminal-info"
             >
               {item.name} → {item.command}
             </span>

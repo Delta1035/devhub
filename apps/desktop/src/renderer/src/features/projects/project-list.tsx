@@ -182,6 +182,16 @@ export function ProjectList({
         )}
       </header>
 
+      {(projects.isLoading || workspaces.isLoading) && (
+        <p
+          role="status"
+          aria-label="项目加载中"
+          className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground"
+        >
+          正在加载项目…
+        </p>
+      )}
+
       {projects.data?.length === 0 && workspaceList.length === 0 && (
         <p className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
           {shell

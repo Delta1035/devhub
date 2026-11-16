@@ -212,7 +212,10 @@ export function RunDetailPanel({
           )}
 
           {/* 终端日志代码框 */}
-          <div className="min-h-[160px] flex-1 overflow-auto rounded-lg border border-border bg-[#0B0D10] p-2.5 font-mono text-[10.5px] leading-relaxed text-muted-foreground">
+          <div
+            data-theme-surface="run-log"
+            className="min-h-[160px] flex-1 overflow-auto rounded-lg border border-terminal-border bg-terminal p-2.5 font-mono text-[10.5px] leading-relaxed text-terminal-muted"
+          >
             {tailLines.length > 0 ? (
               tailLines.map((line, idx) => (
                 <div
@@ -227,7 +230,7 @@ export function RunDetailPanel({
                 </div>
               ))
             ) : (
-              <span className="text-muted-foreground/50">无输出日志</span>
+              <span className="text-terminal-muted/50">无输出日志</span>
             )}
           </div>
         </div>

@@ -244,7 +244,7 @@ for (const mode of ['serial', 'parallel'] as const) {
       { dir, mode, ports: [first.port, second.port] }
     )
     await page.reload()
-    await page.getByRole('tab', { name: '批量' }).click()
+    await page.getByRole('button', { name: '批量', exact: true }).click()
     const item = page.getByRole('listitem', { name: '批量任务 replace listeners' })
     await item.getByRole('button', { name: '执行 replace listeners' }).click()
 

@@ -10,9 +10,9 @@ setInterval(() => {}, 1000)
 const listRuns = (page: Page) =>
   page.evaluate(() => (window as unknown as DevhubWindow).devhub.listRuns())
 
-/** Switches the sidebar to the groups tab. */
+/** Switches the feature navigation to the batch workspace. */
 const openGroups = async (page: Page) => {
-  await page.getByRole('tab', { name: '批量' }).click()
+  await page.getByRole('button', { name: '批量', exact: true }).click()
   return page.getByRole('region', { name: '批量任务' })
 }
 
@@ -63,18 +63,22 @@ test('a serial group across projects waits for each step, then stops everything'
   const detail = page.getByRole('region', { name: '任务运行 front1' })
   await expect(detail).toContainText('输出出现文字「API ready」')
   await item.getByRole('button', { name: '执行 front1' }).click()
-  // The tab and the persistent bar name the group while it starts; the title bar stays clear.
-  const running = page.getByRole('tab', { name: /批量/ }).getByRole('status')
-  const bar = page.getByRole('region', { name: '正在运行的批量任务' })
+  // The feature navigation and the persistent bar name the group while it starts.
+  const running = page.getByRole('button', { name: '运行中', exact: true }).getByRole('status')
   const titleBar = page.getByRole('banner').getByRole('button', { name: /^正在运行：/ })
-  await expect(running).toHaveAttribute('aria-label', /front1（启动中 \d\/2）/)
+  await expect(running).toHaveText(/\d+/)
+  await page.getByRole('button', { name: '运行中', exact: true }).click()
+  const bar = page.getByRole('region', { name: '正在运行的批量任务' })
   await expect(bar).toContainText(/front1启动中 \d\/2/)
   await expect(titleBar).toHaveCount(0)
+  await page.getByRole('button', { name: '批量', exact: true }).click()
   await expect(item).toContainText('已完成', { timeout: 30_000 })
-  // The tab and bar remain while the servers keep running after the execution ended.
-  await expect(running).toHaveAttribute('aria-label', '正在运行：front1（运行中 2/2）')
+  // The navigation badge and bar remain while the servers keep running after the execution ended.
+  await expect(running).toHaveText(/\d+/)
+  await page.getByRole('button', { name: '运行中', exact: true }).click()
   await expect(bar).toContainText('front1运行中 2/2')
   await expect(titleBar).toHaveCount(0)
+  await page.getByRole('button', { name: '批量', exact: true }).click()
   await expect(detail).toContainText('2/2 个步骤完成')
   await expect(detail).toContainText('服务进程可能仍在运行')
   await expect(detail.getByRole('button', { name: '停止全部' })).toBeEnabled()

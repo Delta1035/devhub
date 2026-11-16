@@ -162,7 +162,10 @@ export function ProjectSettingsPorts({
             可在 <code className="font-mono text-foreground">.devhub.yaml</code>{' '}
             中为后端服务配置健康检查路径。服务返回 2xx 响应即标志为完全就绪（Ready）：
           </p>
-          <pre className="overflow-x-auto rounded border border-border bg-[#08090C] p-2.5 font-mono text-[11px] text-[#7FB2FF]">
+          <pre
+            data-theme-surface="code-sample"
+            className="overflow-x-auto rounded border border-terminal-border bg-terminal p-2.5 font-mono text-[11px] text-terminal-info"
+          >
             {`scripts:
   dev:
     command: pnpm run dev

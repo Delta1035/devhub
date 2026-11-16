@@ -3,6 +3,8 @@ import { addProjectViaApi, packageJson, test, expect, type DevhubWindow } from '
 const openSettings = async (page: import('@playwright/test').Page) => {
   await page.locator('header').getByRole('button', { name: '设置' }).click()
   await expect(page.getByRole('heading', { name: '设置' })).toBeVisible()
+  await page.locator('header').getByRole('button', { name: '设置' }).click()
+  await expect(page.getByRole('heading', { name: '设置' })).toBeVisible()
 }
 
 test('settings apply at once and survive a restart', async ({ launchDevhub, createProject }) => {
@@ -19,6 +21,33 @@ test('settings apply at once and survive a restart', async ({ launchDevhub, crea
   await page.getByRole('radio', { name: '浅色' }).click()
   await expect(page.locator('html')).not.toHaveClass(/dark/)
   const lightBg = await background()
+
+  // Embedded code and terminal surfaces must follow the selected light palette too.
+  await page.getByRole('button', { name: '返回' }).click()
+  await page.getByRole('button', { name: '项目设置', exact: true }).click()
+  await expect(page.locator('[data-theme-surface="code-editor"]')).toHaveCSS(
+    'background-color',
+    'rgb(251, 251, 251)'
+  )
+  await page.getByRole('button', { name: '端口与健康检查' }).click()
+  await expect(page.locator('[data-theme-surface="code-sample"]')).toHaveCSS(
+    'background-color',
+    'rgb(251, 251, 251)'
+  )
+
+  await page.getByRole('button', { name: '终端', exact: true }).click()
+  await page.getByRole('button', { name: '新建终端' }).click()
+  await expect(page.locator('[data-terminal-run] > div')).toHaveCSS(
+    'background-color',
+    'rgb(251, 251, 251)'
+  )
+  await page.getByRole('button', { name: '在终端中查找' }).click()
+  await expect(page.locator('[data-theme-surface="terminal-search-bar"]')).toHaveCSS(
+    'background-color',
+    'rgb(248, 250, 252)'
+  )
+  await page.getByRole('button', { name: '关闭 终端 1' }).click()
+  await openSettings(page)
 
   await page.getByRole('radio', { name: '深色' }).click()
   await expect(page.locator('html')).toHaveClass(/dark/)

@@ -13674,6 +13674,399 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "nav117",
+      "x": 1520,
+      "y": 0,
+      "name": "DevHub — 功能导航与运行中视图",
+      "clip": true,
+      "width": 960,
+      "height": 640,
+      "fill": "$bg-app",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "nav117-header",
+          "name": "导航原型说明",
+          "width": "fill_container",
+          "height": 48,
+          "fill": "$bg-panel",
+          "stroke": "$border",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "padding": [
+            0,
+            16
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "nav117-title",
+              "name": "标题",
+              "fill": "$text-primary",
+              "content": "功能导航布局 · 运行中视图",
+              "fontFamily": "$ui",
+              "fontSize": 13,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "nav117-note",
+              "name": "说明",
+              "fill": "$text-tertiary",
+              "content": "桌面与远程网页共用",
+              "fontFamily": "$ui",
+              "fontSize": 10,
+              "fontWeight": "normal",
+              "marginLeft": 12
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "nav117-body",
+          "name": "功能导航主体",
+          "width": "fill_container",
+          "height": "fill_container",
+          "children": [
+            {
+              "type": "frame",
+              "id": "nav117-sidebar",
+              "name": "功能导航列",
+              "width": 208,
+              "height": "fill_container",
+              "fill": "$bg-panel",
+              "stroke": "$border",
+              "strokeWidth": {
+                "right": 1
+              },
+              "layout": "vertical",
+              "gap": 6,
+              "padding": [
+                16,
+                12
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "nav117-label",
+                  "name": "导航标签",
+                  "fill": "$text-tertiary",
+                  "content": "功能",
+                  "fontFamily": "$ui",
+                  "fontSize": 10,
+                  "fontWeight": "600",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "nav117-projects",
+                  "name": "导航 · 项目",
+                  "width": "fill_container",
+                  "height": 36,
+                  "cornerRadius": 7,
+                  "gap": 9,
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "nav117-projects-icon",
+                      "name": "图标",
+                      "width": 15,
+                      "height": 15,
+                      "icon": "folder-kanban",
+                      "library": "lucide",
+                      "fill": "$text-secondary"
+                    },
+                    {
+                      "type": "text",
+                      "id": "nav117-projects-text",
+                      "name": "文字",
+                      "fill": "$text-secondary",
+                      "content": "项目",
+                      "fontFamily": "$ui",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "nav117-groups",
+                  "name": "导航 · 批量",
+                  "width": "fill_container",
+                  "height": 36,
+                  "cornerRadius": 7,
+                  "gap": 9,
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "nav117-groups-icon",
+                      "name": "图标",
+                      "width": 15,
+                      "height": 15,
+                      "icon": "layers-3",
+                      "library": "lucide",
+                      "fill": "$text-secondary"
+                    },
+                    {
+                      "type": "text",
+                      "id": "nav117-groups-text",
+                      "name": "文字",
+                      "fill": "$text-secondary",
+                      "content": "批量",
+                      "fontFamily": "$ui",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "nav117-running",
+                  "name": "导航 · 运行中",
+                  "width": "fill_container",
+                  "height": 36,
+                  "fill": "$accent-soft",
+                  "cornerRadius": 7,
+                  "gap": 9,
+                  "padding": [
+                    0,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "nav117-running-icon",
+                      "name": "图标",
+                      "width": 15,
+                      "height": 15,
+                      "icon": "activity",
+                      "library": "lucide",
+                      "fill": "$accent"
+                    },
+                    {
+                      "type": "text",
+                      "id": "nav117-running-text",
+                      "name": "文字",
+                      "fill": "$accent",
+                      "content": "运行中",
+                      "fontFamily": "$ui",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "nav117-running-count",
+                      "name": "数量",
+                      "fill": "$accent",
+                      "content": "3",
+                      "fontFamily": "$mono",
+                      "fontSize": 10,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "nav117-space",
+                  "name": "占位",
+                  "width": "fill_container",
+                  "height": "fill_container"
+                },
+                {
+                  "type": "text",
+                  "id": "nav117-mobile",
+                  "name": "窄屏说明",
+                  "fill": "$text-tertiary",
+                  "content": "窄屏：导航列收进左侧抽屉，选择入口后自动关闭",
+                  "fontFamily": "$ui",
+                  "fontSize": 10,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "nav117-content",
+              "name": "运行中内容区",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "nav117-content-heading",
+                  "name": "内容标题",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "nav117-content-icon",
+                      "name": "图标",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "activity",
+                      "library": "lucide",
+                      "fill": "$accent"
+                    },
+                    {
+                      "type": "text",
+                      "id": "nav117-content-title",
+                      "name": "标题",
+                      "fill": "$text-primary",
+                      "content": "运行中",
+                      "fontFamily": "$ui",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "nav117-content-count",
+                      "name": "数量",
+                      "fill": "$text-secondary",
+                      "content": "3 个活动项",
+                      "fontFamily": "$mono",
+                      "fontSize": 10,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "nav117-cards",
+                  "name": "运行中卡片",
+                  "width": "fill_container",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "nav117-card-1",
+                      "name": "运行项 · 项目脚本",
+                      "width": "fill_container",
+                      "height": 96,
+                      "fill": "$bg-panel",
+                      "cornerRadius": 9,
+                      "stroke": "$border",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 5,
+                      "padding": 14,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "nav117-card-1-title",
+                          "name": "标题",
+                          "fill": "$text-primary",
+                          "content": "shop-web · dev",
+                          "fontFamily": "$ui",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "nav117-card-1-meta",
+                          "name": "元信息",
+                          "fill": "$text-secondary",
+                          "content": "运行 12m 04s · 端口 3000",
+                          "fontFamily": "$mono",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "nav117-card-1-action",
+                          "name": "操作",
+                          "fill": "$accent",
+                          "content": "查看终端    停止",
+                          "fontFamily": "$ui",
+                          "fontSize": 10,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "nav117-card-2",
+                      "name": "运行项 · 批量任务",
+                      "width": "fill_container",
+                      "height": 96,
+                      "fill": "$bg-panel",
+                      "cornerRadius": 9,
+                      "stroke": "$border",
+                      "strokeWidth": 1,
+                      "layout": "vertical",
+                      "gap": 5,
+                      "padding": 14,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "nav117-card-2-title",
+                          "name": "标题",
+                          "fill": "$text-primary",
+                          "content": "本地开发环境",
+                          "fontFamily": "$ui",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "nav117-card-2-meta",
+                          "name": "元信息",
+                          "fill": "$text-secondary",
+                          "content": "批量任务 · 运行中 2 / 3",
+                          "fontFamily": "$mono",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "nav117-card-2-action",
+                          "name": "操作",
+                          "fill": "$accent",
+                          "content": "查看任务    停止全部",
+                          "fontFamily": "$ui",
+                          "fontSize": 10,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "nav117-empty",
+                  "name": "空状态说明",
+                  "fill": "$text-tertiary",
+                  "content": "无运行项时：显示“当前没有运行中的项目或批量任务”，保留项目与批量导航入口",
+                  "fontFamily": "$ui",
+                  "fontSize": 10,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "variables": {

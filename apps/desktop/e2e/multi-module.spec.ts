@@ -26,7 +26,7 @@ test('shows qualified Gradle and Maven application module commands', async ({
 
   await addProjectViaApi(page, maven)
   await page
-    .locator('aside')
+    .getByRole('region', { name: '项目列表' })
     .getByRole('button', { name: /maven-multi/, exact: false })
     .first()
     .click()

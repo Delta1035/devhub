@@ -9,7 +9,8 @@ test('project item actions, context menu and a resizable sidebar', async ({
   })
   const { app, page } = await launchDevhub()
   await addProjectViaApi(page, dir)
-  const item = page.locator('aside').getByRole('button', { name: /^a-project-with/ })
+  const projectList = page.getByRole('region', { name: '项目列表' })
+  const item = projectList.getByRole('button', { name: /^a-project-with/ })
 
   // Hovering does not open a hover card (removed to prevent visual distraction).
   await item.hover()
@@ -56,7 +57,7 @@ test('project item actions, context menu and a resizable sidebar', async ({
   const other = await createProject('other', { 'package.json': packageJson({ dev: 'node -v' }) })
   await addProjectViaApi(page, other)
   await page
-    .locator('aside')
+    .getByRole('region', { name: '项目列表' })
     .getByRole('button', { name: /^other/ })
     .click()
   await expect(page.getByRole('heading', { name: 'other' })).toBeVisible()
@@ -64,7 +65,9 @@ test('project item actions, context menu and a resizable sidebar', async ({
   await page.getByRole('menuitem', { name: '在 DevHub 终端中打开' }).click()
   await expect(page.getByRole('heading', { name: /^a-project-with/ })).toBeVisible()
   await expect(page.getByRole('button', { name: '终端 1', exact: true })).toBeVisible()
-  await expect(page.locator('aside').getByRole('status', { name: '1 个活动终端' })).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: '项目列表' }).getByRole('status', { name: '1 个活动终端' })
+  ).toBeVisible()
   await page.getByRole('button', { name: '关闭 终端 1' }).click()
   await expect(page.getByRole('button', { name: '终端 1', exact: true })).toBeHidden()
 

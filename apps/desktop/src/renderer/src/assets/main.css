@@ -45,6 +45,15 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-terminal: var(--bg-term);
+  --color-terminal-foreground: var(--text-primary);
+  --color-terminal-muted: var(--text-secondary);
+  --color-terminal-border: var(--border);
+  --color-terminal-header: var(--bg-panel-2);
+  --color-terminal-gutter: var(--bg-app);
+  --color-terminal-chip: var(--bg-panel-2);
+  --color-terminal-info: var(--info);
+  --color-terminal-warning: var(--warning);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
   --radius-sm: calc(var(--radius) * 0.6);
@@ -192,7 +201,7 @@
 }
 
 /* ==========================================================================
-   Global Scrollbar Styling (Unified Modern Dark Tech Look)
+   Global Scrollbar Styling (Theme-aware)
    ========================================================================== */
 
 /* Standards-compliant browsers (Firefox, modern CSS) */

@@ -11,6 +11,7 @@ import { useStopRun } from '@renderer/features/runs/use-runs'
 import { cn } from '@renderer/lib/utils'
 
 interface SidebarRunningSectionProps {
+  variant?: 'sidebar' | 'page'
   activeRuns: Run[]
   activeGroups: ActiveGroupView[]
   projects: Project[]
@@ -41,6 +42,7 @@ function useNow(enabled: boolean): number {
 }
 
 export function SidebarRunningSection({
+  variant = 'sidebar',
   activeRuns,
   activeGroups,
   projects,
@@ -58,14 +60,24 @@ export function SidebarRunningSection({
   const projectMap = new Map(projects.map((p) => [p.id, p.name]))
   const totalCount = activeRuns.length + activeGroups.length
 
+  const page = variant === 'page'
+
   return (
     <section
-      className="flex shrink-0 flex-col gap-1.5 border-t border-border/60 pt-2"
+      className={cn(
+        'flex flex-col',
+        page ? 'gap-3' : 'shrink-0 gap-1.5 border-t border-border/60 pt-2'
+      )}
       aria-label="运行中任务"
     >
       <header className="flex items-center justify-between px-1">
         <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-semibold tracking-wider text-muted-foreground">
+          <span
+            className={cn(
+              'font-semibold tracking-wider text-muted-foreground',
+              page ? 'text-sm' : 'text-[11px]'
+            )}
+          >
             运行中
           </span>
           <span className="rounded bg-success/15 px-1.5 py-0.5 font-mono text-[10px] font-medium text-success">
@@ -142,7 +154,7 @@ export function SidebarRunningSection({
 
       {/* Active Runs */}
       {activeRuns.length > 0 && (
-        <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto">
+        <ul className={cn('flex flex-col gap-1 overflow-y-auto', !page && 'max-h-48')}>
           {activeRuns.map((run) => {
             const projectName = projectMap.get(run.projectId) ?? '未知项目'
             const stopping =

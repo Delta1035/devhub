@@ -32,7 +32,7 @@ import { useWindowState } from './use-window-state'
 
 interface TitleBarProps {
   showSettings: boolean
-  onToggleSettings: () => void
+  onOpenSettings: () => void
   /** Opens the search palette dialog. */
   onOpenSearch?: () => void
   /** Opens the sidebar drawer; only given on narrow screens, where the sidebar is hidden. */
@@ -45,7 +45,7 @@ interface TitleBarProps {
  */
 export function TitleBar({
   showSettings,
-  onToggleSettings,
+  onOpenSettings,
   onOpenSearch,
   onOpenNavigation
 }: TitleBarProps): React.JSX.Element {
@@ -202,7 +202,7 @@ export function TitleBar({
         <Button
           variant={showSettings ? 'secondary' : 'ghost'}
           size="icon-sm"
-          onClick={onToggleSettings}
+          onClick={onOpenSettings}
           aria-label="设置"
           aria-pressed={showSettings}
           title="设置"

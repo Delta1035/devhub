@@ -99,9 +99,12 @@ export function GroupOutputPanel({
   }
 
   return (
-    <div className="flex flex-col border-t border-border bg-[#080A0D]">
+    <div
+      data-theme-surface="group-output"
+      className="flex flex-col border-t border-terminal-border bg-terminal"
+    >
       {/* Header */}
-      <div className="flex h-8 items-center gap-2 border-b border-border bg-[#0C0F13] px-4 text-xs md:px-6">
+      <div className="flex h-8 items-center gap-2 border-b border-terminal-border bg-terminal-header px-4 text-xs md:px-6">
         <ScrollText className="size-3 text-muted-foreground" />
         <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
           任务输出
@@ -138,24 +141,22 @@ export function GroupOutputPanel({
       {/* Content */}
       <div className="max-h-48 min-h-24 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed md:px-6">
         {displayedLogs.length === 0 ? (
-          <p className="py-4 text-center text-xs text-muted-foreground/60">
+          <p className="py-4 text-center text-xs text-terminal-muted/60">
             {onlyFailures ? '暂无失败日志' : '任务启动后，各步骤的输出状态将在此处实时汇聚'}
           </p>
         ) : (
           <div className="space-y-1">
             {displayedLogs.map((log) => (
               <div key={log.id} className="flex items-start gap-2">
-                <span className="shrink-0 text-muted-foreground/50">{log.time}</span>
-                {log.stepTag && (
-                  <span className="shrink-0 text-muted-foreground">{log.stepTag}</span>
-                )}
+                <span className="shrink-0 text-terminal-muted/50">{log.time}</span>
+                {log.stepTag && <span className="shrink-0 text-terminal-muted">{log.stepTag}</span>}
                 <span
                   className={cn(
                     'break-all',
-                    log.type === 'success' && 'text-accent',
+                    log.type === 'success' && 'text-success',
                     log.type === 'danger' && 'text-destructive font-medium',
                     log.type === 'info' && 'text-info',
-                    log.type === 'muted' && 'text-muted-foreground'
+                    log.type === 'muted' && 'text-terminal-muted'
                   )}
                 >
                   {log.text}

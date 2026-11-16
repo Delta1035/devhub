@@ -14,7 +14,9 @@ const manifest = packageJson({ dev: 'node -v' })
 
 /** A sidebar project entry (its accessible name starts with the project name). */
 const projectButton = (page: Page, name: string) =>
-  page.locator('aside').getByRole('button', { name: new RegExp(`^${name}`) })
+  page
+    .getByRole('region', { name: '项目列表' })
+    .getByRole('button', { name: new RegExp(`^${name}`) })
 
 test('a workspace discovers projects, follows changes on disk, excludes, restores and is removed', async ({
   launchDevhub,
