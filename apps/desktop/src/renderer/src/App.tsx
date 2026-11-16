@@ -11,7 +11,6 @@ import { useRunEventsSync, useRuns } from '@renderer/features/runs/use-runs'
 import { Sheet, SheetContent, SheetTitle } from '@renderer/components/ui/sheet'
 import { Sidebar, type SidebarView } from '@renderer/features/sidebar/sidebar'
 import { SidebarSkeleton } from '@renderer/features/sidebar/sidebar-skeleton'
-import { useResizableWidth } from '@renderer/features/sidebar/use-resizable-width'
 import { GlobalSearchDialog } from '@renderer/features/search/global-search-dialog'
 import { Toaster } from '@renderer/components/ui/toaster'
 import { StatusBar } from '@renderer/features/status-bar/status-bar'
@@ -39,8 +38,6 @@ function App(): React.JSX.Element {
     const stored = localStorage.getItem('devhub.activeView')
     return stored === 'groups' || stored === 'running' ? stored : 'projects'
   })
-  // Long project names stay readable when the sidebar is widened (default = Tailwind w-64).
-  const sidebar = useResizableWidth('devhub.sidebarWidth', 256, 200)
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [requestedRunId, setRequestedRunId] = useState<string | null>(null)
   // On phones the sidebar is a drawer over the content, closed once something is chosen.
@@ -98,14 +95,6 @@ function App(): React.JSX.Element {
   if (!chosen && runs && fallbackProject) setSelectedId(fallbackProject.id)
   const selected = chosen ?? fallbackProject
 
-  const sidebarContent = (
-    <Sidebar
-      activeView={activeView}
-      activeCount={activeRuns.length + activeGroupCount}
-      onViewChange={selectView}
-    />
-  )
-
   return (
     // dvh: on phones the browser's address bar would otherwise cover the bottom of the page.
     <div className="flex h-dvh flex-col bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-foreground">
@@ -134,24 +123,25 @@ function App(): React.JSX.Element {
               }}
             >
               <SheetTitle className="sr-only">导航</SheetTitle>
-              {drawerReady || reducedMotion ? sidebarContent : <SidebarSkeleton />}
+              {drawerReady || reducedMotion ? (
+                <Sidebar
+                  activeView={activeView}
+                  activeCount={activeRuns.length + activeGroupCount}
+                  onViewChange={selectView}
+                  compact={false}
+                />
+              ) : (
+                <SidebarSkeleton />
+              )}
             </SheetContent>
           </Sheet>
         ) : (
-          <aside
-            className="relative flex shrink-0 flex-col border-r border-border bg-sidebar p-3"
-            style={{ width: sidebar.width }}
-          >
-            {sidebarContent}
-            <div
-              role="separator"
-              aria-orientation="vertical"
-              aria-label="调整侧栏宽度"
-              aria-valuenow={sidebar.width}
-              tabIndex={0}
-              title="拖动调整宽度，双击恢复默认"
-              {...sidebar.handleProps}
-              className="absolute inset-y-0 -right-1 z-10 w-2 cursor-col-resize touch-none outline-none after:absolute after:inset-y-0 after:left-1/2 after:w-0.5 after:-translate-x-1/2 after:transition-colors hover:after:bg-primary/50 focus-visible:after:bg-primary"
+          <aside className="flex w-14 shrink-0 flex-col border-r border-border bg-sidebar p-2">
+            <Sidebar
+              activeView={activeView}
+              activeCount={activeRuns.length + activeGroupCount}
+              onViewChange={selectView}
+              compact={true}
             />
           </aside>
         )}

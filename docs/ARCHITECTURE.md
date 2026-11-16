@@ -75,6 +75,7 @@ React UI ──> @renderer/api ──> DevhubApi (packages/shared)
 - 移动端导航：`App` 挂载时订阅工作区查询；返回前台时重扫，打开窄屏抽屉时不重复重扫。窄屏项目行只挂载按钮与更多菜单入口，菜单操作在打开时才挂载；宽屏保留右键菜单、更多操作和编辑器按钮（已移除悬浮卡片以避免遮挡与误触）。
 - 窄屏侧栏首次展开时先显示静态骨架，Sheet 的进入动画结束后才挂载真实侧栏；取消展开后仍保留骨架状态，再次打开可继续等待动画。真实侧栏挂载过一次后，后续打开直接显示内容；偏好减少动态效果时立即显示内容。
 - 功能导航布局（#117）：`features/sidebar/sidebar.tsx` 只承载「项目」「批量」「运行中」三个稳定入口及选中态/运行数量提示；项目列表与详情由 `features/projects/project-workspace.tsx` 在右侧内容区组合，批量由 `BatchWorkspace` 自持列表与详情，运行中由 `features/runs/running-workspace.tsx` 展示脚本和批量任务。窄屏抽屉只挂载功能导航，选择入口后关闭，桌面端与远程网页共用同一布局。
+- 功能导航与项目列表布局（#120）：桌面端左侧功能导航栏为 56px 紧凑图标栏，保留图标、角标提示与右侧悬浮提示（Tooltip）；项目列表宽度调整（`useResizableWidth`）移入 `features/projects/project-workspace.tsx` 的项目列表区，持久化键为 `devhub.projectListWidth` 并兼容旧键；全局搜索弹窗基于设计令牌统一浅色与暗色模式。
 
 这些边界由 ESLint 强制（见根目录 `eslint.config.mjs`）。
 

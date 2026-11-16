@@ -1,6 +1,6 @@
 import { addProjectViaApi, packageJson, test, expect } from './fixtures'
 
-test('project item actions, context menu and a resizable sidebar', async ({
+test('project item actions, context menu and a resizable project list', async ({
   launchDevhub,
   createProject
 }) => {
@@ -78,20 +78,23 @@ test('project item actions, context menu and a resizable sidebar', async ({
   await page.getByRole('button', { name: '取消' }).click()
   await expect(item).toBeVisible()
 
-  // Dragging the handle widens the sidebar; the width survives a reload; double-click resets.
-  const aside = page.locator('aside')
-  const handle = page.getByRole('separator', { name: '调整侧栏宽度' })
-  const before = (await aside.boundingBox())?.width ?? 0
+  // Dragging the handle widens the project list; the width survives a reload; double-click resets.
+  const handle = page.getByRole('separator', { name: '调整项目列表宽度' })
+  const before = (await projectList.boundingBox())?.width ?? 0
   const box = await handle.boundingBox()
   if (!box) throw new Error('resize handle not visible')
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.mouse.down()
   await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2, { steps: 5 })
   await page.mouse.up()
-  await expect.poll(async () => (await aside.boundingBox())?.width).toBeGreaterThan(before + 100)
+  await expect
+    .poll(async () => (await projectList.boundingBox())?.width)
+    .toBeGreaterThan(before + 100)
 
   await page.reload()
-  await expect.poll(async () => (await aside.boundingBox())?.width).toBeGreaterThan(before + 100)
-  await page.getByRole('separator', { name: '调整侧栏宽度' }).dblclick()
-  await expect.poll(async () => (await aside.boundingBox())?.width).toBe(before)
+  await expect
+    .poll(async () => (await projectList.boundingBox())?.width)
+    .toBeGreaterThan(before + 100)
+  await page.getByRole('separator', { name: '调整项目列表宽度' }).dblclick()
+  await expect.poll(async () => (await projectList.boundingBox())?.width).toBe(before)
 })

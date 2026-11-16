@@ -12,21 +12,35 @@ interface ResizableWidth {
 
 const keyStep = 16
 // Room kept for the main area, so a wide sidebar never squeezes the script list away.
-const mainReserve = 480
+export const MAIN_RESERVE = 480
+
+export function clampWidth(
+  value: number,
+  minWidth: number,
+  windowWidth: number,
+  reserve = MAIN_RESERVE
+): number {
+  return Math.round(Math.min(Math.max(value, minWidth), Math.max(minWidth, windowWidth - reserve)))
+}
 
 /** Width of a left panel that the user drags from its right edge; persisted locally. */
 export function useResizableWidth(
   storageKey: string,
   defaultWidth: number,
-  minWidth: number
+  minWidth: number,
+  fallbackStorageKey?: string
 ): ResizableWidth {
   const clamp = (value: number): number =>
-    Math.round(
-      Math.min(Math.max(value, minWidth), Math.max(minWidth, window.innerWidth - mainReserve))
+    clampWidth(
+      value,
+      minWidth,
+      typeof window !== 'undefined' ? window.innerWidth : defaultWidth + MAIN_RESERVE
     )
 
   const [width, setWidth] = useState(() => {
-    const stored = Number(readStored(storageKey))
+    const raw =
+      readStored(storageKey) ?? (fallbackStorageKey ? readStored(fallbackStorageKey) : null)
+    const stored = Number(raw)
     return clamp(Number.isFinite(stored) && stored > 0 ? stored : defaultWidth)
   })
   const widthRef = useRef(width)
@@ -69,7 +83,7 @@ export function useResizableWidth(
   }
 }
 
-function readStored(key: string): string | null {
+export function readStored(key: string): string | null {
   try {
     return localStorage.getItem(key)
   } catch {
@@ -77,7 +91,7 @@ function readStored(key: string): string | null {
   }
 }
 
-function writeStored(key: string, value: string): void {
+export function writeStored(key: string, value: string): void {
   try {
     localStorage.setItem(key, value)
   } catch {

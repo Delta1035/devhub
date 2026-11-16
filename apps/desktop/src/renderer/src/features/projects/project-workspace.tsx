@@ -1,4 +1,5 @@
 import type { Project, Run } from '@devhub/shared'
+import { useResizableWidth } from '@renderer/features/sidebar/use-resizable-width'
 import { ProjectDetail } from './project-detail'
 import { ProjectList } from './project-list'
 
@@ -18,6 +19,8 @@ export function ProjectWorkspace({
   onSelectProject,
   onOpenRun
 }: ProjectWorkspaceProps): React.JSX.Element {
+  const projectList = useResizableWidth('devhub.projectListWidth', 260, 200, 'devhub.sidebarWidth')
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <header className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3 md:px-6">
@@ -29,14 +32,29 @@ export function ProjectWorkspace({
       <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
         <section
           aria-label="项目列表"
-          className="min-h-[13rem] w-full shrink-0 overflow-y-auto border-b border-border p-4 sm:min-h-0 sm:w-64 sm:border-b-0 sm:border-r md:p-5 xl:w-[18rem]"
+          style={narrow ? undefined : { width: projectList.width }}
+          className="relative flex min-h-[13rem] w-full shrink-0 flex-col border-b border-border sm:min-h-0 sm:border-b-0 sm:border-r"
         >
-          <ProjectList
-            narrow={narrow}
-            selectedId={selectedProject?.id ?? null}
-            onSelect={onSelectProject}
-            onOpenRun={onOpenRun}
-          />
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-5">
+            <ProjectList
+              narrow={narrow}
+              selectedId={selectedProject?.id ?? null}
+              onSelect={onSelectProject}
+              onOpenRun={onOpenRun}
+            />
+          </div>
+          {!narrow && (
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="调整项目列表宽度"
+              aria-valuenow={projectList.width}
+              tabIndex={0}
+              title="拖动调整宽度，双击恢复默认"
+              {...projectList.handleProps}
+              className="absolute inset-y-0 -right-1 z-10 w-2 cursor-col-resize touch-none outline-none after:absolute after:inset-y-0 after:left-1/2 after:w-0.5 after:-translate-x-1/2 after:transition-colors hover:after:bg-primary/50 focus-visible:after:bg-primary"
+            />
+          )}
         </section>
         <section aria-label="项目内容" className="min-h-0 min-w-0 flex-1 overflow-hidden">
           {selectedProject ? (

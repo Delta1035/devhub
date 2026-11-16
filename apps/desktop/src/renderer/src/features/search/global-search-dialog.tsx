@@ -50,7 +50,7 @@ export function GlobalSearchDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-xl p-0 overflow-hidden border-border bg-[#111419] text-[#E8ECF2] shadow-2xl"
+        className="max-w-xl p-0 overflow-hidden border border-border bg-card text-card-foreground shadow-2xl"
       >
         <DialogHeader className="sr-only">
           <DialogTitle>全局搜索</DialogTitle>
@@ -58,14 +58,14 @@ export function GlobalSearchDialog({
         </DialogHeader>
 
         {/* Search Input Bar */}
-        <div className="flex items-center gap-3 border-b border-[#212731] bg-[#171C23] px-4 py-3">
-          <Search className="size-4 shrink-0 text-[#8B95A6]" />
+        <div className="flex items-center gap-3 border-b border-border bg-secondary/50 px-4 py-3">
+          <Search className="size-4 shrink-0 text-muted-foreground" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="搜索项目、脚本或运行记录..."
-            className="flex-1 bg-transparent text-sm text-[#E8ECF2] placeholder:text-[#6F7A8B] outline-none"
+            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
             autoFocus
           />
           <button
@@ -73,7 +73,7 @@ export function GlobalSearchDialog({
             tabIndex={-1}
             onClick={() => onOpenChange(false)}
             title="关闭 (Esc)"
-            className="cursor-pointer select-none rounded border border-[#2D3541] bg-[#111419] px-2 py-0.5 font-mono text-[10px] text-[#8B95A6] transition-colors hover:border-[#3D4554] hover:text-[#CCD2DC]"
+            className="cursor-pointer select-none rounded border border-border bg-background px-2 py-0.5 font-mono text-[10px] text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
           >
             ESC
           </button>
@@ -84,7 +84,7 @@ export function GlobalSearchDialog({
           {/* Projects Section */}
           {filteredProjects.length > 0 && (
             <div className="mb-3">
-              <span className="px-2 text-[10px] font-semibold uppercase tracking-wider text-[#6F7A8B]">
+              <span className="px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 项目 ({filteredProjects.length})
               </span>
               <ul className="mt-1 flex flex-col gap-1">
@@ -96,18 +96,18 @@ export function GlobalSearchDialog({
                         onSelectProject(p.id)
                         onOpenChange(false)
                       }}
-                      className="flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-xs text-[#E8ECF2] transition-colors hover:bg-[#1A2028]"
+                      className="flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-xs text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                     >
-                      <div className="flex size-6 shrink-0 items-center justify-center rounded bg-[#171C23] text-[#7FB2FF]">
+                      <div className="flex size-6 shrink-0 items-center justify-center rounded bg-secondary text-info">
                         <Folder className="size-3.5" />
                       </div>
                       <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="font-medium text-[#E8ECF2]">{p.name}</span>
-                        <span className="truncate font-mono text-[10px] text-[#6F7A8B]">
+                        <span className="font-medium text-foreground">{p.name}</span>
+                        <span className="truncate font-mono text-[10px] text-muted-foreground">
                           {p.path}
                         </span>
                       </div>
-                      <span className="rounded bg-[#171C23] px-1.5 py-0.5 text-[10px] text-[#8B95A6]">
+                      <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
                         打开
                       </span>
                     </button>
@@ -120,7 +120,7 @@ export function GlobalSearchDialog({
           {/* Batch Tasks Section */}
           {filteredGroups.length > 0 && (
             <div className="mb-3">
-              <span className="px-2 text-[10px] font-semibold uppercase tracking-wider text-[#6F7A8B]">
+              <span className="px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 批量任务 ({filteredGroups.length})
               </span>
               <ul className="mt-1 flex flex-col gap-1">
@@ -132,19 +132,19 @@ export function GlobalSearchDialog({
                         onSelectGroup(g.id)
                         onOpenChange(false)
                       }}
-                      className="flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-xs text-[#E8ECF2] transition-colors hover:bg-[#1A2028]"
+                      className="flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-xs text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                     >
-                      <div className="flex size-6 shrink-0 items-center justify-center rounded bg-[#171C23] text-[#3ED598]">
+                      <div className="flex size-6 shrink-0 items-center justify-center rounded bg-secondary text-primary">
                         <Workflow className="size-3.5" />
                       </div>
                       <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="font-medium text-[#E8ECF2]">{g.name}</span>
-                        <span className="text-[10px] text-[#6F7A8B]">
+                        <span className="font-medium text-foreground">{g.name}</span>
+                        <span className="text-[10px] text-muted-foreground">
                           {g.steps.length} 个步骤 ·{' '}
                           {g.mode === 'parallel' ? '并行启动' : '串行流水线'}
                         </span>
                       </div>
-                      <span className="rounded bg-[#171C23] px-1.5 py-0.5 text-[10px] text-[#8B95A6]">
+                      <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
                         运行
                       </span>
                     </button>
@@ -155,7 +155,7 @@ export function GlobalSearchDialog({
           )}
 
           {filteredProjects.length === 0 && filteredGroups.length === 0 && (
-            <div className="py-8 text-center text-xs text-[#6F7A8B]">
+            <div className="py-8 text-center text-xs text-muted-foreground">
               未找到匹配的项目或批量任务
             </div>
           )}

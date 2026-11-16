@@ -16,6 +16,8 @@ test('switches feature navigation and manages a running script from the running 
     'aria-current',
     'page'
   )
+  await navigation.getByRole('button', { name: '项目', exact: true }).hover()
+  await expect(page.getByRole('tooltip')).toContainText('项目')
   await expect(page.getByRole('region', { name: '项目列表' })).toBeVisible()
   await expect(
     page.locator('aside').getByRole('button', { name: '远程访问', exact: true })
@@ -79,4 +81,20 @@ test('keeps project heading and script commands visible in 1024x768 desktop layo
   await expect(code).toBeVisible()
   const codeBox = await code.boundingBox()
   expect(codeBox?.width).toBeGreaterThan(0)
+})
+
+test('global search dialog opens via search bar and adapts theme styling', async ({
+  launchDevhub
+}) => {
+  const { page } = await launchDevhub()
+
+  // Click search button in title bar
+  await page.getByRole('button', { name: '搜索项目、脚本或运行记录' }).click()
+  const dialog = page.getByRole('dialog', { name: '全局搜索' })
+  await expect(dialog).toBeVisible()
+  await expect(page.getByPlaceholder('搜索项目、脚本或运行记录...')).toBeVisible()
+
+  // Press ESC to close
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
 })
