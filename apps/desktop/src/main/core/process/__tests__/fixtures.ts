@@ -1,9 +1,9 @@
 import { vi, type Mock } from 'vitest'
 import { DevhubError, type DevhubEvent, type Project, type Script } from '@devhub/shared'
-import type { ShellLocator, ShellSpec } from '../shells/shell-locator'
-import type { ProcessKiller } from './process-killer'
-import type { PtyProcess, PtySpawnOptions } from './pty'
-import { createRunManager, type RunManager, type RunManagerDeps } from './run-manager'
+import type { ShellLocator, ShellSpec } from '../../shells/shell-locator'
+import type { ProcessKiller } from '../process-killer'
+import type { PtyProcess, PtySpawnOptions } from '../pty'
+import { createRunManager, type RunManager, type RunManagerDeps } from '../run-manager'
 
 /** Test doubles shared by the run manager unit tests. */
 export class FakePty implements PtyProcess {

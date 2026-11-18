@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PortConflict } from '@devhub/shared'
-import { createHarness, type TestHarness } from './run-manager.fixtures'
+import { createHarness, type TestHarness } from './fixtures'
 
 describe('createRunManager port conflicts', () => {
   let harness: TestHarness

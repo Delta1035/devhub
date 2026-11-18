@@ -4,11 +4,11 @@ import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import type { Project, Script } from '@devhub/shared'
-import { systemDeps, writeFileEnsuringDir } from '../fs/system-deps'
-import { createShellLocator } from '../shells/shell-locator'
-import { createProcessKiller } from './process-killer'
-import { nodePtySpawner } from './pty'
-import { createRunManager, type RunManager } from './run-manager'
+import { systemDeps, writeFileEnsuringDir } from '../../fs/system-deps'
+import { createShellLocator } from '../../shells/shell-locator'
+import { createProcessKiller } from '../process-killer'
+import { nodePtySpawner } from '../pty'
+import { createRunManager, type RunManager } from '../run-manager'
 
 // Spawns a child and records both pids. "stubborn" ignores the polite interrupt in both
 // processes so the forced tree kill has to do the work.

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createProcessKiller, parseSessionId } from './process-killer'
-import type { PtyProcess } from './pty'
+import { createProcessKiller, parseSessionId } from '../process-killer'
+import type { PtyProcess } from '../pty'
 
 const fakePty = (pid: number) =>
   ({

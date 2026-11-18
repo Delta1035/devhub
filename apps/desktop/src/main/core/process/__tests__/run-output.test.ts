@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { OutputCursor } from '@devhub/shared'
-import { RunOutput } from './run-output'
+import { RunOutput } from '../run-output'
 
 describe('RunOutput', () => {
   let flushed: [offset: number, data: string][]

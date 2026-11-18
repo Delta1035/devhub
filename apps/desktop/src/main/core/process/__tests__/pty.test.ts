@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { shellInvocation } from './pty'
+import { shellInvocation } from '../pty'
 
 describe('shellInvocation', () => {
   it('runs through cmd.exe on Windows, keeping inner quotes verbatim', () => {

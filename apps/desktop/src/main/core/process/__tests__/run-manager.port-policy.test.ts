@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DevhubError, type PortConflict, type Script } from '@devhub/shared'
-import { createHarness, project, type TestHarness } from './run-manager.fixtures'
+import { createHarness, project, type TestHarness } from './fixtures'
 
 describe('script port replacement', () => {
   let harness: TestHarness

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Run } from '@devhub/shared'
-import type { JsonStore } from '../storage/json-store'
-import { createRunRegistry, emptyRunsFile, type RunsFile } from './run-registry'
+import type { JsonStore } from '../../storage/json-store'
+import { createRunRegistry, emptyRunsFile, type RunsFile } from '../run-registry'
 
 const memoryStore = (initial: RunsFile = emptyRunsFile()) => {
   let saved = structuredClone(initial)

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createHarness, type TestHarness } from './run-manager.fixtures'
+import { createHarness, type TestHarness } from './fixtures'
 
 describe('createRunManager events and terminal I/O', () => {
   let harness: TestHarness

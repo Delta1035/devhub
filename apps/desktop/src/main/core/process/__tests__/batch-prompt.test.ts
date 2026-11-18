@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { answerBatchPrompt } from './batch-prompt'
+import { answerBatchPrompt } from '../batch-prompt'
 
 describe('answerBatchPrompt', () => {
   let output: string

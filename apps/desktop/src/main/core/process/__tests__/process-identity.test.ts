@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createIdentityReader, parseStartTime } from './process-identity'
+import { createIdentityReader, parseStartTime } from '../process-identity'
 
 describe('createIdentityReader on Windows', () => {
   it('reads start times of all pids with one PowerShell call', async () => {

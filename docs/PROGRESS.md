@@ -99,6 +99,7 @@ M4-3 Android：
 - #8 已完成：Linux Mint（X11）上 AppImage 自动更新 1.3.0 → 1.4.0 实测通过（增量下载、替换文件、自动重启、数据保留）。
 - #119 已完成：优化流水线执行效率与资源占用（静态检查去重、路径过滤与 PR 分级）；`pnpm check` 通过。
 - #131 已完成：整理 E2E 测试目录结构，抽出 support/ 夹具与 features/、process/、remote/、system/ 子目录；`pnpm check` 与 `pnpm e2e` 全部通过。
+- #132 已完成：收敛 process 模块所有单元测试与 fixture 至 `__tests__/` 目录，恢复源码目录纯净；`pnpm check` 全部通过。
 
 桌面模板维护：
 

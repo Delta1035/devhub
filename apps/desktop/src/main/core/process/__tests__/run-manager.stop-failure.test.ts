@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DevhubError, type Run, type Script } from '@devhub/shared'
-import { createHarness, project, type TestHarness } from './run-manager.fixtures'
-import type { RunManagerDeps } from './run-manager'
+import { createHarness, project, type TestHarness } from './fixtures'
+import type { RunManagerDeps } from '../run-manager'
 
 function updatedStates(harness: TestHarness, run: Run): { status: string; stopped: boolean }[] {
   return harness.events.flatMap((event) =>
