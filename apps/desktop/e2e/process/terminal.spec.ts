@@ -1,5 +1,5 @@
 import type { ElectronApplication, Page } from '@playwright/test'
-import { addProjectViaApi, packageJson, test, expect } from './fixtures'
+import { addProjectViaApi, packageJson, test, expect } from '../support/fixtures'
 
 const readClipboard = (app: ElectronApplication) =>
   app.evaluate(({ clipboard }) => clipboard.readText())

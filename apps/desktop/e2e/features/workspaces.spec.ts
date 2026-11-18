@@ -8,7 +8,7 @@ import {
   stubFolderPicker,
   test,
   expect
-} from './fixtures'
+} from '../support/fixtures'
 
 const manifest = packageJson({ dev: 'node -v' })
 

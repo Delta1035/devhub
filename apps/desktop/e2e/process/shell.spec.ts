@@ -1,7 +1,7 @@
 import { readFile } from 'fs/promises'
 import { join } from 'path'
 import { z } from 'zod'
-import { addProjectViaApi, packageJson, test, expect } from './fixtures'
+import { addProjectViaApi, packageJson, test, expect } from '../support/fixtures'
 
 // Started by typing in the terminal; records its pid so the test can check it was stopped.
 const serverScript = `

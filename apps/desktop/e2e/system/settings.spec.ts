@@ -1,4 +1,4 @@
-import { addProjectViaApi, packageJson, test, expect, type DevhubWindow } from './fixtures'
+import { addProjectViaApi, packageJson, test, expect, type DevhubWindow } from '../support/fixtures'
 
 const openSettings = async (page: import('@playwright/test').Page) => {
   await page.locator('header').getByRole('button', { name: '设置' }).click()

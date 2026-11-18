@@ -1,4 +1,4 @@
-import { addProjectViaApi, expect, packageJson, test, type DevhubWindow } from './fixtures'
+import { addProjectViaApi, expect, packageJson, test, type DevhubWindow } from '../support/fixtures'
 
 const openSchedules = async (page: Parameters<typeof addProjectViaApi>[0]) => {
   await page.getByRole('button', { name: '定时', exact: true }).click()

@@ -1,4 +1,4 @@
-import { addProjectViaApi, expect, packageJson, test } from './fixtures'
+import { addProjectViaApi, expect, packageJson, test } from '../support/fixtures'
 
 test('switches feature navigation and manages a running script from the running view', async ({
   launchDevhub,

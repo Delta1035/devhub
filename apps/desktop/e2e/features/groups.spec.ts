@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { addProjectViaApi, packageJson, test, expect, type DevhubWindow } from './fixtures'
+import { addProjectViaApi, packageJson, test, expect, type DevhubWindow } from '../support/fixtures'
 
 // A server that becomes "ready" only after a while, so the serial order is observable.
 const slowServer = (readyText: string, delayMs: number) => `

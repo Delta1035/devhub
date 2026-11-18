@@ -1,4 +1,4 @@
-import { addProjectViaApi, packageJson, test, expect } from './fixtures'
+import { addProjectViaApi, packageJson, test, expect } from '../support/fixtures'
 
 const tickScript = `
 let n = 0

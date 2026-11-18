@@ -6,7 +6,7 @@ import {
   test,
   expect,
   type DevhubWindow
-} from './fixtures'
+} from '../support/fixtures'
 
 const listRuns = (port: number, token: string): Promise<Response> =>
   fetch(`http://127.0.0.1:${port}/api/v1/listRuns`, {

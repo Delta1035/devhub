@@ -8,6 +8,11 @@
 devhub/                        pnpm monorepo
 ├── apps/desktop/              Electron 桌面客户端
 │   ├── e2e/                   Playwright E2E：驱动构建产物，每个测试独立 userData（ADR 0001 补充）
+│   │   ├── support/           测试夹具与基础设施（fixtures, port-fixtures, diagnostics, web-app）
+│   │   ├── features/          业务功能用例（projects, scripts, groups, schedules, workspaces）
+│   │   ├── process/           进程与端口用例（runs, ports, orphans, terminal, shell）
+│   │   ├── remote/            远程访问与移动适配用例（remote, remote-web, remote-web-mobile）
+│   │   └── system/            系统与生命周期用例（navigation, settings, history, quit 等）
 │   └── src/
 │       ├── main/              主进程（Node）
 │       │   ├── index.ts       应用生命周期：单实例、托盘、窗口

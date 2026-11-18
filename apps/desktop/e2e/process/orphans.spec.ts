@@ -2,7 +2,7 @@ import { spawnSync } from 'child_process'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
 import { z } from 'zod'
-import { addProjectViaApi, packageJson, test, expect, type DevhubWindow } from './fixtures'
+import { addProjectViaApi, packageJson, test, expect, type DevhubWindow } from '../support/fixtures'
 
 // Ignores SIGHUP, so on Linux it outlives a terminal that goes away.
 const serverScript = `

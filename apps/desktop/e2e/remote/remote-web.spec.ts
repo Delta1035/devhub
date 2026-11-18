@@ -6,8 +6,8 @@ import {
   test,
   expect,
   type DevhubWindow
-} from './fixtures'
-import { enableRemote, openWebApp } from './web-app'
+} from '../support/fixtures'
+import { enableRemote, openWebApp } from '../support/web-app'
 
 test('the web app connects with the QR link and drives scripts, without desktop-only actions', async ({
   launchDevhub,

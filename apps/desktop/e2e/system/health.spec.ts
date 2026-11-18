@@ -1,5 +1,5 @@
 import { createServer } from 'net'
-import { addProjectViaApi, packageJson, test, expect } from './fixtures'
+import { addProjectViaApi, packageJson, test, expect } from '../support/fixtures'
 
 /** A port nothing listens on yet. */
 const freePort = (): Promise<number> =>

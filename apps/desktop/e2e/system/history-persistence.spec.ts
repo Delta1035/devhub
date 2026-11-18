@@ -2,7 +2,7 @@ import { mkdir, readFile, readdir, writeFile } from 'fs/promises'
 import { join } from 'path'
 import { createHash } from 'crypto'
 import { runHistoryOutputLimit } from '@devhub/shared'
-import { addProjectViaApi, packageJson, test, expect, type DevhubWindow } from './fixtures'
+import { addProjectViaApi, packageJson, test, expect, type DevhubWindow } from '../support/fixtures'
 
 test('retains capped history logs across restart, clears ended logs, and cleans removed projects', async ({
   launchDevhub,

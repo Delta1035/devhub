@@ -1,6 +1,13 @@
 import type { Page } from '@playwright/test'
-import { addProjectViaApi, packageJson, type DevhubWindow } from './fixtures'
-import { canBind, hasExited, httpBody, httpServerScript, test, expect } from './port-fixtures'
+import { addProjectViaApi, packageJson, type DevhubWindow } from '../support/fixtures'
+import {
+  canBind,
+  hasExited,
+  httpBody,
+  httpServerScript,
+  test,
+  expect
+} from '../support/port-fixtures'
 
 const enableTermination = async (page: Page) => {
   await page.getByRole('button', { name: '设置', exact: true }).click()

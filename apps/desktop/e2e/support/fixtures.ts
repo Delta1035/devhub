@@ -15,7 +15,7 @@ export { expect } from '@playwright/test'
 
 // The app directory, not out/main/index.js: given a bare script, Electron finds no package.json
 // and reports its own version and name. Its "main" points at the same built entry.
-const appDir = resolve(__dirname, '..')
+const appDir = resolve(__dirname, '../..')
 
 export interface DevhubApp {
   app: ElectronApplication

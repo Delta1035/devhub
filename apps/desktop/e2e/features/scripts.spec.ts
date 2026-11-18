@@ -1,6 +1,6 @@
 import { rm, writeFile } from 'fs/promises'
 import { join } from 'path'
-import { addProjectViaApi, packageJson, test, expect } from './fixtures'
+import { addProjectViaApi, packageJson, test, expect } from '../support/fixtures'
 
 test('lists detected scripts with the package manager from the lockfile', async ({
   launchDevhub,

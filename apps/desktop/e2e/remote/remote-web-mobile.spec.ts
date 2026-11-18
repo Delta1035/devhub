@@ -5,8 +5,8 @@ import {
   test,
   expect,
   type DevhubWindow
-} from './fixtures'
-import { enableRemote, openWebApp } from './web-app'
+} from '../support/fixtures'
+import { enableRemote, openWebApp } from '../support/web-app'
 
 const phone = { width: 375, height: 812 }
 

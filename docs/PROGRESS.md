@@ -98,6 +98,7 @@ M4-3 Android：
 - #10 已完成：提交信息校验与 CHANGELOG（ADR 0026），Release 正文取自 `CHANGELOG.md`，已在 v1.7.2 发布时核对一致；更早版本的 Release 正文暂不修改。已同步到模板仓库 [electron-desktop-template](https://github.com/Delta1035/electron-desktop-template)（78e45ce，模板 ADR 0009）。
 - #8 已完成：Linux Mint（X11）上 AppImage 自动更新 1.3.0 → 1.4.0 实测通过（增量下载、替换文件、自动重启、数据保留）。
 - #119 已完成：优化流水线执行效率与资源占用（静态检查去重、路径过滤与 PR 分级）；`pnpm check` 通过。
+- #131 已完成：整理 E2E 测试目录结构，抽出 support/ 夹具与 features/、process/、remote/、system/ 子目录；`pnpm check` 与 `pnpm e2e` 全部通过。
 
 桌面模板维护：
 

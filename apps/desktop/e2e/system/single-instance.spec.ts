@@ -3,10 +3,10 @@ import { mkdir, readlink, symlink } from 'fs/promises'
 import { hostname } from 'os'
 import { join, resolve } from 'path'
 import { promisify } from 'util'
-import { test, expect } from './fixtures'
+import { test, expect } from '../support/fixtures'
 
 const execFileAsync = promisify(execFile)
-const appDir = resolve(__dirname, '..')
+const appDir = resolve(__dirname, '../..')
 
 function electronEnv(): NodeJS.ProcessEnv {
   const env = { ...process.env }

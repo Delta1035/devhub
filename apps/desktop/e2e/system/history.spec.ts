@@ -1,4 +1,4 @@
-import { addProjectViaApi, packageJson, test, expect } from './fixtures'
+import { addProjectViaApi, packageJson, test, expect } from '../support/fixtures'
 
 test('lists how earlier runs ended, and keeps them after a restart', async ({
   launchDevhub,

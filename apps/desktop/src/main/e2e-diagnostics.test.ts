@@ -4,7 +4,7 @@ import { join } from 'path'
 import { writeFile } from 'fs/promises'
 import type { ElectronApplication, TestInfo } from '@playwright/test'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { closeRunningApps, trackAppDiagnostics } from '../../e2e/diagnostics'
+import { closeRunningApps, trackAppDiagnostics } from '../../e2e/support/diagnostics'
 
 vi.mock('fs/promises', () => ({ mkdir: vi.fn(), writeFile: vi.fn() }))
 vi.mock('child_process', () => ({

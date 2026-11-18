@@ -1,4 +1,4 @@
-import { addProjectViaApi, test, expect } from './fixtures'
+import { addProjectViaApi, test, expect } from '../support/fixtures'
 
 test('shows qualified Gradle and Maven application module commands', async ({
   launchDevhub,

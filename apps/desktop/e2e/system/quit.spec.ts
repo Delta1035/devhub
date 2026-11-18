@@ -1,7 +1,7 @@
 import { readFile } from 'fs/promises'
 import { join } from 'path'
 import { z } from 'zod'
-import { addProjectViaApi, packageJson, test, expect, type DevhubWindow } from './fixtures'
+import { addProjectViaApi, packageJson, test, expect, type DevhubWindow } from '../support/fixtures'
 
 // Spawns a child process and records both pids, so the test can check the whole tree.
 const serverScript = `

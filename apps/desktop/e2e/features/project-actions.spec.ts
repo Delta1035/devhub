@@ -1,4 +1,4 @@
-import { addProjectViaApi, packageJson, test, expect } from './fixtures'
+import { addProjectViaApi, packageJson, test, expect } from '../support/fixtures'
 
 test('project item actions, context menu and a resizable project list', async ({
   launchDevhub,

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { addProjectViaApi, expect, packageJson, test, type DevhubWindow } from './fixtures'
+import { addProjectViaApi, expect, packageJson, test, type DevhubWindow } from '../support/fixtures'
 
 const projectList = (page: Page) => page.getByRole('region', { name: '项目列表' })
 const projectItems = (page: Page) => projectList(page).locator('section[aria-label="独立项目"] li')

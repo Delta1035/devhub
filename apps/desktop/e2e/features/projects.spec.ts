@@ -6,7 +6,7 @@ import {
   stubFolderPicker,
   test,
   expect
-} from './fixtures'
+} from '../support/fixtures'
 
 test('adds a project with the folder picker, rejects duplicates, survives a restart, removes it', async ({
   launchDevhub,
