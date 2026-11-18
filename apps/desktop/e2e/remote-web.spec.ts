@@ -38,7 +38,9 @@ test('the web app connects with the QR link and drives scripts, without desktop-
   await expect(
     desktop.page.locator('main li', { hasText: 'npm run tick' }).getByText('运行中')
   ).toBeVisible()
+  await web.getByRole('button', { name: '查看 tick 终端' }).click()
   await expect(web.locator('.xterm-rows')).toContainText('tick 2')
+  await web.getByRole('button', { name: /^脚本/ }).click()
 
   // Actions that change what runs on the host are not offered.
   await expect(web.getByRole('button', { name: '移除 app' })).toHaveCount(0)
@@ -50,7 +52,7 @@ test('the web app connects with the QR link and drives scripts, without desktop-
   await expect(tickRow.getByText('已停止')).toBeVisible()
 
   // Settings keep only what is local to this device.
-  await web.getByRole('button', { name: '设置' }).click()
+  await web.getByRole('button', { name: '设置', exact: true }).click()
   await expect(web.getByRole('region', { name: '外观' })).toBeVisible()
   await expect(web.getByLabel('停止等待时间')).toHaveCount(0)
   await expect(web.getByRole('region', { name: '远程访问' })).toHaveCount(0)
@@ -119,6 +121,6 @@ test('a cancelled connection ignores a late session response and can retry', asy
   await expect(web.getByRole('heading', { name: '连接 DevHub' })).toBeVisible()
   await web.unroute('**/api/v1/session')
   await web.getByRole('button', { name: '重试' }).click()
-  await expect(web.getByRole('button', { name: '设置' })).toBeVisible()
+  await expect(web.getByRole('button', { name: '设置', exact: true })).toBeVisible()
   await desktop.app.close()
 })

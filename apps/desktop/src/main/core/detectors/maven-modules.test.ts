@@ -54,7 +54,8 @@ describe('Maven multi-module detection', () => {
           source: 'maven',
           command: `${executable} -pl service spring-boot:run`,
           description: '运行模块 Spring Boot 应用（先构建依赖）',
-          ports: [8093]
+          ports: [8093],
+          portsInferred: true
         }
       ])
       expect(scripts.every((script) => script.cwd === undefined)).toBe(true)

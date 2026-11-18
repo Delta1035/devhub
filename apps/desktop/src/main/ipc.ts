@@ -1,4 +1,8 @@
-import { BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { execFile } from 'node:child_process'
+import { stat } from 'node:fs/promises'
+import { join } from 'node:path'
+import { promisify } from 'node:util'
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import {
   DevhubError,
   devhubApiMethods,
@@ -10,8 +14,55 @@ import {
 } from '@devhub/shared'
 import { toIpcResult } from './core/api-result'
 import { isDirectory } from './core/fs/is-directory'
+import { updateDesktopShortcutStyle, type ShortcutIconStyle } from './core/shell/desktop-shortcut'
 import { parseExternalUrl } from './core/shell/external-url'
 import { resolveProjectFolder } from './core/shell/project-folder'
+
+const execFileAsync = promisify(execFile)
+
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    const s = await stat(path)
+    return s.isFile()
+  } catch {
+    return false
+  }
+}
+
+async function resolveShortcutIconPath(style: ShortcutIconStyle): Promise<string | null> {
+  const candidates = [
+    join(process.resourcesPath, `icon-${style}.ico`),
+    join(process.resourcesPath, 'app.asar.unpacked', 'resources', `icon-${style}.ico`),
+    join(app.getAppPath(), 'resources', `icon-${style}.ico`),
+    join(app.getAppPath(), '..', 'resources', `icon-${style}.ico`),
+    join(__dirname, '../../resources', `icon-${style}.ico`),
+    join(process.cwd(), 'apps/desktop/resources', `icon-${style}.ico`),
+    join(process.cwd(), 'resources', `icon-${style}.ico`),
+    join(__dirname, '../../build', `icon-${style}.ico`)
+  ]
+  for (const candidate of candidates) {
+    if (await fileExists(candidate)) return candidate
+  }
+  return null
+}
+
+async function updateWindowsShortcut(shortcutPath: string, iconPath: string): Promise<void> {
+  const script = `
+    $ws = New-Object -ComObject WScript.Shell
+    $s = $ws.CreateShortcut('${shortcutPath.replace(/'/g, "''")}')
+    $s.IconLocation = '${iconPath.replace(/'/g, "''")},0'
+    $s.Save()
+    try {
+      $code = '[DllImport("shell32.dll")]public static extern void SHChangeNotify(int id, uint flags, IntPtr p1, IntPtr p2);'
+      $type = Add-Type -MemberDefinition $code -Name 'NativeMethods' -Namespace 'ShellIcon' -PassThru
+      $type::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)
+    } catch {}
+    try { ie4uinit.exe -show } catch {}
+  `
+  await execFileAsync('powershell', ['-NoProfile', '-NonInteractive', '-Command', script], {
+    timeout: 5000
+  })
+}
 
 type AnyApiMethod = (...args: unknown[]) => Promise<unknown>
 
@@ -71,6 +122,19 @@ export function registerIpcHandlers(core: DevhubApi & DevhubEvents): void {
       // Resolves to an error message rather than rejecting.
       const failure = await shell.openPath(folder)
       if (failure) throw new DevhubError('OPEN_FOLDER_FAILED', `无法打开目录：${failure}`)
+    })
+  )
+
+  ipcMain.handle(shellChannel.setDesktopShortcutStyle, (_event, style: unknown) =>
+    toIpcResult('setDesktopShortcutStyle', async () => {
+      const parsedStyle = style === 'light' || style === 'dark' ? style : 'dark'
+      return updateDesktopShortcutStyle(parsedStyle, {
+        platform: process.platform,
+        env: process.env,
+        exists: fileExists,
+        resolveIconPath: resolveShortcutIconPath,
+        updateShortcut: updateWindowsShortcut
+      })
     })
   )
 }

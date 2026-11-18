@@ -26,11 +26,16 @@ export function useGroupEventsSync(): void {
   useEffect(
     () =>
       events.subscribe((event) => {
-        if (event.type !== 'group-updated') return
-        queryClient.setQueryData<GroupRunState[]>(groupStatesKey, (states = []) => [
-          ...states.filter((state) => state.groupId !== event.state.groupId),
-          event.state
-        ])
+        if (event.type === 'groups-updated') {
+          queryClient.invalidateQueries({ queryKey: groupsKey }).catch((error: unknown) => {
+            console.error('Failed to reload groups', error)
+          })
+        } else if (event.type === 'group-updated') {
+          queryClient.setQueryData<GroupRunState[]>(groupStatesKey, (states = []) => [
+            ...states.filter((state) => state.groupId !== event.state.groupId),
+            event.state
+          ])
+        }
       }),
     [queryClient]
   )
@@ -40,6 +45,18 @@ export function useSaveGroup(): UseMutationResult<Group, Error, GroupInput> {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input) => api.saveGroup(input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: groupsKey })
+  })
+}
+
+export function useSetGroupPinned(): UseMutationResult<
+  Group,
+  Error,
+  { groupId: string; pinned: boolean }
+> {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ groupId, pinned }) => api.setGroupPinned(groupId, pinned),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: groupsKey })
   })
 }

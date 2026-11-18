@@ -93,6 +93,23 @@ export function createWorkspaceService(deps: WorkspaceServiceDeps): WorkspaceSer
     for (const id of projectIds) await deps.forgetProject(id)
   }
 
+  /** Removes hand-added projects only when their path is confirmed to be gone. */
+  const removeMissingStandaloneProjects = async (): Promise<boolean> => {
+    const missingIds: string[] = []
+    for (const project of await projects.list()) {
+      if (project.workspaceId || deps.isActive(project.id)) continue
+      try {
+        if (!(await deps.isDirectory(project.path))) missingIds.push(project.id)
+      } catch {
+        // Permissions and transient I/O errors do not prove that the project was deleted.
+      }
+    }
+    if (missingIds.length === 0) return false
+    const removed = await projects.removeMany(missingIds)
+    await forget(removed.map((project) => project.id))
+    return removed.length > 0
+  }
+
   /** Scans one workspace and applies the result. True when anything visible changed. */
   const sync = async (workspace: Workspace): Promise<boolean> => {
     const result = await deps.scan(workspace.path, workspace.depth)
@@ -205,6 +222,7 @@ export function createWorkspaceService(deps: WorkspaceServiceDeps): WorkspaceSer
         for (const workspace of data.workspaces) {
           if (await sync(workspace)) changed = true
         }
+        if (await removeMissingStandaloneProjects()) changed = true
         if (changed) emit({ type: 'projects-updated' })
         return data.workspaces.map(view)
       })

@@ -1,4 +1,14 @@
-import { AppWindow, Copy, Ellipsis, FolderOpen, Info, SquareTerminal, X } from 'lucide-react'
+import {
+  AppWindow,
+  Copy,
+  Ellipsis,
+  FolderOpen,
+  Info,
+  Pin,
+  PinOff,
+  SquareTerminal,
+  X
+} from 'lucide-react'
 import type { Project, Run } from '@devhub/shared'
 import { access, shell } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
@@ -177,6 +187,7 @@ const dropdownParts: MenuParts = {
 
 function ProjectMenuItems({
   parts: { Item, Separator, Sub, SubTrigger, SubContent },
+  project,
   actions,
   onShowDetails,
   onRemove
@@ -187,6 +198,10 @@ function ProjectMenuItems({
       <Item onSelect={onShowDetails}>
         <Info />
         显示详情
+      </Item>
+      <Item onSelect={actions.togglePinned} disabled={actions.pinPending}>
+        {project.pinnedAt ? <PinOff /> : <Pin />}
+        {project.pinnedAt ? '取消置顶' : '置顶'}
       </Item>
       {shell && (
         <Item onSelect={actions.openFolder}>

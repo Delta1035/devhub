@@ -62,7 +62,8 @@ describe('createMavenDetector', () => {
       source: 'maven',
       command: 'mvn spring-boot:run',
       description: '运行 Spring Boot 应用',
-      ports: [8080]
+      ports: [8080],
+      portsInferred: true
     })
   })
 

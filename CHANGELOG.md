@@ -4,6 +4,118 @@ User-facing changes in each DevHub release. `pnpm release` generates each sectio
 Conventional Commits since the previous tag (`scripts/changelog.mjs`), and the Release workflow
 uses it as the GitHub Release notes.
 
+## v1.10.9 - 2026-11-17
+
+### Fixes
+
+- **terminal:** 修复窄屏终端页可视区过小导致 E2E 失败 (Closes #124) (e2684fd)
+- **terminal:** 每次终端显示都刷新快照而非仅首次 (531ce6c)
+- **terminal:** 终端显示时重取快照修复慢速 CI 输出为空 (6250e90)
+
+## v1.10.8 - 2026-11-17
+
+### Features
+
+- 标题栏采用品牌图标，支持运行态任务栏与桌面快捷方式图标风格切换 (Closes #122, Closes #123) (33b2532)
+- 全局搜索浅色适配、紧凑功能导航栏与项目列表宽度可调 (d7a0cc9)
+
+### Fixes
+
+- 消除批量任务绝对定位元素穿透引起的视口滚动 (0225d13)
+- 修复批量任务页面全局溢出滚动并移除项目条目悬停编辑器图标 (38bbff3)
+
+## v1.10.7 - 2026-11-16
+
+### Fixes
+
+- 修复 1024 桌面分辨率下项目详情被压缩至 0 宽导致的可见性检查失败 (Closes #118) (6c09980)
+
+## v1.10.6 - 2026-11-16
+
+### Fixes
+
+- 适配 Windows 高 DPI 最小桌面宽度 (Refs #117) (edcc203)
+- 适配 Windows 高 DPI 最小桌面宽度 (Refs #117) (83bb9d8)
+
+## v1.10.5 - 2026-11-16
+
+### Fixes
+
+- 适配更窄高 DPI 桌面项目布局 (Refs #117) (405f0f3)
+- 适配更窄高 DPI 桌面项目布局 (Refs #117) (3e875f0)
+
+## v1.10.4 - 2026-11-16
+
+### Fixes
+
+- 兼容超窄桌面项目双栏布局 (Refs #117) (29bfdf0)
+- 兼容超窄桌面项目双栏布局 (Refs #117) (30e705b)
+
+## v1.10.3 - 2026-11-16
+
+### Fixes
+
+- 兼容高 DPI 窄桌面项目布局 (Refs #117) (02c5b27)
+- 兼容高 DPI 窄桌面项目布局 (Refs #117) (ce8d23b)
+
+## v1.10.2 - 2026-11-16
+
+### Fixes
+
+- 修复窄桌面项目布局不可见问题 (Refs #117) (e8e723c)
+- 修复窄桌面项目布局不可见问题 (Refs #117) (d92d69f)
+
+## v1.10.1 - 2026-11-16
+
+### Features
+
+- 重构功能导航并精简侧栏入口 (Closes #117) (5880765)
+
+## v1.10.0 - 2026-11-14
+
+### Features
+
+- **core:** 支持 Python 语言项目环境嗅探与脚本管理 (Closes #116) (8ce5307)
+- **core:** 支持 Go 语言项目工作区识别、多入口脚本探测与生命周期管理 (Closes #115) (92ecb93)
+- **renderer:** 统一全局消息通知中心、精简外观模式与基于主题翠绿焕新软件图标 (9245f1b)
+- **renderer:** 全局统一滚动条样式（对齐暗色科技原型设计） (Closes #112) (#113) (1717001)
+- **desktop:** 补齐项目设置分栏视图、脚本端口交互与全页面按钮交互反馈 (Closes #110) (#111) (13bc837)
+- 对齐原型科技暗色主题并支持浏览器模式测试 (#109) (e921cd1)
+- 对齐项目工作区与双栏运行历史面板（对齐画板 eM1tc 与 G3SBfh） (#107) (3be0002)
+- 重构主工作区路由与落地两栏式批量任务中心（对齐画板 vQtHE） (#105) (0240fcc)
+- **project:** 重构运行历史与项目设置面板对齐原型设计 (#103) (240d0a7)
+- **groups:** 重构批量任务主面板与步骤时间线对齐原型设计 (#101) (153a5b2)
+- **workspace:** redesign project detail and terminal panel with tabs and command bar (#99) (47fc58f)
+- **sidebar:** redesign project sidebar with modern cards and active runs monitor (#97) (945612f)
+- **desktop:** 重构全局布局骨架与现代顶底栏 (b988964)
+
+### Fixes
+
+- **desktop:** 移除项目条目悬浮详情卡片避免遮挡 (639ccb9)
+
+## v1.9.0 - 2026-11-10
+
+### Features
+
+- 启动前安全释放显式端口 (3498e0b)
+
+### Fixes
+
+- **windows:** 容忍已退出的父进程 (085b56b)
+- **windows:** 加速端口监听进程查询 (a232622)
+- 移除标题栏重复的批量任务信息 (63726a0)
+- 刷新时清理已删除的项目 (34c3ec2)
+
+## v1.8.0 - 2026-11-06
+
+### Features
+
+- 支持项目与批量任务置顶 (7384395)
+
+### Fixes
+
+- recover stale Linux single-instance locks (55dc08d)
+
 ## v1.7.3 - 2026-11-01
 
 ### Performance

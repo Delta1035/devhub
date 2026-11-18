@@ -7,8 +7,9 @@ import { readOptionalFile } from '../detectors/fs-utils'
  * the rules stay simple: explicit flags first, then well-known dev-server defaults.
  */
 
-// `--port 3000`, `--port=3000`, `-p 3000`, `PORT=3000`.
-const explicitPort = /(?:--port[= ]|(?:^|\s)-p\s+|\bPORT=)(\d{2,5})\b/
+// `--port 3000`, `--port=3000`, `-p 3000`, `PORT=3000`, `-addr :8080`, `-http :8080`, `-listen :8080`.
+const explicitPort =
+  /(?:--(?:port|addr|http|listen)[= ]|(?:^|\s)-(?:p|port|addr|http|listen)[= ]|\bPORT=)(?::|"[^"]*:|'[^']*:)?(\d{2,5})\b/
 
 /** Default ports of dev servers, keyed by the tool and (optionally) its subcommand. */
 const toolDefaults: { tool: string; subcommands?: string[]; port: number }[] = [
@@ -22,8 +23,16 @@ const toolDefaults: { tool: string; subcommands?: string[]; port: number }[] = [
   { tool: 'webpack', subcommands: ['serve'], port: 8080 },
   { tool: 'webpack-dev-server', port: 8080 },
   { tool: 'ng', subcommands: ['serve'], port: 4200 },
-  { tool: 'astro', subcommands: ['dev', 'preview'], port: 4321 }
+  { tool: 'astro', subcommands: ['dev', 'preview'], port: 4321 },
+  { tool: 'uvicorn', port: 8000 },
+  { tool: 'gunicorn', port: 8000 },
+  { tool: 'flask', subcommands: ['', 'run'], port: 5000 },
+  { tool: 'streamlit', subcommands: ['', 'run'], port: 8501 },
+  { tool: 'gradio', port: 7860 },
+  { tool: 'manage.py', subcommands: ['runserver'], port: 8000 }
 ]
+
+const djangoRunserver = /\bmanage\.py\s+runserver\s+(?:[^\s:]*:)?(\d{2,5})\b/
 
 const validPort = (port: number): boolean => Number.isInteger(port) && port >= 1 && port <= 65535
 
@@ -37,9 +46,14 @@ export function inferNpmPorts(body: string): number[] {
       ports.add(Number(explicit[1]))
       continue
     }
+    const django = djangoRunserver.exec(segment)
+    if (django?.[1] && validPort(Number(django[1]))) {
+      ports.add(Number(django[1]))
+      continue
+    }
     const words = segment.trim().split(/\s+/)
     for (const [index, word] of words.entries()) {
-      const tool = word.split('/').pop() ?? word // node_modules/.bin/vite → vite
+      const tool = word.split(/[/\\]/).pop() ?? word // node_modules/.bin/vite → vite
       const subcommand = words[index + 1]?.startsWith('-') ? '' : (words[index + 1] ?? '')
       const match = toolDefaults.find(
         (entry) =>
@@ -91,4 +105,15 @@ export async function readSpringPort(projectDir: string): Promise<number> {
     if (fromYaml && validPort(Number(fromYaml))) return Number(fromYaml)
   }
   return springDefaultPort
+}
+
+const goServerPort = /(?:ListenAndServe|Run|Listen|Start)\s*\(\s*["'`][^"'`:]*:(\d{2,5})["'`]/
+
+/** Best-effort extraction of an HTTP listen port from Go source code (net/http, Gin, Fiber, Echo). */
+export function parseGoPort(content: string): number | null {
+  const stripped = content.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')
+  const match = goServerPort.exec(stripped)
+  if (!match?.[1]) return null
+  const port = Number(match[1])
+  return validPort(port) ? port : null
 }

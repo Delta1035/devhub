@@ -19,6 +19,7 @@ export interface ProjectService {
   /** Throws PROJECT_NOT_FOUND for unknown or malformed ids. */
   get(projectId: unknown): Promise<Project>
   add(path: unknown): Promise<Project>
+  setPinned(projectId: unknown, pinned: unknown): Promise<Project>
   remove(projectId: unknown): Promise<void>
   /**
    * Adds discovered directories in one write. Trusted input (normalized absolute paths from a
@@ -38,6 +39,7 @@ export interface ProjectServiceDeps {
 
 const pathInput = z.string().trim().min(1)
 const idInput = z.string().min(1)
+const pinnedInput = z.boolean()
 
 export function createProjectService({
   store,
@@ -102,6 +104,21 @@ export function createProjectService({
           addedAt: now().toISOString()
         }
         data.projects.push(project)
+        return project
+      })
+    },
+
+    setPinned(rawId, rawPinned) {
+      return mutate(async (data) => {
+        const parsedId = idInput.safeParse(rawId)
+        const parsedPinned = pinnedInput.safeParse(rawPinned)
+        const project = parsedId.success
+          ? data.projects.find((candidate) => candidate.id === parsedId.data)
+          : undefined
+        if (!project) throw new DevhubError('PROJECT_NOT_FOUND', '项目不存在或已被移除')
+        if (!parsedPinned.success) throw new DevhubError('INVALID_INPUT', '置顶状态无效')
+        if (parsedPinned.data) project.pinnedAt = now().toISOString()
+        else delete project.pinnedAt
         return project
       })
     },

@@ -20,7 +20,10 @@ test('lists detected scripts with the package manager from the lockfile', async 
   await expect(main.getByText('pnpm run build')).toBeVisible()
 })
 
-test('flags a project whose directory was deleted', async ({ launchDevhub, createProject }) => {
+test('removes a deleted project when the app refreshes on restart', async ({
+  launchDevhub,
+  createProject
+}) => {
   const dir = await createProject('gone', { 'package.json': packageJson({ dev: 'node -v' }) })
   const first = await launchDevhub()
   const { app } = first
@@ -31,7 +34,7 @@ test('flags a project whose directory was deleted', async ({ launchDevhub, creat
 
   await rm(dir, { recursive: true, force: true })
   page = (await launchDevhub()).page
-  await expect(page.getByText('项目目录不存在')).toBeVisible()
+  await expect(page.getByText('还没有项目')).toBeVisible()
 })
 
 test('runs custom scripts from .devhub.yaml and points at mistakes in it', async ({
@@ -55,9 +58,46 @@ test('runs custom scripts from .devhub.yaml and points at mistakes in it', async
   await expect(main.getByRole('heading', { name: '自定义' })).toBeVisible()
   await expect(main.getByText('本地 mock 服务')).toBeVisible()
   await page.getByRole('button', { name: '运行 mock' }).click()
+  await page.getByRole('button', { name: '查看 mock 终端' }).click()
   await expect(page.locator('.xterm-rows')).toContainText('mock from tools')
+  await page.getByRole('button', { name: /^脚本/ }).click()
 
   await writeFile(join(dir, '.devhub.yaml'), 'scripts:\n  mock:\n    command: "oops\n')
   await page.getByRole('button', { name: '刷新' }).click()
   await expect(main.getByText(/自定义：\.devhub\.yaml 第 \d+ 行不是有效的 YAML/)).toBeVisible()
+})
+
+test('lists detected Go scripts and entrypoints', async ({ launchDevhub, createProject }) => {
+  const dir = await createProject('sample-go', {
+    'go.mod': 'module example.com/sample-go\n\ngo 1.22\n',
+    'main.go': 'package main\n\nfunc main() {}\n'
+  })
+  const { page } = await launchDevhub()
+  await addProjectViaApi(page, dir)
+
+  const main = page.locator('main')
+  await expect(main.getByRole('heading', { level: 3, name: 'Go' })).toBeVisible()
+  await expect(main.getByText('go run .', { exact: true })).toBeVisible()
+  await expect(main.getByText('go build ./...')).toBeVisible()
+  await expect(main.getByText('go test ./...')).toBeVisible()
+})
+
+test('lists detected Python scripts and entrypoints', async ({ launchDevhub, createProject }) => {
+  const dir = await createProject('sample-py', {
+    'pyproject.toml': [
+      '[project]',
+      'name = "sample-py"',
+      '',
+      '[project.scripts]',
+      'my-cli = "sample.cli:main"'
+    ].join('\n'),
+    'main.py': 'print("hello")\n'
+  })
+  const { page } = await launchDevhub()
+  await addProjectViaApi(page, dir)
+
+  const main = page.locator('main')
+  await expect(main.getByRole('heading', { level: 3, name: 'Python' })).toBeVisible()
+  await expect(main.getByText('my-cli')).toBeVisible()
+  await expect(main.getByText('run', { exact: true })).toBeVisible()
 })

@@ -23,8 +23,10 @@ test('runs a script, streams its output, stops it, and shows exit codes', async 
   const tickRow = page.locator('main li', { hasText: 'npm run tick' })
   await page.getByRole('button', { name: '运行 tick' }).click()
   await expect(tickRow.getByText('运行中')).toBeVisible()
+  await page.getByRole('button', { name: '查看 tick 终端' }).click()
   await expect(page.locator('.xterm-rows')).toContainText('tick 3')
 
+  await page.getByRole('button', { name: /^脚本/ }).click()
   await page.getByRole('button', { name: '停止 tick' }).click()
   await expect(tickRow.getByText('已停止')).toBeVisible()
 
@@ -42,6 +44,7 @@ test('sends terminal input to the running process', async ({ launchDevhub, creat
   await addProjectViaApi(page, dir)
 
   await page.getByRole('button', { name: '运行 ask' }).click()
+  await page.getByRole('button', { name: '查看 ask 终端' }).click()
   const terminal = page.locator('.xterm-rows')
   await expect(terminal).toContainText('你叫什么名字？')
 
@@ -49,6 +52,7 @@ test('sends terminal input to the running process', async ({ launchDevhub, creat
   await page.keyboard.type('E2E')
   await page.keyboard.press('Enter')
   await expect(terminal).toContainText('你好，E2E！')
+  await page.getByRole('button', { name: /^脚本/ }).click()
   await expect(
     page.locator('main li', { hasText: 'npm run ask' }).getByText('已完成')
   ).toBeVisible()

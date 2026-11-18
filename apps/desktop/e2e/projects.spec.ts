@@ -21,7 +21,9 @@ test('adds a project with the folder picker, rejects duplicates, survives a rest
 
   await stubFolderPicker(app, dir)
   await addFromMenu(page, '添加项目')
-  const projectItem = page.locator('aside').getByRole('button', { name: /^web-app/ })
+  const projectItem = page
+    .getByRole('region', { name: '项目列表' })
+    .getByRole('button', { name: /^web-app/ })
   await expect(projectItem).toBeVisible()
   await expect(page.getByRole('heading', { name: 'web-app' })).toBeVisible()
 
@@ -30,14 +32,18 @@ test('adds a project with the folder picker, rejects duplicates, survives a rest
 
   await app.close()
   page = (await launchDevhub()).page
-  await expect(page.locator('aside').getByRole('button', { name: /^web-app/ })).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: '项目列表' }).getByRole('button', { name: /^web-app/ })
+  ).toBeVisible()
 
   // The × only asks: cancelling keeps the project.
   await page.getByRole('button', { name: '移除 web-app' }).click()
   const confirm = page.getByRole('dialog', { name: '移除项目「web-app」？' })
   await confirm.getByRole('button', { name: '取消' }).click()
   await expect(confirm).toBeHidden()
-  await expect(page.locator('aside').getByRole('button', { name: /^web-app/ })).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: '项目列表' }).getByRole('button', { name: /^web-app/ })
+  ).toBeVisible()
 
   await page.getByRole('button', { name: '移除 web-app' }).click()
   await confirm.getByRole('button', { name: '确认移除' }).click()
@@ -64,13 +70,15 @@ setInterval(() => console.log('tick ' + ++n), 200)
   await addProjectViaApi(page, dirA)
   await addProjectViaApi(page, dirB)
 
-  const items = page.locator('aside section[aria-label="独立项目"] li')
+  const items = page
+    .getByRole('region', { name: '项目列表' })
+    .locator('section[aria-label="独立项目"] li')
   await expect(items.first()).toContainText('alpha-app')
   await expect(items.nth(1)).toContainText('beta-app')
 
   // Select beta-app and run its script to make it active
   await page
-    .locator('aside')
+    .getByRole('region', { name: '项目列表' })
     .getByRole('button', { name: /^beta-app/ })
     .click()
   await page.getByRole('button', { name: '运行 tick' }).click()
@@ -111,14 +119,14 @@ setInterval(() => console.log('tick ' + ++n), 200)
 
   // Start tick on charlie-app so it is active
   await page
-    .locator('aside')
+    .getByRole('region', { name: '项目列表' })
     .getByRole('button', { name: /^charlie-app/ })
     .click()
   await page.getByRole('button', { name: '运行 tick' }).click()
 
   // Select alpha-app
   await page
-    .locator('aside')
+    .getByRole('region', { name: '项目列表' })
     .getByRole('button', { name: /^alpha-app/ })
     .click()
   await expect(page.getByRole('heading', { name: 'alpha-app' })).toBeVisible()
@@ -157,7 +165,9 @@ test('keeps the fallback selection when another project starts running', async (
     if (!tick) throw new Error('tick script was not detected')
     await devhub.startScript(beta.id, tick.id)
   })
-  const items = page.locator('aside section[aria-label="独立项目"] li')
+  const items = page
+    .getByRole('region', { name: '项目列表' })
+    .locator('section[aria-label="独立项目"] li')
   await expect(items.first()).toContainText('beta-app')
   await expect(page.getByRole('heading', { name: 'alpha-app' })).toBeVisible()
 })

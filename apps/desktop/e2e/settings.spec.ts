@@ -1,7 +1,9 @@
 import { addProjectViaApi, packageJson, test, expect, type DevhubWindow } from './fixtures'
 
 const openSettings = async (page: import('@playwright/test').Page) => {
-  await page.getByRole('button', { name: '设置' }).click()
+  await page.locator('header').getByRole('button', { name: '设置' }).click()
+  await expect(page.getByRole('heading', { name: '设置' })).toBeVisible()
+  await page.locator('header').getByRole('button', { name: '设置' }).click()
   await expect(page.getByRole('heading', { name: '设置' })).toBeVisible()
 }
 
@@ -13,17 +15,43 @@ test('settings apply at once and survive a restart', async ({ launchDevhub, crea
   await addProjectViaApi(page, dir)
   await openSettings(page)
 
-  // Theme: a fixed choice overrides the OS.
-  await page.getByRole('radio', { name: '深色' }).click()
-  await expect(page.locator('html')).toHaveClass(/dark/)
-
-  // Style: swaps the tokens, so the page background changes with it.
+  // Mode: a fixed choice overrides the OS and swaps background tokens.
   const background = () =>
     page.locator('body').evaluate((body) => getComputedStyle(body).backgroundColor)
-  const neutralBackground = await background()
-  await page.getByRole('radio', { name: 'Material 3' }).click()
-  await expect(page.locator('html')).toHaveAttribute('data-style', 'material')
-  await expect.poll(background).not.toBe(neutralBackground)
+  await page.getByRole('radio', { name: '浅色' }).click()
+  await expect(page.locator('html')).not.toHaveClass(/dark/)
+  const lightBg = await background()
+
+  // Embedded code and terminal surfaces must follow the selected light palette too.
+  await page.getByRole('button', { name: '返回' }).click()
+  await page.getByRole('button', { name: '项目设置', exact: true }).click()
+  await expect(page.locator('[data-theme-surface="code-editor"]')).toHaveCSS(
+    'background-color',
+    'rgb(251, 251, 251)'
+  )
+  await page.getByRole('button', { name: '端口与健康检查' }).click()
+  await expect(page.locator('[data-theme-surface="code-sample"]')).toHaveCSS(
+    'background-color',
+    'rgb(251, 251, 251)'
+  )
+
+  await page.getByRole('button', { name: '终端', exact: true }).click()
+  await page.getByRole('button', { name: '新建终端' }).click()
+  await expect(page.locator('[data-terminal-run] > div')).toHaveCSS(
+    'background-color',
+    'rgb(251, 251, 251)'
+  )
+  await page.getByRole('button', { name: '在终端中查找' }).click()
+  await expect(page.locator('[data-theme-surface="terminal-search-bar"]')).toHaveCSS(
+    'background-color',
+    'rgb(248, 250, 252)'
+  )
+  await page.getByRole('button', { name: '关闭 终端 1' }).click()
+  await openSettings(page)
+
+  await page.getByRole('radio', { name: '深色' }).click()
+  await expect(page.locator('html')).toHaveClass(/dark/)
+  await expect.poll(background).not.toBe(lightBg)
 
   // Default shell: pick the last detected one (PowerShell / cmd on Windows, sh… on Linux).
   const shellSelect = page.getByLabel('默认 shell')
@@ -43,6 +71,7 @@ test('settings apply at once and survive a restart', async ({ launchDevhub, crea
 
   // Back to the project: "+" now opens the chosen shell, at the chosen font size.
   await page.getByRole('button', { name: '返回' }).click()
+  await page.getByRole('button', { name: /^终端/ }).click()
   await page.getByRole('button', { name: '新建终端' }).click()
   await expect
     .poll(async () =>
@@ -60,7 +89,6 @@ test('settings apply at once and survive a restart', async ({ launchDevhub, crea
   await app.close()
   page = (await launchDevhub()).page
   await expect(page.locator('html')).toHaveClass(/dark/)
-  await expect(page.locator('html')).toHaveAttribute('data-style', 'material')
   await openSettings(page)
   await expect(page.getByLabel('默认 shell')).toHaveValue(chosen)
   await expect(page.getByLabel('停止等待时间')).toHaveValue('9')
@@ -125,9 +153,10 @@ test('a custom shell can be added and opened from the terminal menu', async ({
   await expect(section.getByRole('button', { name: '保存' })).toBeHidden()
 
   await page.getByRole('button', { name: '返回' }).click()
+  await page.getByRole('button', { name: /^终端/ }).click()
   await page.getByRole('button', { name: '选择终端类型' }).click()
   await page.getByRole('menuitem', { name: 'Node REPL' }).click()
-  await expect(page.getByRole('button', { name: '终端 1', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '终端 1', exact: true }).last()).toBeVisible()
   await expect(page.locator('.xterm-rows')).toContainText('>')
   await page.locator('.xterm').click()
   await page.keyboard.type('6*7')

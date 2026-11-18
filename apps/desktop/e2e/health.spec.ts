@@ -38,8 +38,10 @@ test('a server shows as starting, then ready once its health endpoint answers', 
   await page.getByRole('button', { name: '运行 api' }).click()
   const badge = row.getByTitle(`检查：GET http://localhost:${port}/health`)
   await expect(badge).toHaveText('启动中')
+  await page.getByRole('button', { name: '查看 api 终端' }).click()
   // Listening alone is not enough: the endpoint must answer 2xx.
   await expect(page.locator('.xterm-rows')).toContainText('listening')
+  await page.getByRole('button', { name: /^脚本/ }).click()
   await expect(badge).toHaveText('启动中')
   await expect(badge).toHaveText('就绪', { timeout: 10_000 })
 

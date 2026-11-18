@@ -259,6 +259,22 @@ describe('createGroupRunner', () => {
     await expect(runner.states()).resolves.toHaveLength(1)
   })
 
+  it('keeps a group active while a parallel step continues after startup', async () => {
+    define({
+      id: 'g',
+      name: 'server group',
+      mode: 'parallel',
+      steps: [step('s1', 'npm:server', { type: 'delay', seconds: 60 })]
+    })
+
+    await runner.start('g')
+    await flush()
+
+    await expect(runner.isRunning('g')).resolves.toBe(true)
+    await runner.stop('g')
+    await expect(runner.isRunning('g')).resolves.toBe(false)
+  })
+
   it('rejects unknown groups', async () => {
     await expect(runner.start('nope')).rejects.toMatchObject({ code: 'GROUP_NOT_FOUND' })
     await expect(runner.stop('nope')).rejects.toMatchObject({ code: 'GROUP_NOT_FOUND' })

@@ -50,7 +50,8 @@ describe('createScriptService', () => {
           source: 'npm',
           command: 'npm run dev',
           description: 'vite',
-          ports: [5173]
+          ports: [5173],
+          portsInferred: true
         }
       ],
       warnings: []

@@ -51,6 +51,20 @@ describe('createSettingsService', () => {
     await expect(service.get()).resolves.toMatchObject({ editorPaths: { idea: null } })
   })
 
+  it('persists the conflict policy and keeps it through unrelated updates', async () => {
+    const { service, store, events } = makeService()
+    await service.update({ portConflictPolicy: 'terminate' })
+    await service.update({ closeAction: 'quit' })
+    await expect(service.get()).resolves.toMatchObject({ portConflictPolicy: 'terminate' })
+    expect(store.saved().settings.portConflictPolicy).toBe('terminate')
+    expect(events.at(-1)).toMatchObject({
+      type: 'settings-updated',
+      settings: { portConflictPolicy: 'terminate', closeAction: 'quit' }
+    })
+    await service.update({ portConflictPolicy: 'error' })
+    await expect(service.get()).resolves.toMatchObject({ portConflictPolicy: 'error' })
+  })
+
   it.each([['relative/idea.exe'], [process.platform === 'win32' ? 'C:\\nope.exe' : '/nope']])(
     'rejects an editor path that is not an existing absolute file: %s',
     async (path) => {
@@ -62,14 +76,17 @@ describe('createSettingsService', () => {
     }
   )
 
-  it.each([[{ stopGraceSeconds: 0 }], [{ defaultShell: 'tcsh' }], [null], ['x']])(
-    'rejects invalid values %o',
-    async (patch) => {
-      await expect(makeService().service.update(patch)).rejects.toMatchObject({
-        code: 'SETTINGS_INVALID'
-      })
-    }
-  )
+  it.each([
+    [{ stopGraceSeconds: 0 }],
+    [{ defaultShell: 'tcsh' }],
+    [{ portConflictPolicy: 'kill' }],
+    [null],
+    ['x']
+  ])('rejects invalid values %o', async (patch) => {
+    await expect(makeService().service.update(patch)).rejects.toMatchObject({
+      code: 'SETTINGS_INVALID'
+    })
+  })
 
   it('returns copies, so callers cannot change the stored settings', async () => {
     const { service } = makeService()

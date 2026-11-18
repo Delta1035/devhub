@@ -24,6 +24,7 @@ import { checkHttpOk, checkLocalHttp } from './net/http-check'
 import { checkLocalPort } from './net/local-port'
 import { createPortGuard } from './ports/port-guard'
 import { createPortOwnerFinder } from './ports/port-owner'
+import { createPortReleaser } from './ports/port-releaser'
 import {
   createGroupHistory,
   emptyGroupHistoryFile,
@@ -31,6 +32,12 @@ import {
 } from './groups/group-history'
 import { createGroupRunner } from './groups/group-runner'
 import { createGroupService, emptyGroupsFile, groupsFileSchema } from './groups/group-service'
+import {
+  createScheduleService,
+  emptySchedulesFile,
+  schedulesFileSchema,
+  type ScheduleTargetExecutor
+} from './schedules/schedule-service'
 import { createEventBus } from './events/event-bus'
 import { createIdentityReader } from './process/process-identity'
 import { createProcessKiller } from './process/process-killer'
@@ -184,6 +191,8 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
   const runs = createRunManager({
     scripts,
     portConflicts,
+    portConflictPolicy: async () => (await settings.get()).portConflictPolicy,
+    releasePorts: createPortReleaser({ platform: env.platform, graceMs: () => stopGraceMs }),
     projects,
     shells,
     spawn: nodePtySpawner,
@@ -217,6 +226,59 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
         fallback: emptyGroupHistoryFile
       })
     )
+  })
+
+  const scheduleExecutor: ScheduleTargetExecutor = {
+    validate: async (target) => {
+      if (target.kind === 'script') {
+        await scripts.find(target.projectId, target.scriptId)
+      } else {
+        await groupService.get(target.groupId)
+      }
+    },
+    isRunning: async (target) => {
+      if (target.kind === 'script') {
+        return runs
+          .list()
+          .some(
+            (run) =>
+              run.kind === 'script' &&
+              run.projectId === target.projectId &&
+              run.scriptId === target.scriptId &&
+              run.status !== 'exited'
+          )
+      }
+      return groupRunner.isRunning(target.groupId)
+    },
+    start: async (target) => {
+      if (target.kind === 'script') await runs.start(target.projectId, target.scriptId)
+      else await groupRunner.start(target.groupId)
+    },
+    stop: async (target) => {
+      if (target.kind === 'script') {
+        const activeRuns = runs
+          .list()
+          .filter(
+            (run) =>
+              run.kind === 'script' &&
+              run.projectId === target.projectId &&
+              run.scriptId === target.scriptId &&
+              run.status !== 'exited'
+          )
+        await Promise.all(activeRuns.map((run) => runs.stop(run.id)))
+      } else {
+        await groupRunner.stop(target.groupId)
+      }
+    }
+  }
+  const schedules = createScheduleService({
+    store: createJsonStore({
+      filePath: join(env.dataDir, 'schedules.json'),
+      schema: schedulesFileSchema,
+      fallback: emptySchedulesFile
+    }),
+    executor: scheduleExecutor,
+    emit: (event) => events.emit(event)
   })
 
   const workspaces = createWorkspaceService({
@@ -256,6 +318,11 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     },
     listProjects: () => projects.list(),
     addProject: (path) => projects.add(path),
+    setProjectPinned: async (projectId, pinned) => {
+      const project = await projects.setPinned(projectId, pinned)
+      events.emit({ type: 'projects-updated' })
+      return project
+    },
     removeProject: (projectId) => workspaces.removeProject(projectId),
     listWorkspaces: () => workspaces.list(),
     addWorkspace: (path, depth) => workspaces.add(path, depth),
@@ -285,15 +352,30 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     getSettings: () => settings.get(),
     updateSettings: (patch) => settings.update(patch),
     listGroups: () => groupService.list(),
-    saveGroup: (input) => groupService.save(input),
+    saveGroup: async (input) => {
+      const group = await groupService.save(input)
+      events.emit({ type: 'groups-updated' })
+      return group
+    },
+    setGroupPinned: async (groupId, pinned) => {
+      const group = await groupService.setPinned(groupId, pinned)
+      events.emit({ type: 'groups-updated' })
+      return group
+    },
     deleteGroup: async (groupId) => {
       await groupRunner.stop(groupId).catch(() => undefined)
       await groupService.remove(groupId)
       if (typeof groupId === 'string') await groupRunner.forget(groupId)
+      events.emit({ type: 'groups-updated' })
     },
     startGroup: (groupId) => groupRunner.start(groupId),
     stopGroup: (groupId) => groupRunner.stop(groupId),
     listGroupStates: () => groupRunner.states(),
+    listSchedules: () => schedules.list(),
+    saveSchedule: (input) => schedules.save(input),
+    setScheduleEnabled: (scheduleId, enabled) => schedules.setEnabled(scheduleId, enabled),
+    deleteSchedule: (scheduleId) => schedules.remove(scheduleId),
+    runScheduleNow: (scheduleId) => schedules.runNow(scheduleId),
     listEditors: () => editors.list(),
     openInEditor: (projectId, editor) => editors.open(projectId, editor),
     getSystemTerminal: () => systemTerminal.get(),
@@ -320,6 +402,9 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     })
   })
   void remote.start()
+  void schedules.start().catch((error: unknown) => {
+    console.error('[core] schedule service failed to start', error)
+  })
 
   return {
     ...api,
@@ -327,6 +412,7 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     dispose: async () => {
       // No new remote requests while shutting down.
       await remote.dispose()
+      await schedules.dispose()
       // Cancel sequences first so no step starts while the runs are being stopped.
       groupRunner.dispose()
       health.dispose()

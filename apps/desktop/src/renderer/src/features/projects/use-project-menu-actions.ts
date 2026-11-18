@@ -7,7 +7,7 @@ import {
   useSystemTerminal
 } from '@renderer/features/editors/use-editors'
 import { useStartShell } from '@renderer/features/terminal/use-shells'
-import { useOpenProjectFolder } from './use-projects'
+import { useOpenProjectFolder, useSetProjectPinned } from './use-projects'
 
 /**
  * A project's actions, offered both as its context menu (right click) and as a "more" button
@@ -17,11 +17,13 @@ export interface ProjectMenuActions {
   editors: UseQueryResult<EditorInfo[]>
   systemTerminal: UseQueryResult<SystemTerminalInfo | null>
   shellPending: boolean
+  pinPending: boolean
   openFolder: () => void
   openShell: () => void
   openInEditor: (editor: EditorId) => void
   openInSystemTerminal: () => void
   copyPath: () => void
+  togglePinned: () => void
 }
 
 /**
@@ -45,11 +47,13 @@ export function useProjectMenuActions(
   const systemTerminal = useSystemTerminal()
   const openInSystemTerminal = useOpenInSystemTerminal()
   const startShell = useStartShell()
+  const setPinned = useSetProjectPinned()
 
   return {
     editors,
     systemTerminal,
     shellPending: startShell.isPending,
+    pinPending: setPinned.isPending,
     openFolder: () => openFolder.mutate(project.id, { onError }),
     openShell: () =>
       startShell.mutate({ projectId: project.id }, { onSuccess: onShellStarted, onError }),
@@ -57,6 +61,8 @@ export function useProjectMenuActions(
     openInSystemTerminal: () => openInSystemTerminal.mutate(project.id, { onError }),
     copyPath: () => {
       navigator.clipboard.writeText(project.path).catch(onError)
-    }
+    },
+    togglePinned: () =>
+      setPinned.mutate({ projectId: project.id, pinned: !project.pinnedAt }, { onError })
   }
 }

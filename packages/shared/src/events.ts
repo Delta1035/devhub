@@ -2,6 +2,7 @@ import type { Run } from './domain'
 import type { GroupRunState } from './groups'
 import type { RunHealth } from './health'
 import type { Settings } from './settings'
+import type { Schedule } from './schedules'
 
 /**
  * Pushed from the core to every connected UI. Desktop: Electron IPC; remote: Server-Sent Events.
@@ -15,6 +16,10 @@ export type DevhubEvent =
   /** Emitted after history changes have been processed, including clear operations. */
   | { type: 'history-updated'; projectId: string; scriptId: string }
   | { type: 'group-updated'; state: GroupRunState }
+  /** A batch task definition changed; refetch the group list. */
+  | { type: 'groups-updated' }
+  /** A scheduled task changed; refetch the schedule list. */
+  | { type: 'schedules-updated'; schedule?: Schedule; removedId?: string }
   /** `health` is null once the run is no longer checked (stopping, exited, removed). */
   | { type: 'run-health'; runId: string; health: RunHealth | null }
   | { type: 'settings-updated'; settings: Settings }

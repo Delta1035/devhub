@@ -39,7 +39,7 @@ Runs on Windows and Linux (Ubuntu / X11). The UI is currently in Chinese.
   - Project wrappers (`mvnw` / `gradlew`) are preferred
   - Anything else goes in [`.devhub.yaml`](#custom-scripts-devhubyaml)
 - **Runs and logs**: start / stop / restart, stopping the whole process tree; one terminal tab per run with interactive input, search, copy/paste and clickable links
-- **Ports and health checks**: infers ports from commands, warns before starting when a port is taken and names the process holding it; running scripts show starting / ready / unresponsive
+- **Ports and health checks**: infers ports from commands, names processes holding a port and can stop them before starting a service; running scripts show starting / ready / unresponsive
 - **Batch tasks**: combine scripts across projects and start them in parallel or in sequence; a sequential step can wait for a successful exit, a text (or regex) in the output, an open port, an HTTP 2xx or a fixed delay, and a failure stops the remaining steps with a reason
 - **Run history**: the last 20 runs of each script, with their logs, survive a DevHub restart
 - **Project terminals**: open bash / PowerShell / cmd or a custom shell in the project directory
@@ -83,6 +83,7 @@ scripts:
     command: mvnw.cmd spring-boot:run -pl server # or per platform: { windows: ..., linux: ... }
     description: Backend # optional
     port: 8081 # optional, or ports: [8081, 8082]; inferred from the command when omitted
+    portConflictPolicy: terminate # optional: stop port holders before starting this script
     health: /actuator/health # optional; readiness then means this path returns HTTP 2xx
   db:
     command: docker compose up postgres
@@ -90,6 +91,8 @@ scripts:
 ```
 
 Changes apply on refresh or when the window regains focus; mistakes are reported in the script list with a line number or field path.
+
+Settings → Process → Port conflicts defaults to reporting a conflict. Choose **Stop port holders before starting** to apply automatic replacement globally, or set `portConflictPolicy: terminate` on individual custom scripts. A script's `error` or `terminate` value overrides the global setting. This applies to single and batch starts, and only to ports explicitly declared with `port` or `ports` in `.devhub.yaml`. Inferred ports still report conflicts, because a tool's default port may differ from its actual configuration. DevHub stops managed services normally, terminates external holders and their process trees, and waits for the ports to be free. If a holder cannot be identified or stopped, startup fails with a reason.
 
 ## Development
 

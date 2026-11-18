@@ -3,20 +3,60 @@ import { mkdir, writeFile } from 'fs/promises'
 import { dirname } from 'path'
 import type { ElectronApplication, TestInfo } from '@playwright/test'
 
-/** Playwright destroys app.process() after close, so retain the child from launch. */
+/** Give DevHub a chance to stop its runs, then force-close the test's own process tree. */
+const appCloseTimeoutMs = 10_000
+
+/**
+ * Playwright destroys app.process() after close, so retain the child from launch.
+ * `app.close()` can hang when a Windows PTY child dies during shutdown; a bounded close
+ * keeps one teardown from consuming the whole test timeout and stalling CI.
+ */
 export async function closeRunningApps(
   launched: { app: Pick<ElectronApplication, 'close'>; child: ChildProcess }[]
 ): Promise<void> {
   const errors: unknown[] = []
   for (const { app, child } of launched) {
     if (child.exitCode !== null || child.signalCode !== null) continue
+    let timedOut = false
+    let timer: NodeJS.Timeout | undefined
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        timedOut = true
+        reject(new Error('Electron close timed out'))
+      }, appCloseTimeoutMs)
+    })
     try {
-      await app.close()
+      await Promise.race([app.close(), timeout])
     } catch (error) {
-      errors.push(error)
+      if (timedOut) await forceKill(child)
+      else errors.push(error)
+    } finally {
+      clearTimeout(timer)
     }
   }
   if (errors.length > 0) throw new AggregateError(errors, 'Failed to close Electron applications')
+}
+
+/** Kills only the Electron instance launched by this test, including its child processes. */
+function forceKill(child: ChildProcess): Promise<void> {
+  const pid = child.pid
+  if (!pid || child.exitCode !== null || child.signalCode !== null) return Promise.resolve()
+  if (process.platform === 'win32') {
+    return new Promise((resolve) => {
+      execFile(
+        'taskkill',
+        ['/PID', String(pid), '/T', '/F'],
+        { timeout: 5000, windowsHide: true },
+        () => resolve()
+      )
+    })
+  }
+  try {
+    process.kill(-pid, 'SIGKILL')
+  } catch {
+    child.kill('SIGKILL')
+  }
+  return Promise.resolve()
 }
 
 /** Capture evidence before Playwright's overall timeout interrupts a stuck close. */

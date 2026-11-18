@@ -1,15 +1,21 @@
 import { lazy, Suspense, useState } from 'react'
 import { sortProjects, type Run } from '@devhub/shared'
-import { ProjectDetail } from '@renderer/features/projects/project-detail'
-import { GroupDetail } from '@renderer/features/groups/group-detail'
-import { useGroups, useGroupEventsSync } from '@renderer/features/groups/use-groups'
+import { BatchWorkspace } from '@renderer/features/groups/batch-workspace'
+import { useActiveGroups } from '@renderer/features/groups/use-active-groups'
+import { useGroupEventsSync } from '@renderer/features/groups/use-groups'
+import { ProjectWorkspace } from '@renderer/features/projects/project-workspace'
 import { useProjects } from '@renderer/features/projects/use-projects'
 import { OrphansBanner } from '@renderer/features/runs/orphans-banner'
+import { RunningWorkspace } from '@renderer/features/runs/running-workspace'
 import { useRunEventsSync, useRuns } from '@renderer/features/runs/use-runs'
+import { ScheduleWorkspace } from '@renderer/features/schedules/schedule-workspace'
+import { useScheduleEventsSync } from '@renderer/features/schedules/use-schedules'
 import { Sheet, SheetContent, SheetTitle } from '@renderer/components/ui/sheet'
-import { Sidebar } from '@renderer/features/sidebar/sidebar'
+import { Sidebar, type SidebarView } from '@renderer/features/sidebar/sidebar'
 import { SidebarSkeleton } from '@renderer/features/sidebar/sidebar-skeleton'
-import { useResizableWidth } from '@renderer/features/sidebar/use-resizable-width'
+import { GlobalSearchDialog } from '@renderer/features/search/global-search-dialog'
+import { Toaster } from '@renderer/components/ui/toaster'
+import { StatusBar } from '@renderer/features/status-bar/status-bar'
 import { TitleBar } from '@renderer/features/title-bar/title-bar'
 import { useWorkspaceEventsSync, useWorkspaces } from '@renderer/features/workspaces/use-workspaces'
 import { narrowQuery, useMediaQuery } from '@renderer/lib/use-media-query'
@@ -24,14 +30,19 @@ const SettingsPage = lazy(() =>
 function App(): React.JSX.Element {
   useRunEventsSync()
   useGroupEventsSync()
+  useScheduleEventsSync()
   useWorkspaceEventsSync()
   useWorkspaces()
   const { data: projects } = useProjects()
   const { data: runs } = useRuns()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
-  // Long project names stay readable when the sidebar is widened (default = Tailwind w-64).
-  const sidebar = useResizableWidth('devhub.sidebarWidth', 256, 200)
+  const [activeView, setActiveView] = useState<SidebarView>(() => {
+    const stored = localStorage.getItem('devhub.activeView')
+    return stored === 'groups' || stored === 'running' || stored === 'schedules'
+      ? stored
+      : 'projects'
+  })
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [requestedRunId, setRequestedRunId] = useState<string | null>(null)
   // On phones the sidebar is a drawer over the content, closed once something is chosen.
@@ -39,16 +50,40 @@ function App(): React.JSX.Element {
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerReady, setDrawerReady] = useState(false)
-  const groups = useGroups().data ?? []
-  const selectedGroup = groups.find((group) => group.id === selectedGroupId)
-  // Choosing a project in the sidebar leaves the settings page.
+  const [searchOpen, setSearchOpen] = useState(false)
+  const activeRuns = (runs ?? []).filter((run) => run.status !== 'exited')
+  const activeGroupCount = useActiveGroups().length
+
+  const selectView = (view: SidebarView): void => {
+    setActiveView(view)
+    localStorage.setItem('devhub.activeView', view)
+    setShowSettings(false)
+    setDrawerOpen(false)
+  }
+
+  const openSettings = (): void => {
+    setShowSettings(true)
+    setDrawerOpen(false)
+  }
+
+  // Choosing a project in the sidebar leaves the settings and batch page.
   const selectProject = (projectId: string): void => {
     setSelectedId(projectId)
     setSelectedGroupId(null)
     setRequestedRunId(null)
     setShowSettings(false)
     setDrawerOpen(false)
+    selectView('projects')
   }
+
+  // Choosing batch tasks or a group switches to batch workspace.
+  const selectBatch = (groupId?: string | null): void => {
+    selectView('groups')
+    if (groupId) {
+      setSelectedGroupId(groupId)
+    }
+  }
+
   // Shows a specific run's terminal tab, e.g. a group step's log or a shell opened from the list.
   const openRun = (run: Run): void => {
     selectProject(run.projectId)
@@ -65,38 +100,22 @@ function App(): React.JSX.Element {
   if (!chosen && runs && fallbackProject) setSelectedId(fallbackProject.id)
   const selected = chosen ?? fallbackProject
 
-  const sidebarContent = (
-    <Sidebar
-      narrow={narrow}
-      selectedGroupId={showSettings ? null : selectedGroupId}
-      onSelectGroup={(groupId) => {
-        setSelectedGroupId(groupId)
-        setShowSettings(false)
-        setDrawerOpen(false)
-      }}
-      selectedProjectId={showSettings || selectedGroup ? null : (selected?.id ?? null)}
-      currentProjectId={selected?.id ?? null}
-      onSelectProject={selectProject}
-      onOpenRun={openRun}
-    />
-  )
-
   return (
     // dvh: on phones the browser's address bar would otherwise cover the bottom of the page.
-    <div className="flex h-dvh flex-col bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-foreground">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-foreground">
       <TitleBar
         showSettings={showSettings}
-        onToggleSettings={() => {
-          setShowSettings(!showSettings)
-          setDrawerOpen(false)
-        }}
+        onOpenSettings={openSettings}
+        onOpenSearch={() => setSearchOpen(true)}
         onOpenNavigation={narrow ? () => setDrawerOpen(true) : undefined}
-        onSelectGroup={(groupId) => {
-          setSelectedGroupId(groupId)
-          setShowSettings(false)
-        }}
       />
-      <div className="flex min-h-0 flex-1">
+      <GlobalSearchDialog
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        onSelectProject={selectProject}
+        onSelectGroup={(groupId) => selectBatch(groupId)}
+      />
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         {narrow ? (
           <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
             <SheetContent
@@ -109,50 +128,62 @@ function App(): React.JSX.Element {
               }}
             >
               <SheetTitle className="sr-only">导航</SheetTitle>
-              {drawerReady || reducedMotion ? sidebarContent : <SidebarSkeleton />}
+              {drawerReady || reducedMotion ? (
+                <Sidebar
+                  activeView={activeView}
+                  activeCount={activeRuns.length + activeGroupCount}
+                  onViewChange={selectView}
+                  compact={false}
+                />
+              ) : (
+                <SidebarSkeleton />
+              )}
             </SheetContent>
           </Sheet>
         ) : (
-          <aside
-            className="relative flex shrink-0 flex-col border-r p-3"
-            style={{ width: sidebar.width }}
-          >
-            {sidebarContent}
-            <div
-              role="separator"
-              aria-orientation="vertical"
-              aria-label="调整侧栏宽度"
-              aria-valuenow={sidebar.width}
-              tabIndex={0}
-              title="拖动调整宽度，双击恢复默认"
-              {...sidebar.handleProps}
-              className="absolute inset-y-0 -right-1 z-10 w-2 cursor-col-resize touch-none outline-none after:absolute after:inset-y-0 after:left-1/2 after:w-0.5 after:-translate-x-1/2 after:transition-colors hover:after:bg-primary/50 focus-visible:after:bg-primary"
+          <aside className="flex w-14 shrink-0 flex-col border-r border-border bg-sidebar p-2">
+            <Sidebar
+              activeView={activeView}
+              activeCount={activeRuns.length + activeGroupCount}
+              onViewChange={selectView}
+              compact={true}
             />
           </aside>
         )}
-        <main className="flex min-w-0 flex-1 flex-col">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <OrphansBanner />
-          <div className="min-h-0 flex-1">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {showSettings ? (
               <Suspense>
                 <SettingsPage onClose={() => setShowSettings(false)} />
               </Suspense>
-            ) : selectedGroup ? (
-              <GroupDetail key={selectedGroup.id} group={selectedGroup} onOpenRun={openRun} />
-            ) : selected ? (
-              <ProjectDetail
-                key={`${selected.id}:${requestedRunId ?? ''}`}
-                project={selected}
-                initialRunId={requestedRunId}
+            ) : activeView === 'projects' ? (
+              <ProjectWorkspace
+                narrow={narrow}
+                selectedProject={selected}
+                requestedRunId={requestedRunId}
+                onSelectProject={selectProject}
+                onOpenRun={openRun}
               />
+            ) : activeView === 'groups' ? (
+              <BatchWorkspace
+                selectedGroupId={selectedGroupId}
+                onSelectGroup={(groupId) => setSelectedGroupId(groupId)}
+                onOpenRun={openRun}
+              />
+            ) : activeView === 'schedules' ? (
+              <ScheduleWorkspace />
             ) : (
-              <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                添加一个项目后，这里会列出它的脚本
-              </p>
+              <RunningWorkspace
+                onSelectGroup={(groupId) => selectBatch(groupId)}
+                onOpenRun={openRun}
+              />
             )}
           </div>
         </main>
       </div>
+      <StatusBar />
+      <Toaster />
     </div>
   )
 }

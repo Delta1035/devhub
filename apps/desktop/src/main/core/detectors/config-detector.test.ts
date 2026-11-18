@@ -50,7 +50,24 @@ scripts:
 
   it('infers ports from the command when none is given', async () => {
     await write('scripts:\n  web:\n    command: npx vite --port 5180\n')
-    await expect(detect()).resolves.toMatchObject([{ ports: [5180] }])
+    await expect(detect()).resolves.toMatchObject([{ ports: [5180], portsInferred: true }])
+  })
+
+  it.each(['port: 5180', 'ports: [5180, 5181]'])(
+    'trusts explicitly declared YAML ports: %s',
+    async (declaration) => {
+      await write(`scripts:\n  web:\n    command: vite\n    ${declaration}\n`)
+      const scripts = await detect()
+      expect(scripts[0]?.ports).toContain(5180)
+      expect(scripts[0]).not.toHaveProperty('portsInferred')
+    }
+  )
+
+  it.each(['error', 'terminate'])('preserves a script conflict policy: %s', async (policy) => {
+    await write(
+      `scripts:\n  web:\n    command: node server.js\n    portConflictPolicy: ${policy}\n`
+    )
+    await expect(detect()).resolves.toMatchObject([{ portConflictPolicy: policy }])
   })
 
   it('reads an HTTP health path, which needs a known port', async () => {
@@ -110,6 +127,10 @@ scripts:
     [
       'scripts:\n  api:\n    command: x\n    port: 99999\n',
       '.devhub.yaml 格式不正确：scripts.api.port'
+    ],
+    [
+      'scripts:\n  api:\n    command: x\n    portConflictPolicy: kill\n',
+      '.devhub.yaml 格式不正确：scripts.api.portConflictPolicy'
     ]
   ])('reports where the content is wrong (%#)', async (content, message) => {
     await write(content)

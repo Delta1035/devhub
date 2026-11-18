@@ -1,24 +1,31 @@
 import { useState } from 'react'
-import { FolderX, TriangleAlert, X } from 'lucide-react'
+import { ChevronRight, FileCode, FolderX, TriangleAlert, X } from 'lucide-react'
 import type { Project, Run, Script, ScriptSource } from '@devhub/shared'
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
-import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Skeleton } from '@renderer/components/ui/skeleton'
-import { useActiveGroups, type ActiveGroupView } from '@renderer/features/groups/use-active-groups'
-import { RunControls } from '@renderer/features/runs/run-controls'
-import { RunHistoryButton } from '@renderer/features/runs/run-history-button'
+import { useActiveGroups } from '@renderer/features/groups/use-active-groups'
 import { useRuns } from '@renderer/features/runs/use-runs'
+import { ScriptGroup } from './script-group'
 import { sourceLabels } from './source-labels'
 import { useProjectScripts } from './use-scripts'
 
 interface ScriptListProps {
   project: Project
+  filterQuery?: string
   /** Called with a freshly started run so the terminal panel can switch to it. */
   onRunStarted: (run: Run) => void
+  onViewTerminal?: (runId: string) => void
+  onOpenSettings?: () => void
 }
 
-export function ScriptList({ project, onRunStarted }: ScriptListProps): React.JSX.Element {
+export function ScriptList({
+  project,
+  filterQuery = '',
+  onRunStarted,
+  onViewTerminal,
+  onOpenSettings
+}: ScriptListProps): React.JSX.Element {
   const scripts = useProjectScripts(project.id)
   const runs = useRuns()
   const activeGroups = useActiveGroups()
@@ -57,6 +64,16 @@ export function ScriptList({ project, onRunStarted }: ScriptListProps): React.JS
       </Alert>
     )
   }
+
+  const query = filterQuery.trim().toLowerCase()
+  const displayItems = query
+    ? items.filter(
+        (s) =>
+          s.name.toLowerCase().includes(query) ||
+          s.command.toLowerCase().includes(query) ||
+          (s.description && s.description.toLowerCase().includes(query))
+      )
+    : items
 
   return (
     <div className="flex flex-col gap-4">
@@ -111,13 +128,20 @@ export function ScriptList({ project, onRunStarted }: ScriptListProps): React.JS
       )}
 
       {items.length === 0 && warnings.length === 0 && (
-        <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+        <p className="rounded-lg border border-dashed border-border/80 p-8 text-center text-sm text-muted-foreground">
           没有识别到脚本。目前支持 package.json（npm / pnpm / yarn）、pom.xml（Maven）、
-          build.gradle（Gradle），以及项目根目录的 .devhub.yaml（自定义脚本）。
+          build.gradle（Gradle）、go.mod（Go）、pyproject.toml /
+          requirements.txt（Python），以及项目根目录的 .devhub.yaml（自定义脚本）。
         </p>
       )}
 
-      {groupBySource(items).map(([source, group]) => (
+      {displayItems.length === 0 && items.length > 0 && (
+        <p className="rounded-lg border border-dashed border-border/80 p-6 text-center text-xs text-muted-foreground">
+          没有匹配「{filterQuery}」的脚本
+        </p>
+      )}
+
+      {groupBySource(displayItems).map(([source, group]) => (
         <ScriptGroup
           key={source}
           projectId={project.id}
@@ -127,119 +151,35 @@ export function ScriptList({ project, onRunStarted }: ScriptListProps): React.JS
           activeGroups={activeGroups}
           onRunError={(error, retry) => setRunError({ error, retry })}
           onRunStarted={onRunStarted}
+          onViewTerminal={onViewTerminal}
+          onOpenSettings={onOpenSettings}
         />
       ))}
 
+      {/* 自定义脚本提示条 (对齐 pen/devhub.pen) */}
+      <div className="flex items-center justify-between rounded-lg border border-border bg-card/60 px-4 py-2.5 text-xs">
+        <div className="flex items-center gap-2">
+          <ChevronRight className="size-3.5 text-muted-foreground" />
+          <FileCode className="size-3.5 text-muted-foreground" />
+          <span className="text-muted-foreground">
+            {items.filter((s) => s.source === 'custom').length > 0
+              ? `检测到 .devhub.yaml 中的 ${items.filter((s) => s.source === 'custom').length} 个自定义脚本`
+              : '检测到 .devhub.yaml 中的 0 个自定义脚本'}
+          </span>
+        </div>
+        {onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="font-semibold text-primary hover:underline text-xs"
+          >
+            查看
+          </button>
+        )}
+      </div>
+
       <ConfigHint />
     </div>
-  )
-}
-
-interface ScriptGroupProps {
-  projectId: string
-  source: ScriptSource
-  scripts: Script[]
-  runs: Run[]
-  /** Labels scripts that a batch run started or reused. */
-  activeGroups: ActiveGroupView[]
-  onRunError: (error: Error, retry?: () => void) => void
-  onRunStarted: (run: Run) => void
-}
-
-function ScriptGroup({
-  projectId,
-  source,
-  scripts,
-  runs,
-  activeGroups,
-  onRunError,
-  onRunStarted
-}: ScriptGroupProps): React.JSX.Element {
-  // All scripts of one source share the executable, e.g. "pnpm" or "mvnw.cmd".
-  const executable = scripts[0]?.command.split(' ')[0]
-
-  return (
-    <section className="flex flex-col gap-2">
-      <h3 className="flex items-center gap-2 text-sm font-semibold">
-        {sourceLabels[source]}
-        {executable && <Badge variant="secondary">{executable}</Badge>}
-      </h3>
-      <ul className="divide-y rounded-lg border bg-card">
-        {scripts.map((script) => {
-          const run = runs.find(
-            (candidate) =>
-              candidate.kind === 'script' &&
-              candidate.projectId === projectId &&
-              candidate.scriptId === script.id
-          )
-          const groups = run ? activeGroups.filter((group) => group.runIds.includes(run.id)) : []
-          return (
-            <li
-              key={script.id}
-              className="flex items-center gap-4 px-4 py-2.5 max-md:gap-2 max-md:px-3"
-            >
-              {/* On phones the name goes above the command, leaving the row's width to the controls. */}
-              <div className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-4">
-                <span className="flex min-w-0 items-center gap-1.5 md:w-40 md:shrink-0">
-                  <span className="truncate font-medium" title={script.name}>
-                    {script.name}
-                  </span>
-                  {groups.length > 0 && (
-                    <Badge
-                      variant="secondary"
-                      className="h-4 min-w-0 shrink px-1.5 text-[10px] text-info"
-                      title={`由批量任务启动或纳入：${groups.map((group) => group.name).join('、')}`}
-                    >
-                      <span className="truncate">
-                        批量：{groups.map((group) => group.name).join('、')}
-                      </span>
-                    </Badge>
-                  )}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <span className="flex min-w-0 items-center gap-2">
-                    <code className="truncate font-mono text-xs" title={script.command}>
-                      {script.command}
-                    </code>
-                    {script.ports?.map((port) => (
-                      <Badge
-                        key={port}
-                        variant="outline"
-                        className="h-4 shrink-0 px-1.5 text-[10px]"
-                        title="启动前会检查这个端口是否已被占用"
-                      >
-                        端口 {port}
-                      </Badge>
-                    ))}
-                  </span>
-                  {script.description && (
-                    <p
-                      className="truncate text-xs text-muted-foreground"
-                      title={script.description}
-                    >
-                      {script.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <RunHistoryButton
-                projectId={projectId}
-                scriptId={script.id}
-                scriptName={script.name}
-              />
-              <RunControls
-                projectId={projectId}
-                scriptId={script.id}
-                scriptName={script.name}
-                run={run}
-                onError={onRunError}
-                onStarted={onRunStarted}
-              />
-            </li>
-          )
-        })}
-      </ul>
-    </section>
   )
 }
 

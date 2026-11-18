@@ -10,9 +10,9 @@ setInterval(() => {}, 1000)
 const listRuns = (page: Page) =>
   page.evaluate(() => (window as unknown as DevhubWindow).devhub.listRuns())
 
-/** Switches the sidebar to the groups tab. */
+/** Switches the feature navigation to the batch workspace. */
 const openGroups = async (page: Page) => {
-  await page.getByRole('tab', { name: '批量' }).click()
+  await page.getByRole('button', { name: '批量', exact: true }).click()
   return page.getByRole('region', { name: '批量任务' })
 }
 
@@ -47,7 +47,7 @@ test('a serial group across projects waits for each step, then stops everything'
   await addProjectViaApi(page, web)
 
   const groups = await openGroups(page)
-  await groups.getByRole('button', { name: '新建' }).click()
+  await groups.getByRole('button', { name: '新建', exact: true }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('名称').fill('front1')
   await dialog.getByRole('button', { name: /^串行/ }).click()
@@ -62,19 +62,34 @@ test('a serial group across projects waits for each step, then stops everything'
   await item.getByRole('button', { name: '查看 front1' }).click()
   const detail = page.getByRole('region', { name: '任务运行 front1' })
   await expect(detail).toContainText('输出出现文字「API ready」')
+  // Batch workspace does not cause window-level page scrolling.
+  await page.mouse.move(500, 60)
+  await page.mouse.wheel(0, 500)
+  const windowScrolls = await page.evaluate(() => ({
+    overflows: document.documentElement.scrollHeight > window.innerHeight,
+    scrollY: window.scrollY,
+    scrollTop: document.documentElement.scrollTop
+  }))
+  expect(windowScrolls.overflows).toBe(false)
+  expect(windowScrolls.scrollY).toBe(0)
+  expect(windowScrolls.scrollTop).toBe(0)
   await item.getByRole('button', { name: '执行 front1' }).click()
-  // The tab, a bar above the tabs and the title bar name the group while it starts...
-  const running = page.getByRole('tab', { name: /批量/ }).getByRole('status')
-  const bar = page.getByRole('region', { name: '正在运行的批量任务' })
+  // The feature navigation and the persistent bar name the group while it starts.
+  const running = page.getByRole('button', { name: '运行中', exact: true }).getByRole('status')
   const titleBar = page.getByRole('banner').getByRole('button', { name: /^正在运行：/ })
-  await expect(running).toHaveAttribute('aria-label', /front1（启动中 \d\/2）/)
+  await expect(running).toHaveText(/\d+/)
+  await page.getByRole('button', { name: '运行中', exact: true }).click()
+  const bar = page.getByRole('region', { name: '正在运行的批量任务' })
   await expect(bar).toContainText(/front1启动中 \d\/2/)
-  await expect(titleBar).toContainText('front1')
+  await expect(titleBar).toHaveCount(0)
+  await page.getByRole('button', { name: '批量', exact: true }).click()
   await expect(item).toContainText('已完成', { timeout: 30_000 })
-  // ...and while the servers it started keep running after the execution ended.
-  await expect(running).toHaveAttribute('aria-label', '正在运行：front1（运行中 2/2）')
+  // The navigation badge and bar remain while the servers keep running after the execution ended.
+  await expect(running).toHaveText(/\d+/)
+  await page.getByRole('button', { name: '运行中', exact: true }).click()
   await expect(bar).toContainText('front1运行中 2/2')
-  await expect(titleBar).toContainText('front1运行中 2/2')
+  await expect(titleBar).toHaveCount(0)
+  await page.getByRole('button', { name: '批量', exact: true }).click()
   await expect(detail).toContainText('2/2 个步骤完成')
   await expect(detail).toContainText('服务进程可能仍在运行')
   await expect(detail.getByRole('button', { name: '停止全部' })).toBeEnabled()
@@ -87,6 +102,7 @@ test('a serial group across projects waits for each step, then stops everything'
   await expect(
     page.locator('main').getByRole('button', { name: 'serve', exact: true })
   ).toHaveAttribute('aria-current', 'true')
+  await page.getByRole('button', { name: /^脚本/ }).click()
   // The script row tells which batch run started it.
   await expect(page.locator('main').getByText('批量：front1')).toBeVisible()
 
@@ -103,7 +119,11 @@ test('a serial group across projects waits for each step, then stops everything'
   // web may only start after api printed "API ready", 1.5 s after api started.
   expect(startOf('web') - startOf('api')).toBeGreaterThanOrEqual(1000)
 
-  await item.getByRole('button', { name: '停止 front1' }).click()
+  const groupsView = await openGroups(page)
+  await groupsView
+    .getByRole('listitem', { name: '批量任务 front1' })
+    .getByRole('button', { name: '停止 front1' })
+    .click()
   await expect
     .poll(async () => (await listRuns(page)).filter((run) => run.status !== 'exited').length, {
       timeout: 20_000
@@ -111,7 +131,7 @@ test('a serial group across projects waits for each step, then stops everything'
     .toBe(0)
   await expect(bar).toBeHidden()
   await expect(running).toBeHidden()
-  await expect(titleBar).toBeHidden()
+  await expect(titleBar).toHaveCount(0)
 })
 
 test('a failing serial step stops the sequence and explains why', async ({
@@ -125,7 +145,7 @@ test('a failing serial step stops the sequence and explains why', async ({
   await addProjectViaApi(page, dir)
 
   const groups = await openGroups(page)
-  await groups.getByRole('button', { name: '新建' }).click()
+  await groups.getByRole('button', { name: '新建', exact: true }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('名称').fill('broken')
   await dialog.getByRole('button', { name: /^串行/ }).click()
@@ -162,7 +182,7 @@ test('waits for a regex in the output and remembers the result after a restart',
   await addProjectViaApi(page, dir)
 
   const groups = await openGroups(page)
-  await groups.getByRole('button', { name: '新建' }).click()
+  await groups.getByRole('button', { name: '新建', exact: true }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('名称').fill('backend')
   await dialog.getByRole('button', { name: /^串行/ }).click()
@@ -184,6 +204,7 @@ test('waits for a regex in the output and remembers the result after a restart',
 
   await app.close()
   page = (await launchDevhub()).page
+  await openGroups(page)
   await expect(item()).toContainText(/已完成 · \d{2}:\d{2}/)
   await item().getByRole('button', { name: '查看 backend' }).click()
   await expect(detail()).toContainText('日志不可用')

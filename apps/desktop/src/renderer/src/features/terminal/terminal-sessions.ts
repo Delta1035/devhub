@@ -81,8 +81,18 @@ export class TerminalSession {
     this.unsubscribePrefs = terminalPrefs.subscribe(() => this.applyPrefs())
 
     // Live chunks are held until the snapshot arrives; the cursor drops what it already had.
+    this.loadSnapshot()
+  }
+
+  /**
+   * Fetches the run's output and appends only what the cursor has not written yet. Safe to call
+   * more than once: OutputCursor makes repeated snapshots idempotent. Re-fetching on attach
+   * matters on remote clients, where the snapshot taken at construction can predate output that
+   * arrived before the SSE stream was ready (ADR 0022: no event replay after a reconnect).
+   */
+  private loadSnapshot(): void {
     api
-      .getRunOutput(runId)
+      .getRunOutput(this.runId)
       .then((snapshot) => {
         if (!this.disposed) this.terminal.write(this.cursor.acceptSnapshot(snapshot))
       })
@@ -110,6 +120,10 @@ export class TerminalSession {
       // Padding on xterm's own element: the fit addon subtracts it when measuring.
       if (this.terminal.element) this.terminal.element.style.padding = '6px 8px'
     }
+    // The snapshot taken at construction can predate output produced before the remote client's
+    // SSE stream was ready (ADR 0022 has no replay). Re-read every time the terminal becomes
+    // visible; OutputCursor drops anything already written, so this only adds missing output.
+    this.loadSnapshot()
     this.applyPrefs()
 
     this.observer = new ResizeObserver(() => {

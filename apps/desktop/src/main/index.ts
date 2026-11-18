@@ -1,5 +1,5 @@
 import { join } from 'path'
-import { app, BrowserWindow, Tray } from 'electron'
+import { app, BrowserWindow, dialog, Tray } from 'electron'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { createDevhubCore, type DevhubCore } from './core/devhub-core'
@@ -8,6 +8,7 @@ import { registerUpdater } from './updater'
 import { createMainWindow } from './window'
 import { registerWindowControls } from './window-controls'
 import { createTray } from './tray'
+import { acquireSingleInstanceLock } from './single-instance'
 
 let mainWindow: BrowserWindow | null = null
 // Module-level reference keeps the tray icon from being garbage-collected.
@@ -22,6 +23,9 @@ let disposed = false
 const disposeTimeoutMs = 10_000
 
 function showMainWindow(): void {
+  // A second launch can arrive after the lock is acquired but before Electron is ready.
+  // The normal ready path below will show the initial window for that early request.
+  if (!app.isReady()) return
   if (!mainWindow) {
     mainWindow = createMainWindow(() => !isQuitting && closeAction === 'tray')
     return
@@ -38,10 +42,26 @@ if (is.dev && !app.commandLine.hasSwitch('user-data-dir')) {
   app.setPath('userData', `${app.getPath('userData')}-dev`)
 }
 
-// Only one DevHub may own the managed processes at a time.
-if (!app.requestSingleInstanceLock()) {
+// Only one DevHub may own the managed processes at a time. On Linux, recover a lock whose
+// recorded owner is provably dead; Chromium can otherwise leave desktop launches silent.
+const singleInstance = acquireSingleInstanceLock({
+  app,
+  platform: process.platform,
+  userData: app.getPath('userData')
+})
+if (singleInstance.status !== 'primary') {
+  if (singleInstance.status === 'failed') {
+    console.error('[startup] single-instance lock recovery failed:', singleInstance.message)
+    dialog.showErrorBox(
+      'DevHub 无法启动',
+      `${singleInstance.message}\n\n请确认没有其他 DevHub 实例后重试。`
+    )
+  }
   app.quit()
 } else {
+  if (singleInstance.recoveredStaleLock) {
+    console.warn('[startup] recovered a stale Linux single-instance lock')
+  }
   app.on('second-instance', showMainWindow)
 
   app.whenReady().then(() => {

@@ -2,7 +2,9 @@ import type { Script, ScriptWarning } from '@devhub/shared'
 import { createConfigDetector } from './config-detector'
 import { createGradleDetector } from './gradle-detector'
 import { createMavenDetector } from './maven-detector'
+import { goDetector } from './go-detector'
 import { npmDetector } from './npm-detector'
+import { createPythonDetector } from './python-detector'
 import type { ScriptDetector } from './types'
 
 /** All built-in detectors. Order here is the order scripts are listed in. */
@@ -11,7 +13,9 @@ export const createDefaultDetectors = (platform: NodeJS.Platform): ScriptDetecto
   createConfigDetector({ platform }),
   npmDetector,
   createMavenDetector({ platform }),
-  createGradleDetector({ platform })
+  createGradleDetector({ platform }),
+  goDetector,
+  createPythonDetector({ platform })
 ]
 
 export interface DetectionResult {

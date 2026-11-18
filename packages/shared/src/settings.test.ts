@@ -10,6 +10,7 @@ describe('settingsSchema', () => {
     [{ stopGraceSeconds: 0 }],
     [{ stopGraceSeconds: 61 }],
     [{ closeAction: 'minimize' }],
+    [{ portConflictPolicy: 'kill' }],
     [{ defaultShell: 'tcsh' }]
   ])('rejects %o', (patch) => {
     expect(settingsSchema.safeParse({ ...defaultSettings, ...patch }).success).toBe(false)
@@ -25,6 +26,19 @@ describe('settingsPatchSchema', () => {
   it('allows an empty patch', () => {
     expect(settingsPatchSchema.parse({})).toEqual({})
   })
+
+  it('changes the conflict policy only when explicitly included', () => {
+    expect(settingsPatchSchema.parse({ portConflictPolicy: 'terminate' })).toEqual({
+      portConflictPolicy: 'terminate'
+    })
+    expect(settingsPatchSchema.parse({ closeAction: 'quit' })).toEqual({ closeAction: 'quit' })
+  })
+})
+
+it('loads existing settings with conflict reporting as the default', () => {
+  const { portConflictPolicy: _ignored, ...older } = defaultSettings
+  void _ignored
+  expect(settingsSchema.parse(older).portConflictPolicy).toBe('error')
 })
 
 describe('custom shells in settings', () => {

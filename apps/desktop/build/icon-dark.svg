@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="darkBgGrad" cx="50%" cy="38%" r="65%">
+      <stop offset="0%" stop-color="#181F2A"/>
+      <stop offset="100%" stop-color="#080A0D"/>
+    </radialGradient>
+    <linearGradient id="boltGradDark" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#4EEDB0"/>
+      <stop offset="100%" stop-color="#28BE83"/>
+    </linearGradient>
+    <linearGradient id="braceGradDark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+  </defs>
+  <!-- Dark squircle background with depth -->
+  <rect width="512" height="512" rx="112" fill="url(#darkBgGrad)"/>
+  <!-- Subtle border highlights for dark environments -->
+  <rect x="6" y="6" width="500" height="500" rx="106" fill="none" stroke="rgba(255, 255, 255, 0.08)" stroke-width="6"/>
+  <rect x="12" y="12" width="488" height="488" rx="100" fill="none" stroke="rgba(62, 213, 152, 0.15)" stroke-width="4"/>
+  <!-- Ambient emerald glow behind bolt -->
+  <circle cx="256" cy="256" r="110" fill="#3ED598" opacity="0.12"/>
+  <!-- Code braces -->
+  <g fill="none" stroke="url(#braceGradDark)" stroke-width="38" stroke-linecap="round" stroke-linejoin="round">
+    <path id="brace" d="M168 120 Q120 120 120 168 V216 Q120 256 80 256 Q120 256 120 296 V344 Q120 392 168 392"/>
+    <use href="#brace" transform="translate(512 0) scale(-1 1)"/>
+  </g>
+  <!-- DevHub lightning bolt -->
+  <path d="M284 138 L198 272 H252 L226 374 L314 232 H260 Z" fill="url(#boltGradDark)" stroke="#3ED598" stroke-width="16" stroke-linejoin="round"/>
+</svg>

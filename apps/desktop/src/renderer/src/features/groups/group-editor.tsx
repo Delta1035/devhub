@@ -13,6 +13,7 @@ import {
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
 import { useProjects } from '@renderer/features/projects/use-projects'
+import { toast } from '@renderer/lib/toast'
 import { cn } from '@renderer/lib/utils'
 import { draftFromGroup, emptyStep, toGroupInput, type GroupDraft } from './group-draft'
 import { GroupStepRow } from './group-step-row'
@@ -59,7 +60,10 @@ export function GroupEditor({
     if ('error' in result) return setError(result.error)
     setError(null)
     save.mutate(result.input, {
-      onSuccess: onClose,
+      onSuccess: () => {
+        toast.success(group ? '已保存批量任务修改' : '已创建新批量任务')
+        onClose()
+      },
       onError: (failure) => setError(failure.message)
     })
   }
@@ -67,7 +71,13 @@ export function GroupEditor({
   const deleteGroup = (): void => {
     if (!group) return
     if (!confirmingDelete) return setConfirmingDelete(true)
-    remove.mutate(group.id, { onSuccess: onClose, onError: (failure) => setError(failure.message) })
+    remove.mutate(group.id, {
+      onSuccess: () => {
+        toast.success(`已删除批量任务「${group.name}」`)
+        onClose()
+      },
+      onError: (failure) => setError(failure.message)
+    })
   }
 
   return (

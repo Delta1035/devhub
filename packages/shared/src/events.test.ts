@@ -40,4 +40,19 @@ describe('OutputCursor', () => {
     expect(cursor.acceptSnapshot({ data: '', end: 0 })).toBe('')
     expect(cursor.accept(0, 'first')).toBe('first')
   })
+
+  it('refetching a snapshot is idempotent and fills output missed before the stream was ready', () => {
+    const cursor = new OutputCursor()
+    const esc = String.fromCharCode(27)
+    const sequence = `${esc}[?9001h` // terminal's own escape sequence (7 chars)
+    const full = `${sequence}tick 1\ntick 2\n`
+    // A terminal created before SSE was ready reads a snapshot with only the terminal's own
+    // escape sequences and misses the first live chunk produced in the gap.
+    expect(cursor.acceptSnapshot({ data: sequence, end: sequence.length })).toBe(sequence)
+    // Nothing else arrives over the stream until the terminal re-reads the snapshot on attach.
+    expect(cursor.acceptSnapshot({ data: full, end: full.length })).toBe('tick 1\ntick 2\n')
+    // Re-reading the same snapshot and replayed stream chunks must not duplicate anything.
+    expect(cursor.acceptSnapshot({ data: full, end: full.length })).toBe('')
+    expect(cursor.accept(sequence.length, 'tick 1\ntick 2\n')).toBe('')
+  })
 })

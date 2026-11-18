@@ -44,7 +44,9 @@ test('retains capped history logs across restart, clears ended logs, and cleans 
   await page.keyboard.press('Escape')
 
   await page.getByRole('button', { name: '运行 serve', exact: true }).click()
+  await page.getByRole('button', { name: '查看 serve 终端' }).click()
   await expect(page.locator('.xterm-rows')).toContainText('SERVER_LOG')
+  await page.getByRole('button', { name: /^脚本/ }).click()
   await page.getByRole('button', { name: 'logs 的运行历史' }).click()
   const history = page.getByRole('dialog', { name: 'logs 的运行历史' })
   await history.getByRole('button', { name: '清空历史' }).click()
@@ -95,6 +97,7 @@ test('recovers history and checkpointed logs after an actual application crash',
   const first = await launchDevhub()
   await addProjectViaApi(first.page, dir)
   await first.page.getByRole('button', { name: '运行 serve', exact: true }).click()
+  await first.page.getByRole('button', { name: '查看 serve 终端' }).click()
   await expect(first.page.locator('.xterm-rows')).toContainText('CRASH_LOG 中文')
   // Wait on the checkpoint file, then exit without before-quit/core.dispose cleanup.
   await expect

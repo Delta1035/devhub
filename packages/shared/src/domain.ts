@@ -2,8 +2,12 @@ import { z } from 'zod'
 import { healthPathSchema } from './health'
 
 /** Where a script was discovered. Each source maps to one detector in the desktop main process. */
-export const scriptSourceSchema = z.enum(['npm', 'maven', 'gradle', 'custom'])
+export const scriptSourceSchema = z.enum(['npm', 'maven', 'gradle', 'custom', 'go', 'python'])
 export type ScriptSource = z.infer<typeof scriptSourceSchema>
+
+/** Whether starting a script may stop processes that already listen on its ports. */
+export const portConflictPolicySchema = z.enum(['error', 'terminate'])
+export type PortConflictPolicy = z.infer<typeof portConflictPolicySchema>
 
 /** A runnable command inside a project, either auto-detected or user-defined. */
 export const scriptSchema = z.object({
@@ -14,10 +18,14 @@ export const scriptSchema = z.object({
   cwd: z.string().optional(),
   /** Human-readable detail, e.g. the raw npm script body. */
   description: z.string().optional(),
-  /** Ports the script is expected to listen on (inferred), checked before it starts. */
+  /** Ports the script is expected to listen on, checked before it starts. */
   ports: z.array(z.number().int().min(1).max(65535)).optional(),
+  /** Inferred ports can be checked, but must never authorize stopping their listeners. */
+  portsInferred: z.literal(true).optional(),
   /** HTTP path checked on the first port to decide readiness; otherwise the ports are. */
-  healthPath: healthPathSchema.optional()
+  healthPath: healthPathSchema.optional(),
+  /** Overrides the host setting for this script; absent means inherit. */
+  portConflictPolicy: portConflictPolicySchema.optional()
 })
 export type Script = z.infer<typeof scriptSchema>
 
@@ -126,7 +134,9 @@ export const projectConfigSchema = z
             port: z.number().int().min(1).max(65535).optional(),
             ports: z.array(z.number().int().min(1).max(65535)).optional(),
             /** HTTP path that must answer 2xx for the script to count as ready. */
-            health: healthPathSchema.optional()
+            health: healthPathSchema.optional(),
+            /** Overrides the host's port conflict policy for this script. */
+            portConflictPolicy: portConflictPolicySchema.optional()
           })
           .strict()
       )
@@ -178,6 +188,8 @@ export const projectSchema = z.object({
   /** Absolute, normalized directory path. */
   path: z.string().min(1),
   addedAt: z.iso.datetime(),
+  /** When the user pinned this project; absent means unpinned. */
+  pinnedAt: z.iso.datetime().optional(),
   /** Set when the project was discovered in a workspace; absent for projects added by hand. */
   workspaceId: z.string().min(1).optional()
 })

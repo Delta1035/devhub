@@ -42,7 +42,8 @@ describe('npmDetector', () => {
         source: 'npm',
         command: 'npm run dev',
         description: 'vite --port 5173',
-        ports: [5173]
+        ports: [5173],
+        portsInferred: true
       },
       {
         id: 'npm:build',
@@ -58,6 +59,14 @@ describe('npmDetector', () => {
     await writePackageJson({ scripts: { ok: '', broken: 42, nested: { a: 1 } } })
     await expect(npmDetector.detect(dir)).resolves.toEqual([
       { id: 'npm:ok', name: 'ok', source: 'npm', command: 'npm run ok' }
+    ])
+  })
+
+  it('marks default framework ports as inferred even if a separate config overrides them', async () => {
+    await writePackageJson({ scripts: { dev: 'vite' } })
+    await writeFile(join(dir, 'vite.config.ts'), 'export default { server: { port: 5180 } }')
+    await expect(npmDetector.detect(dir)).resolves.toMatchObject([
+      { id: 'npm:dev', ports: [5173], portsInferred: true }
     ])
   })
 

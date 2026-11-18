@@ -20,7 +20,11 @@ const androidRes = join(root, '..', 'mobile-capacitor', 'android', 'app', 'src',
 // icon-android-round.svg and icon-android-foreground.svg (Android launcher icons).
 const pngs = [
   { src: 'icon.svg', size: 512, out: join(build, 'icon.png') },
+  { src: 'icon-light.svg', size: 512, out: join(build, 'icon-light.png') },
+  { src: 'icon-dark.svg', size: 512, out: join(build, 'icon-dark.png') },
   { src: 'icon.svg', size: 512, out: join(resources, 'icon.png') },
+  { src: 'icon-light.svg', size: 512, out: join(resources, 'icon-light.png') },
+  { src: 'icon-dark.svg', size: 512, out: join(resources, 'icon-dark.png') },
   { src: 'icon.svg', size: 16, out: join(resources, 'tray.png') },
   { src: 'icon.svg', size: 32, out: join(resources, 'tray@2x.png') },
   { src: 'tray-template.svg', size: 16, out: join(resources, 'trayTemplate.png') },
@@ -53,6 +57,26 @@ function androidIcons() {
 }
 const icos = [
   { src: 'icon.svg', sizes: [16, 24, 32, 48, 64, 128, 256], out: join(build, 'icon.ico') },
+  {
+    src: 'icon-light.svg',
+    sizes: [16, 24, 32, 48, 64, 128, 256],
+    out: join(build, 'icon-light.ico')
+  },
+  {
+    src: 'icon-dark.svg',
+    sizes: [16, 24, 32, 48, 64, 128, 256],
+    out: join(build, 'icon-dark.ico')
+  },
+  {
+    src: 'icon-light.svg',
+    sizes: [16, 24, 32, 48, 64, 128, 256],
+    out: join(resources, 'icon-light.ico')
+  },
+  {
+    src: 'icon-dark.svg',
+    sizes: [16, 24, 32, 48, 64, 128, 256],
+    out: join(resources, 'icon-dark.ico')
+  },
   { src: 'icon.svg', sizes: [16, 32, 48], out: join(web, 'favicon.ico') }
 ]
 // ICNS entry types; the retina (@2x) types reuse the pixel size of the larger entry.

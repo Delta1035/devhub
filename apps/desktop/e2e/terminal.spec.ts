@@ -16,6 +16,7 @@ const openShell = async (
 ) => {
   const { app, page } = await launchDevhub()
   await addProjectViaApi(page, dir)
+  await page.getByRole('button', { name: /^终端/ }).click()
   await page.getByRole('button', { name: '新建终端' }).click()
   await expect(page.locator('.xterm-rows')).toContainText('$')
   await page.locator('.xterm').click()
@@ -96,8 +97,8 @@ test('keeps a terminal alive across tab switches; search, clear, zoom and maximi
   await page.keyboard.press('Control+0')
   await expect.poll(fontSize).toBe(before)
 
-  await page.getByRole('button', { name: '最大化终端面板' }).click()
-  await expect(page.getByText('npm run dev')).toBeHidden()
   await page.getByRole('button', { name: '还原终端面板' }).click()
   await expect(page.getByText('npm run dev')).toBeVisible()
+  await page.getByRole('button', { name: /^终端/ }).click()
+  await expect(page.getByText('npm run dev')).toBeHidden()
 })

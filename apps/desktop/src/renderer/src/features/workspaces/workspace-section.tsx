@@ -33,7 +33,7 @@ export function WorkspaceSection({
   const warnings = workspace.scan?.warnings ?? []
   return (
     <section aria-label={`工作区 ${workspace.name}`} className="flex flex-col gap-1">
-      <div className="flex items-center gap-0.5 pr-1">
+      <div className="group flex items-center gap-0.5 rounded-md px-0.5 py-0.5 transition-colors hover:bg-muted/40">
         <button
           type="button"
           onClick={onToggle}
@@ -42,11 +42,16 @@ export function WorkspaceSection({
           className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1 py-1 text-left text-xs font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ChevronRight
-            className={cn('size-3.5 shrink-0 transition-transform', !collapsed && 'rotate-90')}
+            className={cn(
+              'size-3.5 shrink-0 text-muted-foreground transition-transform',
+              !collapsed && 'rotate-90'
+            )}
           />
-          <FolderTree className="size-3.5 shrink-0" />
+          <FolderTree className="size-3.5 shrink-0 text-muted-foreground" />
           <span className="truncate">{workspace.name}</span>
-          <span className="tabular-nums">{projectCount}</span>
+          <span className="font-mono text-[10px] tabular-nums text-muted-foreground/80">
+            ({projectCount})
+          </span>
           {collapsed && activeRuns && <ActiveRunsIndicator runs={activeRuns} />}
         </button>
         {warnings.length > 0 && (
@@ -66,8 +71,9 @@ export function WorkspaceSection({
           disabled={rescanning}
           title="重新扫描工作区"
           aria-label={`重新扫描 ${workspace.name}`}
+          className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
         >
-          <RefreshCw className={cn(rescanning && 'animate-spin')} />
+          <RefreshCw className={cn('size-3 text-muted-foreground', rescanning && 'animate-spin')} />
         </Button>
         {onOpenSettings && (
           <Button
@@ -76,14 +82,15 @@ export function WorkspaceSection({
             onClick={onOpenSettings}
             title="工作区设置：扫描层数、已排除的项目、移除"
             aria-label={`${workspace.name} 工作区设置`}
+            className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
           >
-            <Settings2 />
+            <Settings2 className="size-3 text-muted-foreground" />
           </Button>
         )}
       </div>
       {!collapsed &&
         (projectCount > 0 ? (
-          <ul className="flex flex-col gap-1 pl-2">{children}</ul>
+          <ul className="ml-2 flex flex-col gap-1 border-l border-border/40 pl-2">{children}</ul>
         ) : (
           <p className="px-2 py-1 pl-7 text-xs text-muted-foreground">
             {workspace.scan && !workspace.scan.available ? '无法扫描该目录' : '未发现项目'}

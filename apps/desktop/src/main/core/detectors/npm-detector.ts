@@ -51,7 +51,7 @@ export const npmDetector: ScriptDetector = {
         source: 'npm',
         command: `${manager} run ${safeName.test(name) ? name : JSON.stringify(name)}`,
         ...(body.trim() ? { description: body } : {}),
-        ...(ports.length > 0 ? { ports } : {})
+        ...(ports.length > 0 ? { ports, portsInferred: true } : {})
       })
     }
     return scripts

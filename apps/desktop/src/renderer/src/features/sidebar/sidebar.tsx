@@ -1,97 +1,133 @@
-import { useState } from 'react'
-import type { Run } from '@devhub/shared'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
-import { GroupList } from '@renderer/features/groups/group-list'
-import { RunningGroupsBar } from '@renderer/features/groups/running-groups-bar'
-import { describeActiveGroups, useActiveGroups } from '@renderer/features/groups/use-active-groups'
-import { ProjectList } from '@renderer/features/projects/project-list'
+import { Activity, CalendarClock, FolderKanban, Layers3 } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { cn } from '@renderer/lib/utils'
 
-type SidebarTab = 'projects' | 'groups'
-
-const tabKey = 'devhub.sidebarTab'
+export type SidebarView = 'projects' | 'groups' | 'schedules' | 'running'
 
 interface SidebarProps {
-  narrow: boolean
-  selectedGroupId: string | null
-  onSelectGroup: (groupId: string) => void
-  /** Highlighted project; null while the settings page is open. */
-  selectedProjectId: string | null
-  /** Project new groups start from. */
-  currentProjectId: string | null
-  onSelectProject: (projectId: string) => void
-  /** Selects the run's project and shows its terminal tab. */
-  onOpenRun: (run: Run) => void
+  activeView: SidebarView
+  activeCount: number
+  onViewChange: (view: SidebarView) => void
+  compact?: boolean
 }
 
-/** Projects and batch groups share the sidebar as tabs, so each gets the full height. */
-export function Sidebar({
-  narrow,
-  selectedGroupId,
-  onSelectGroup,
-  selectedProjectId,
-  currentProjectId,
-  onSelectProject,
-  onOpenRun
-}: SidebarProps): React.JSX.Element {
-  const [tab, setTab] = useState<SidebarTab>(() =>
-    localStorage.getItem(tabKey) === 'groups' ? 'groups' : 'projects'
-  )
-  const activeGroups = useActiveGroups()
+const navigationItems: { view: SidebarView; label: string; icon: typeof FolderKanban }[] = [
+  { view: 'projects', label: '项目', icon: FolderKanban },
+  { view: 'groups', label: '批量', icon: Layers3 },
+  { view: 'schedules', label: '定时', icon: CalendarClock },
+  { view: 'running', label: '运行中', icon: Activity }
+]
 
-  const changeTab = (value: string): void => {
-    const next: SidebarTab = value === 'groups' ? 'groups' : 'projects'
-    setTab(next)
-    localStorage.setItem(tabKey, next)
+/** Stable feature navigation; feature-specific lists belong in the content area. */
+export function Sidebar({
+  activeView,
+  activeCount,
+  onViewChange,
+  compact = true
+}: SidebarProps): React.JSX.Element {
+  if (compact) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col items-center gap-2">
+        <nav aria-label="功能导航" className="flex flex-col items-center gap-2">
+          {navigationItems.map(({ view, label, icon: Icon }) => {
+            const selected = activeView === view
+            return (
+              <Tooltip key={view}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={label}
+                    aria-current={selected ? 'page' : undefined}
+                    title={label}
+                    onClick={() => onViewChange(view)}
+                    className={cn(
+                      'group relative flex size-10 cursor-pointer items-center justify-center rounded-lg transition-colors',
+                      selected
+                        ? 'bg-primary text-primary-foreground shadow-xs'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    )}
+                  >
+                    <Icon className="size-5 shrink-0" />
+                    {view === 'running' && activeCount > 0 && (
+                      <span
+                        role="status"
+                        aria-label={`运行中 ${activeCount} 项`}
+                        className={cn(
+                          'absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-mono text-[9px] font-bold shadow-xs',
+                          selected ? 'bg-primary-foreground text-primary' : 'bg-success text-white'
+                        )}
+                      >
+                        {activeCount}
+                      </span>
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={8}>
+                  <span>
+                    {label}
+                    {view === 'running' && activeCount > 0 ? ` (${activeCount})` : ''}
+                  </span>
+                </TooltipContent>
+              </Tooltip>
+            )
+          })}
+        </nav>
+        <div className="min-h-0 flex-1" />
+      </div>
+    )
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      {/* Above the tabs, so active groups stay visible while browsing projects. */}
-      <RunningGroupsBar
-        groups={activeGroups}
-        onSelectGroup={(groupId) => {
-          changeTab('groups')
-          onSelectGroup(groupId)
-        }}
-      />
-      <Tabs value={tab} onValueChange={changeTab} className="min-h-0 flex-1 gap-3">
-        <TabsList className="w-full shrink-0">
-          <TabsTrigger value="projects">项目</TabsTrigger>
-          <TabsTrigger value="groups">
-            批量
-            {activeGroups.length > 0 && (
-              <span
-                role="status"
-                aria-label={`正在运行：${describeActiveGroups(activeGroups)}`}
-                title={`正在运行：${describeActiveGroups(activeGroups)}`}
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <nav aria-label="功能导航" className="flex flex-col gap-1">
+        <p className="px-2 py-1 text-[10px] font-semibold tracking-[0.18em] text-muted-foreground/70">
+          功能
+        </p>
+        {navigationItems.map(({ view, label, icon: Icon }) => {
+          const selected = activeView === view
+          return (
+            <button
+              key={view}
+              type="button"
+              aria-label={label}
+              aria-current={selected ? 'page' : undefined}
+              onClick={() => onViewChange(view)}
+              className={cn(
+                'group flex h-9 w-full items-center gap-2 rounded-md px-2.5 text-left text-xs transition-colors',
+                selected
+                  ? 'bg-primary font-semibold text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
+              )}
+            >
+              <Icon
                 className={cn(
-                  'size-1.5 rounded-full',
-                  activeGroups.some((group) => group.phase === 'starting')
-                    ? 'animate-pulse bg-info'
-                    : 'bg-success'
+                  'size-4 shrink-0',
+                  selected
+                    ? 'text-primary-foreground'
+                    : 'text-muted-foreground group-hover:text-foreground'
                 )}
               />
-            )}
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="projects" className="min-h-0 overflow-y-auto">
-          <ProjectList
-            narrow={narrow}
-            selectedId={selectedProjectId}
-            onSelect={onSelectProject}
-            onOpenRun={onOpenRun}
-          />
-        </TabsContent>
-        <TabsContent value="groups" className="min-h-0 overflow-y-auto">
-          <GroupList
-            selectedGroupId={selectedGroupId}
-            onSelectGroup={onSelectGroup}
-            selectedProjectId={currentProjectId}
-            onSelectProject={onSelectProject}
-          />
-        </TabsContent>
-      </Tabs>
+              <span className="min-w-0 flex-1 truncate">{label}</span>
+              {view === 'running' && activeCount > 0 && (
+                <span
+                  role="status"
+                  aria-label={`运行中 ${activeCount} 项`}
+                  className={cn(
+                    'rounded px-1.5 py-0.5 font-mono text-[10px] font-medium',
+                    selected
+                      ? 'bg-primary-foreground/20 text-primary-foreground'
+                      : 'bg-success/15 text-success'
+                  )}
+                >
+                  {activeCount}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </nav>
+
+      <div className="min-h-0 flex-1" />
     </div>
   )
 }

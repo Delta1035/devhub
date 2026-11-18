@@ -17,6 +17,7 @@ import type { RunHealth } from './health'
 import type { RunHistoryOutput, RunRecord } from './history'
 import type { RemoteConfigPatch, RemoteState } from './remote'
 import type { Settings, SettingsPatch } from './settings'
+import type { Schedule, ScheduleInput } from './schedules'
 import type { WorkspacePatch, WorkspaceView } from './workspaces'
 
 /**
@@ -29,6 +30,8 @@ export interface DevhubApi {
   listProjects(): Promise<Project[]>
   /** Registers an existing local directory. `path` must be absolute. */
   addProject(path: string): Promise<Project>
+  /** Pins or unpins a project in every client sharing this host. */
+  setProjectPinned(projectId: string, pinned: boolean): Promise<Project>
   /** A project discovered in a workspace is also excluded there, so rescans do not re-add it. */
   removeProject(projectId: string): Promise<void>
   listWorkspaces(): Promise<WorkspaceView[]>
@@ -38,7 +41,7 @@ export interface DevhubApi {
   updateWorkspace(workspaceId: string, patch: WorkspacePatch): Promise<WorkspaceView>
   /** Removes the workspace together with the projects discovered in it. */
   removeWorkspace(workspaceId: string): Promise<void>
-  /** Rescans every workspace; changes also arrive as a `projects-updated` event. */
+  /** Rescans workspaces and removes confirmed-missing hand-added projects. */
   rescanWorkspaces(): Promise<WorkspaceView[]>
   /** Scans the project directory for runnable scripts. Never cached: reflects the files on disk. */
   listScripts(projectId: string): Promise<ProjectScripts>
@@ -87,6 +90,8 @@ export interface DevhubApi {
   listGroups(): Promise<Group[]>
   /** Creates a group (input without id) or replaces an existing one. */
   saveGroup(input: GroupInput): Promise<Group>
+  /** Pins or unpins a group in every client sharing this host. */
+  setGroupPinned(groupId: string, pinned: boolean): Promise<Group>
   deleteGroup(groupId: string): Promise<void>
   /** Starts every step (parallel) or the first one (serial); progress arrives as events. */
   startGroup(groupId: string): Promise<GroupRunState>
@@ -94,6 +99,11 @@ export interface DevhubApi {
   stopGroup(groupId: string): Promise<void>
   /** Latest execution state of each group that has run since DevHub started. */
   listGroupStates(): Promise<GroupRunState[]>
+  listSchedules(): Promise<Schedule[]>
+  saveSchedule(input: ScheduleInput): Promise<Schedule>
+  setScheduleEnabled(scheduleId: string, enabled: boolean): Promise<Schedule>
+  deleteSchedule(scheduleId: string): Promise<void>
+  runScheduleNow(scheduleId: string): Promise<Schedule>
   /** Editors DevHub knows about and whether each is installed. */
   listEditors(): Promise<EditorInfo[]>
   /** Opens the project directory in the editor, as a separate process DevHub does not manage. */
@@ -122,6 +132,7 @@ export const devhubApiMethods = [
   'getAppInfo',
   'listProjects',
   'addProject',
+  'setProjectPinned',
   'removeProject',
   'listWorkspaces',
   'addWorkspace',
@@ -151,10 +162,16 @@ export const devhubApiMethods = [
   'updateSettings',
   'listGroups',
   'saveGroup',
+  'setGroupPinned',
   'deleteGroup',
   'startGroup',
   'stopGroup',
   'listGroupStates',
+  'listSchedules',
+  'saveSchedule',
+  'setScheduleEnabled',
+  'deleteSchedule',
+  'runScheduleNow',
   'listEditors',
   'openInEditor',
   'getSystemTerminal',
@@ -206,6 +223,15 @@ export interface ShellApi {
   toggleMaximizeWindow(): Promise<void>
   /** Same as the system close button: hides to the tray or quits, per settings. */
   closeWindow(): Promise<void>
+  /** Sets the runtime window and taskbar / Dock icon according to current theme ('light' | 'dark'). */
+  setWindowTheme(theme: 'light' | 'dark'): Promise<void>
+  /** Updates the Windows desktop shortcut icon to light or dark style. */
+  setDesktopShortcutStyle(style: 'light' | 'dark'): Promise<DesktopShortcutResult>
+}
+
+export interface DesktopShortcutResult {
+  success: boolean
+  message: string
 }
 
 export interface WindowState {
@@ -245,5 +271,7 @@ export const shellChannel = {
   windowState: 'shell:windowState',
   minimizeWindow: 'shell:minimizeWindow',
   toggleMaximizeWindow: 'shell:toggleMaximizeWindow',
-  closeWindow: 'shell:closeWindow'
+  closeWindow: 'shell:closeWindow',
+  setWindowTheme: 'shell:setWindowTheme',
+  setDesktopShortcutStyle: 'shell:setDesktopShortcutStyle'
 } as const

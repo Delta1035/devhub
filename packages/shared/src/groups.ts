@@ -74,9 +74,29 @@ export const groupSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   mode: groupModeSchema,
-  steps: z.array(groupStepSchema)
+  steps: z.array(groupStepSchema),
+  /** When the user pinned this group; absent means unpinned. */
+  pinnedAt: z.iso.datetime().optional()
 })
 export type Group = z.infer<typeof groupSchema>
+
+/** Pinned groups come first, followed by active groups; all remaining ties stay stable. */
+export function sortGroups(groups: readonly Group[], activeGroupIds: ReadonlySet<string>): Group[] {
+  return [...groups].sort((a, b) => {
+    if (a.pinnedAt && !b.pinnedAt) return -1
+    if (!a.pinnedAt && b.pinnedAt) return 1
+    if (a.pinnedAt && b.pinnedAt) {
+      const byPinnedAt = Date.parse(b.pinnedAt) - Date.parse(a.pinnedAt)
+      if (byPinnedAt !== 0) return byPinnedAt
+    }
+
+    const aActive = activeGroupIds.has(a.id)
+    const bActive = activeGroupIds.has(b.id)
+    if (aActive && !bActive) return -1
+    if (!aActive && bActive) return 1
+    return 0
+  })
+}
 
 export const groupStepStateSchema = z.enum(['pending', 'running', 'done', 'failed', 'cancelled'])
 export type GroupStepState = z.infer<typeof groupStepStateSchema>

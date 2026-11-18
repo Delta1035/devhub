@@ -1,6 +1,6 @@
 import { addProjectViaApi, packageJson, test, expect } from './fixtures'
 
-test('project hover details, context menu actions and a resizable sidebar', async ({
+test('project item actions, context menu and a resizable project list', async ({
   launchDevhub,
   createProject
 }) => {
@@ -9,21 +9,16 @@ test('project hover details, context menu actions and a resizable sidebar', asyn
   })
   const { app, page } = await launchDevhub()
   await addProjectViaApi(page, dir)
-  const item = page.locator('aside').getByRole('button', { name: /^a-project-with/ })
+  const projectList = page.getByRole('region', { name: '项目列表' })
+  const item = projectList.getByRole('button', { name: /^a-project-with/ })
 
-  // Hovering shows the details card.
+  // Hovering does not open a hover card (removed to prevent visual distraction)
+  // and does not show VS Code / IDEA quick-open icons on the item row.
   await item.hover()
-  const card = page.locator('[data-slot="hover-card-content"]')
-  await expect(card).toContainText(dir)
-  await expect(card).toContainText('手动添加')
-  await expect(card).toContainText('2 个（npm 2）')
-  await page.mouse.move(600, 400)
-  await expect(card).toBeHidden()
-  // Focus alone does not open it: menus and dialogs return focus to the item they came from,
-  // and a card opening then covered the next menu (seen on Linux).
-  await item.focus()
-  await page.waitForTimeout(1000)
-  await expect(card).toBeHidden()
+  await page.waitForTimeout(700)
+  await expect(page.locator('[data-slot="hover-card-content"]')).toHaveCount(0)
+  await expect(projectList.getByRole('button', { name: /在 VS Code 中打开/ })).toHaveCount(0)
+  await expect(projectList.getByRole('button', { name: /在 IntelliJ IDEA 中打开/ })).toHaveCount(0)
 
   // Context menu → details dialog.
   await item.click({ button: 'right' })
@@ -65,7 +60,7 @@ test('project hover details, context menu actions and a resizable sidebar', asyn
   const other = await createProject('other', { 'package.json': packageJson({ dev: 'node -v' }) })
   await addProjectViaApi(page, other)
   await page
-    .locator('aside')
+    .getByRole('region', { name: '项目列表' })
     .getByRole('button', { name: /^other/ })
     .click()
   await expect(page.getByRole('heading', { name: 'other' })).toBeVisible()
@@ -73,7 +68,9 @@ test('project hover details, context menu actions and a resizable sidebar', asyn
   await page.getByRole('menuitem', { name: '在 DevHub 终端中打开' }).click()
   await expect(page.getByRole('heading', { name: /^a-project-with/ })).toBeVisible()
   await expect(page.getByRole('button', { name: '终端 1', exact: true })).toBeVisible()
-  await expect(page.locator('aside').getByRole('status', { name: '1 个活动终端' })).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: '项目列表' }).getByRole('status', { name: '1 个活动终端' })
+  ).toBeVisible()
   await page.getByRole('button', { name: '关闭 终端 1' }).click()
   await expect(page.getByRole('button', { name: '终端 1', exact: true })).toBeHidden()
 
@@ -84,20 +81,23 @@ test('project hover details, context menu actions and a resizable sidebar', asyn
   await page.getByRole('button', { name: '取消' }).click()
   await expect(item).toBeVisible()
 
-  // Dragging the handle widens the sidebar; the width survives a reload; double-click resets.
-  const aside = page.locator('aside')
-  const handle = page.getByRole('separator', { name: '调整侧栏宽度' })
-  const before = (await aside.boundingBox())?.width ?? 0
+  // Dragging the handle widens the project list; the width survives a reload; double-click resets.
+  const handle = page.getByRole('separator', { name: '调整项目列表宽度' })
+  const before = (await projectList.boundingBox())?.width ?? 0
   const box = await handle.boundingBox()
   if (!box) throw new Error('resize handle not visible')
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.mouse.down()
   await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2, { steps: 5 })
   await page.mouse.up()
-  await expect.poll(async () => (await aside.boundingBox())?.width).toBeGreaterThan(before + 100)
+  await expect
+    .poll(async () => (await projectList.boundingBox())?.width)
+    .toBeGreaterThan(before + 100)
 
   await page.reload()
-  await expect.poll(async () => (await aside.boundingBox())?.width).toBeGreaterThan(before + 100)
-  await page.getByRole('separator', { name: '调整侧栏宽度' }).dblclick()
-  await expect.poll(async () => (await aside.boundingBox())?.width).toBe(before)
+  await expect
+    .poll(async () => (await projectList.boundingBox())?.width)
+    .toBeGreaterThan(before + 100)
+  await page.getByRole('separator', { name: '调整项目列表宽度' }).dblclick()
+  await expect.poll(async () => (await projectList.boundingBox())?.width).toBe(before)
 })

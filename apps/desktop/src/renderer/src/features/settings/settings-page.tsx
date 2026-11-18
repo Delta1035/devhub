@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { ArrowLeft, TriangleAlert } from 'lucide-react'
-import type { EditorId, Settings, SettingsPatch } from '@devhub/shared'
+import {
+  portConflictPolicySchema,
+  type EditorId,
+  type Settings,
+  type SettingsPatch
+} from '@devhub/shared'
 import { access, shell } from '@renderer/api'
 import { Alert, AlertDescription } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
@@ -12,9 +17,9 @@ import {
   terminalPrefs
 } from '@renderer/features/terminal/terminal-prefs'
 import { appearance, type ThemePreference } from '@renderer/lib/appearance'
+import { notify } from '@renderer/lib/notifications'
 import { CustomShellsEditor } from './custom-shells-editor'
 import { RemoteSection } from './remote-section'
-import { StylePicker } from './style-picker'
 import { UpdatesSection } from './updates-section'
 import { NumberSetting, Segmented, SettingRow, SettingsSection } from './settings-controls'
 import { usePreference, useSettings, useUpdateSettings } from './use-settings'
@@ -76,11 +81,31 @@ export function SettingsPage({ onClose }: { onClose: () => void }): React.JSX.El
 
 function AppearanceSection(): React.JSX.Element {
   const theme = usePreference(appearance, appearance.preference)
+  const [isUpdatingShortcut, setIsUpdatingShortcut] = useState(false)
+
+  const handleShortcutStyle = async (style: 'light' | 'dark'): Promise<void> => {
+    if (!shell?.setDesktopShortcutStyle) return
+    setIsUpdatingShortcut(true)
+    try {
+      const res = await shell.setDesktopShortcutStyle(style)
+      if (res.success) {
+        notify.success(res.message)
+      } else {
+        notify.error(res.message)
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      notify.error(`更改快捷方式图标失败：${message}`)
+    } finally {
+      setIsUpdatingShortcut(false)
+    }
+  }
+
   return (
     <SettingsSection title="外观">
-      <SettingRow label="主题" description="只影响当前设备">
+      <SettingRow label="模式" description="只影响当前设备">
         <Segmented<ThemePreference>
-          label="主题"
+          label="外观模式"
           value={theme}
           onChange={(value) => appearance.setPreference(value)}
           options={[
@@ -90,9 +115,34 @@ function AppearanceSection(): React.JSX.Element {
           ]}
         />
       </SettingRow>
-      <SettingRow label="风格" description="配色、圆角和字体；终端配色一起切换">
-        <StylePicker />
-      </SettingRow>
+
+      {shell?.setDesktopShortcutStyle && (
+        <SettingRow
+          label="桌面快捷方式图标"
+          description="更新 Windows 桌面上的 DevHub 快捷方式图标风格"
+        >
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isUpdatingShortcut}
+              onClick={() => void handleShortcutStyle('light')}
+            >
+              应用浅色图标
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isUpdatingShortcut}
+              onClick={() => void handleShortcutStyle('dark')}
+            >
+              应用深色图标
+            </Button>
+          </div>
+        </SettingRow>
+      )}
     </SettingsSection>
   )
 }
@@ -240,6 +290,23 @@ function EditorsSection({
 function ProcessSection({ settings, save }: SectionProps): React.JSX.Element {
   return (
     <SettingsSection title="进程">
+      <SettingRow
+        label="端口被占用时"
+        htmlFor="settings-port-conflict-policy"
+        description="仅自动释放脚本明确配置的端口，会结束占用服务及其子进程；推断端口仍报告冲突"
+      >
+        <select
+          id="settings-port-conflict-policy"
+          className={selectClass}
+          value={settings.portConflictPolicy}
+          onChange={(event) =>
+            save({ portConflictPolicy: portConflictPolicySchema.parse(event.target.value) })
+          }
+        >
+          <option value="error">报告冲突</option>
+          <option value="terminate">结束占用进程后启动</option>
+        </select>
+      </SettingRow>
       <SettingRow
         label="停止等待时间"
         htmlFor="settings-grace"

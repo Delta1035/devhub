@@ -1,8 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDown, FolderPlus, FolderTree } from 'lucide-react'
 import { sortProjects, type Project, type Run, type WorkspaceView } from '@devhub/shared'
 import { access, shell } from '@renderer/api'
-import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
 import {
   DropdownMenu,
@@ -22,6 +21,7 @@ import {
 } from '@renderer/features/workspaces/workspace-display'
 import { WorkspaceSection } from '@renderer/features/workspaces/workspace-section'
 import { WorkspaceSettingsDialog } from '@renderer/features/workspaces/workspace-settings-dialog'
+import { notify } from '@renderer/lib/notifications'
 import { ProjectDetailsDialog, RemoveProjectDialog } from './project-dialogs'
 import { ProjectItem } from './project-item'
 import { useAddProject, useProjects } from './use-projects'
@@ -60,14 +60,13 @@ export function ProjectList({
   const [settingsId, setSettingsId] = useState<string | null>(null)
   // Dialogs are opened from an item (× button or context menu) but live here, once per list.
   const [dialog, setDialog] = useState<ProjectDialog | null>(null)
-  const [actionError, setActionError] = useState<Error | null>(null)
-  const error =
-    projects.error ??
-    workspaces.error ??
-    addProject.error ??
-    addWorkspace.error ??
-    rescan.error ??
-    actionError
+
+  useEffect(() => {
+    const queryError = projects.error ?? workspaces.error ?? rescan.error
+    if (queryError) {
+      notify.error(queryError.message, '项目加载失败')
+    }
+  }, [projects.error, workspaces.error, rescan.error])
 
   const allProjects = projects.data ?? []
   const workspaceList = workspaces.data ?? []
@@ -94,11 +93,20 @@ export function ProjectList({
 
   const handleAddProject = async (): Promise<void> => {
     const path = await shell?.pickDirectory()
-    if (path) addProject.mutate(path, { onSuccess: (project) => onSelect(project.id) })
+    if (path) {
+      addProject.mutate(path, {
+        onSuccess: (project) => onSelect(project.id),
+        onError: (err) => notify.error(err.message, '操作失败')
+      })
+    }
   }
   const handleAddWorkspace = async (): Promise<void> => {
     const path = await shell?.pickDirectory()
-    if (path) addWorkspace.mutate(path)
+    if (path) {
+      addWorkspace.mutate(path, {
+        onError: (err) => notify.error(err.message, '操作失败')
+      })
+    }
   }
 
   const runsOf = (projectId: string): Run[] =>
@@ -123,23 +131,33 @@ export function ProjectList({
       onRemove={() => setDialog({ kind: 'remove', projectId: project.id })}
       onShowDetails={() => setDialog({ kind: 'details', projectId: project.id })}
       onShellStarted={onOpenRun}
-      onError={setActionError}
+      onError={(err) => notify.error(err.message, '操作失败')}
     />
   )
 
   return (
     <section className="flex flex-col gap-3">
       <header className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
-          {projects.data && `${projects.data.length} 个项目`}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-semibold tracking-wider text-muted-foreground">项目</span>
+          {projects.data && (
+            <span className="rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              {projects.data.length}
+            </span>
+          )}
+        </div>
         {shell && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" disabled={addProject.isPending || addWorkspace.isPending}>
-                <FolderPlus data-icon="inline-start" />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={addProject.isPending || addWorkspace.isPending}
+                className="h-7 gap-1 px-2 text-xs"
+              >
+                <FolderPlus className="size-3.5" data-icon="inline-start" />
                 添加
-                <ChevronDown data-icon="inline-end" />
+                <ChevronDown className="size-3 text-muted-foreground" data-icon="inline-end" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-56">
@@ -164,11 +182,14 @@ export function ProjectList({
         )}
       </header>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertTitle>操作失败</AlertTitle>
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
+      {(projects.isLoading || workspaces.isLoading) && (
+        <p
+          role="status"
+          aria-label="项目加载中"
+          className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground"
+        >
+          正在加载项目…
+        </p>
       )}
 
       {projects.data?.length === 0 && workspaceList.length === 0 && (
@@ -202,7 +223,9 @@ export function ProjectList({
       {standalone.length > 0 && (
         <section aria-label="独立项目" className="flex flex-col gap-1">
           {workspaceList.length > 0 && (
-            <h3 className="px-1 py-1 text-xs font-medium text-muted-foreground">独立项目</h3>
+            <h3 className="px-1 py-1 text-[11px] font-semibold tracking-wider text-muted-foreground">
+              独立项目
+            </h3>
           )}
           <ul className="flex flex-col gap-1">
             {standalone.map((project) => renderItem(project))}
