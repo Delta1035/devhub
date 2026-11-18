@@ -100,6 +100,7 @@ M4-3 Android：
 - #119 已完成：优化流水线执行效率与资源占用（静态检查去重、路径过滤与 PR 分级）；`pnpm check` 通过。
 - #131 已完成：整理 E2E 测试目录结构，抽出 support/ 夹具与 features/、process/、remote/、system/ 子目录；`pnpm check` 与 `pnpm e2e` 全部通过。
 - #132 已完成：收敛 process 模块所有单元测试与 fixture 至 `__tests__/` 目录，恢复源码目录纯净；`pnpm check` 全部通过。
+- #133 已完成：支持单元测试与系统集成测试快慢分流（拆分真实端口用例至 integration，配置 vitest projects 及 test:unit / test:int 脚本）；`pnpm check` 全部通过。
 
 桌面模板维护：
 
