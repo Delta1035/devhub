@@ -203,3 +203,10 @@ Linux 已打包版本由 `APPIMAGE` 或 electron-builder 写入 `resources/packa
 - 来自 renderer 的参数一律视为不可信，在 core 中用 zod 校验。
 - 交给系统打开的 URL（ShellApi `openExternal`、`setWindowOpenHandler`）统一经 `core/shell/external-url.ts` 校验，只允许 http / https：链接可能来自不可信的进程输出。
 - 远程 API 默认关闭；开启时必须 Token 鉴权（ADR 0022）。每个 `DevhubApi` 方法在 shared 的 `remoteAccess` 中标注 `read` / `control` / `terminal` / `local`，新增方法不归类则编译失败；`local` 永不远程开放，`terminal` 需单独开关。Token 存 `remote.json`，不进 `settings.json`（设置会推送给所有客户端）。
+
+## 定时任务（`core/schedules/`，ADR 0032）
+
+- `packages/shared/src/schedules.ts` 定义脚本/批量任务目标、单次/每天/每周/间隔/Cron 规则、冲突策略和最近结果；时间计算是纯函数，Cron 为标准 5 段、按本地时区计算。
+- `schedule-service.ts` 使用 `schedules.json` 串行持久化，负责恢复启用任务、计算下一次执行、在停机恢复时跳过错过的计划，并通过注入的 `ScheduleTargetExecutor` 调用 `RunManager` / `GroupRunner`。
+- 定时任务只在 DevHub 进程存活期间执行。目标已在运行时默认记录跳过；配置停止后重跑时先停止同一目标，再启动一次新运行。调度锁确保同一任务不会并发触发。
+- `DevhubApi` 的定时任务方法由 IPC 与远程 HTTP 自动映射；`schedules-updated` 事件让 renderer 和远程客户端更新列表与最近结果。renderer 的 `features/schedules/` 只负责表单、展示和 API 绑定，规则转换与校验放在独立的 `schedule-draft.ts`。

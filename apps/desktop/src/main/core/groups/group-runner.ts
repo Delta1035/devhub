@@ -15,6 +15,7 @@ import type { GroupService } from './group-service'
 export interface GroupRunner {
   start(groupId: unknown): Promise<GroupRunState>
   stop(groupId: unknown): Promise<void>
+  isRunning(groupId: unknown): Promise<boolean>
   /** Latest state of each group, including results restored from earlier sessions. */
   states(): Promise<GroupRunState[]>
   /** Drops a deleted group's state. */
@@ -237,6 +238,16 @@ export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
         )
       )
       if (execution?.state.status === 'running') finish(execution, 'stopped')
+    },
+
+    async isRunning(groupId) {
+      const group = await groups.get(groupId)
+      const execution = executions.get(group.id)
+      const definition = execution?.state.group ?? group
+      return (
+        execution?.state.status === 'running' ||
+        definition.steps.some((step) => activeRunOf(step) !== undefined)
+      )
     },
 
     async states() {
