@@ -22,6 +22,7 @@ import {
   sampleTerminalOutput
 } from './mock-data'
 import { mockEvents } from './mock-events'
+import { createMockScheduleApi } from './mock-schedules'
 import {
   mockAddWorkspace,
   mockGetAppInfo,
@@ -46,6 +47,7 @@ export function createMockApi(): DevhubApi {
   const projects = [...mockProjects]
   const runs = [...mockRuns]
   const groups = [...mockGroups]
+  const scheduleApi = createMockScheduleApi()
   let nextRunId = 100
 
   return {
@@ -362,6 +364,7 @@ export function createMockApi(): DevhubApi {
         }
       ]
     },
+    ...scheduleApi,
     listEditors: mockListEditors,
     openInEditor: mockOpenInEditor,
     getSystemTerminal: mockGetSystemTerminal,

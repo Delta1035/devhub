@@ -1,8 +1,8 @@
-import { Activity, FolderKanban, Layers3 } from 'lucide-react'
+import { Activity, CalendarClock, FolderKanban, Layers3 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { cn } from '@renderer/lib/utils'
 
-export type SidebarView = 'projects' | 'groups' | 'running'
+export type SidebarView = 'projects' | 'groups' | 'schedules' | 'running'
 
 interface SidebarProps {
   activeView: SidebarView
@@ -14,6 +14,7 @@ interface SidebarProps {
 const navigationItems: { view: SidebarView; label: string; icon: typeof FolderKanban }[] = [
   { view: 'projects', label: '项目', icon: FolderKanban },
   { view: 'groups', label: '批量', icon: Layers3 },
+  { view: 'schedules', label: '定时', icon: CalendarClock },
   { view: 'running', label: '运行中', icon: Activity }
 ]
 

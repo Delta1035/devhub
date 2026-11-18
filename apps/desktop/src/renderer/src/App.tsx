@@ -8,6 +8,8 @@ import { useProjects } from '@renderer/features/projects/use-projects'
 import { OrphansBanner } from '@renderer/features/runs/orphans-banner'
 import { RunningWorkspace } from '@renderer/features/runs/running-workspace'
 import { useRunEventsSync, useRuns } from '@renderer/features/runs/use-runs'
+import { ScheduleWorkspace } from '@renderer/features/schedules/schedule-workspace'
+import { useScheduleEventsSync } from '@renderer/features/schedules/use-schedules'
 import { Sheet, SheetContent, SheetTitle } from '@renderer/components/ui/sheet'
 import { Sidebar, type SidebarView } from '@renderer/features/sidebar/sidebar'
 import { SidebarSkeleton } from '@renderer/features/sidebar/sidebar-skeleton'
@@ -28,6 +30,7 @@ const SettingsPage = lazy(() =>
 function App(): React.JSX.Element {
   useRunEventsSync()
   useGroupEventsSync()
+  useScheduleEventsSync()
   useWorkspaceEventsSync()
   useWorkspaces()
   const { data: projects } = useProjects()
@@ -36,7 +39,9 @@ function App(): React.JSX.Element {
   const [showSettings, setShowSettings] = useState(false)
   const [activeView, setActiveView] = useState<SidebarView>(() => {
     const stored = localStorage.getItem('devhub.activeView')
-    return stored === 'groups' || stored === 'running' ? stored : 'projects'
+    return stored === 'groups' || stored === 'running' || stored === 'schedules'
+      ? stored
+      : 'projects'
   })
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [requestedRunId, setRequestedRunId] = useState<string | null>(null)
@@ -166,6 +171,8 @@ function App(): React.JSX.Element {
                 onSelectGroup={(groupId) => setSelectedGroupId(groupId)}
                 onOpenRun={openRun}
               />
+            ) : activeView === 'schedules' ? (
+              <ScheduleWorkspace />
             ) : (
               <RunningWorkspace
                 onSelectGroup={(groupId) => selectBatch(groupId)}

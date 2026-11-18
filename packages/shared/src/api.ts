@@ -17,6 +17,7 @@ import type { RunHealth } from './health'
 import type { RunHistoryOutput, RunRecord } from './history'
 import type { RemoteConfigPatch, RemoteState } from './remote'
 import type { Settings, SettingsPatch } from './settings'
+import type { Schedule, ScheduleInput } from './schedules'
 import type { WorkspacePatch, WorkspaceView } from './workspaces'
 
 /**
@@ -98,6 +99,11 @@ export interface DevhubApi {
   stopGroup(groupId: string): Promise<void>
   /** Latest execution state of each group that has run since DevHub started. */
   listGroupStates(): Promise<GroupRunState[]>
+  listSchedules(): Promise<Schedule[]>
+  saveSchedule(input: ScheduleInput): Promise<Schedule>
+  setScheduleEnabled(scheduleId: string, enabled: boolean): Promise<Schedule>
+  deleteSchedule(scheduleId: string): Promise<void>
+  runScheduleNow(scheduleId: string): Promise<Schedule>
   /** Editors DevHub knows about and whether each is installed. */
   listEditors(): Promise<EditorInfo[]>
   /** Opens the project directory in the editor, as a separate process DevHub does not manage. */
@@ -161,6 +167,11 @@ export const devhubApiMethods = [
   'startGroup',
   'stopGroup',
   'listGroupStates',
+  'listSchedules',
+  'saveSchedule',
+  'setScheduleEnabled',
+  'deleteSchedule',
+  'runScheduleNow',
   'listEditors',
   'openInEditor',
   'getSystemTerminal',

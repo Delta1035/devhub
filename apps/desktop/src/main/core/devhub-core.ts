@@ -32,6 +32,12 @@ import {
 } from './groups/group-history'
 import { createGroupRunner } from './groups/group-runner'
 import { createGroupService, emptyGroupsFile, groupsFileSchema } from './groups/group-service'
+import {
+  createScheduleService,
+  emptySchedulesFile,
+  schedulesFileSchema,
+  type ScheduleTargetExecutor
+} from './schedules/schedule-service'
 import { createEventBus } from './events/event-bus'
 import { createIdentityReader } from './process/process-identity'
 import { createProcessKiller } from './process/process-killer'
@@ -222,6 +228,59 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     )
   })
 
+  const scheduleExecutor: ScheduleTargetExecutor = {
+    validate: async (target) => {
+      if (target.kind === 'script') {
+        await scripts.find(target.projectId, target.scriptId)
+      } else {
+        await groupService.get(target.groupId)
+      }
+    },
+    isRunning: async (target) => {
+      if (target.kind === 'script') {
+        return runs
+          .list()
+          .some(
+            (run) =>
+              run.kind === 'script' &&
+              run.projectId === target.projectId &&
+              run.scriptId === target.scriptId &&
+              run.status !== 'exited'
+          )
+      }
+      return groupRunner.isRunning(target.groupId)
+    },
+    start: async (target) => {
+      if (target.kind === 'script') await runs.start(target.projectId, target.scriptId)
+      else await groupRunner.start(target.groupId)
+    },
+    stop: async (target) => {
+      if (target.kind === 'script') {
+        const activeRuns = runs
+          .list()
+          .filter(
+            (run) =>
+              run.kind === 'script' &&
+              run.projectId === target.projectId &&
+              run.scriptId === target.scriptId &&
+              run.status !== 'exited'
+          )
+        await Promise.all(activeRuns.map((run) => runs.stop(run.id)))
+      } else {
+        await groupRunner.stop(target.groupId)
+      }
+    }
+  }
+  const schedules = createScheduleService({
+    store: createJsonStore({
+      filePath: join(env.dataDir, 'schedules.json'),
+      schema: schedulesFileSchema,
+      fallback: emptySchedulesFile
+    }),
+    executor: scheduleExecutor,
+    emit: (event) => events.emit(event)
+  })
+
   const workspaces = createWorkspaceService({
     store: createJsonStore({
       filePath: join(env.dataDir, 'workspaces.json'),
@@ -312,6 +371,11 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     startGroup: (groupId) => groupRunner.start(groupId),
     stopGroup: (groupId) => groupRunner.stop(groupId),
     listGroupStates: () => groupRunner.states(),
+    listSchedules: () => schedules.list(),
+    saveSchedule: (input) => schedules.save(input),
+    setScheduleEnabled: (scheduleId, enabled) => schedules.setEnabled(scheduleId, enabled),
+    deleteSchedule: (scheduleId) => schedules.remove(scheduleId),
+    runScheduleNow: (scheduleId) => schedules.runNow(scheduleId),
     listEditors: () => editors.list(),
     openInEditor: (projectId, editor) => editors.open(projectId, editor),
     getSystemTerminal: () => systemTerminal.get(),
@@ -338,6 +402,9 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     })
   })
   void remote.start()
+  void schedules.start().catch((error: unknown) => {
+    console.error('[core] schedule service failed to start', error)
+  })
 
   return {
     ...api,
@@ -345,6 +412,7 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     dispose: async () => {
       // No new remote requests while shutting down.
       await remote.dispose()
+      await schedules.dispose()
       // Cancel sequences first so no step starts while the runs are being stopped.
       groupRunner.dispose()
       health.dispose()
