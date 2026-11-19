@@ -17,12 +17,12 @@
 
 ## 功能范围
 
-桌面 MVP 包含下列 M1～M3 已实现的本地功能，并完成运行历史完善；发布前继续验证 Windows 自动升级与 Linux AppImage 更新。CLI 与手机端远程管理暂缓，不纳入当前 MVP（2026-10-03 用户确认）。
+桌面 MVP（M1～M3）与 M4 远程管理均已发布；M5 定时任务已合并到 main，待下个版本发布。CLI、Jira 与 Wayland 暂缓。
 
 ### M1 — 能跑起来
 
 - 添加/移除项目目录
-- 自动识别脚本：npm/pnpm/yarn scripts、Maven、Gradle
+- 自动识别脚本：npm/pnpm/yarn scripts、Maven、Gradle、Go、Python
 - 启动、停止、重启脚本；停止时杀掉整棵进程树（Windows/Linux）
 - 实时日志（保留 ANSI 颜色），保留最近 N 行
 - 关闭窗口最小化到托盘，进程继续运行
@@ -44,6 +44,11 @@
 - 可选开启的 HTTP API + SSE 事件推送（Token 鉴权，默认关闭，推荐经 Tailscale 访问；ADR 0022）
 - 适配手机的 Web 界面 / PWA；之后用 Capacitor 打包同一网页为 Android 客户端（ADR 0027），以后再考虑 React Native (Expo) 原生客户端
 
+### M5 — 定时（已合并 main，待发布）
+
+- 对单个脚本或批量任务设置单次、每天、每周、固定间隔或 5 段 Cron 规则
+- 目标已在运行时默认跳过，也可配置停止后重跑；只在 DevHub 运行期间执行（ADR 0032）
+
 ## 非目标
 
 - 不做代码编辑、不替代 IDE
@@ -52,6 +57,8 @@
 
 ## 变更记录
 
+- 2026-11-18：新增 M5 定时任务（ADR 0032），代码已合并到 main，待发布。
+- 2026-11-14：脚本识别扩展到 Go 与 Python 项目。
 - 2026-10-06：Android 客户端改为先 Capacitor、后 Expo（ADR 0027）。
 
 - 2026-10-02：移除「Profile：一键切换对接的后端（环境变量、追加参数）」，不再规划。M3 的「分组」已提前完成（批量执行，ADR 0006）；另增加了内置交互式终端（ADR 0005）、用编辑器打开项目与设置页（ADR 0007）。

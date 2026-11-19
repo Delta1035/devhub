@@ -4,7 +4,7 @@ layout: home
 hero:
   name: DevHub
   text: 本地项目的脚本，一个窗口全管
-  tagline: 自动识别 npm / Maven / Gradle / 自定义脚本，单个或批量启动、停止、看日志。支持 Windows 与 Linux。
+  tagline: 自动识别 npm / Maven / Gradle / Go / Python / 自定义脚本，单个或批量启动、停止、看日志。支持 Windows 与 Linux，Android 可远程管理。
   image:
     src: /logo.png
     alt: DevHub
@@ -21,7 +21,7 @@ hero:
 
 features:
   - title: 自动识别脚本
-    details: 读取 package.json 的 scripts（pnpm / yarn / npm）、Maven 与 Gradle 构建（含多模块），优先使用 mvnw / gradlew；识别不到的写进 .devhub.yaml。
+    details: 读取 package.json 的 scripts（pnpm / yarn / npm）、Maven 与 Gradle 构建（含多模块）、Go 与 Python 项目；优先使用 mvnw / gradlew；识别不到的写进 .devhub.yaml。
   - title: 运行与日志
     details: 启动 / 停止 / 重启，停止时结束整棵进程树；每个运行一个可交互的终端标签页，支持搜索和可点击链接。
   - title: 端口与健康检查

@@ -10,6 +10,7 @@ Download the latest version from [GitHub Releases](https://github.com/Delta1035/
 | -------- | -------------------------------------------------------- |
 | Windows  | `devhub-*-setup.exe` (installer, lets you pick a folder) |
 | Linux    | `.AppImage` or `.deb` (both support in-app updates)      |
+| Android  | `DevHub-*.apk` (remote client for a running desktop)     |
 
 The installers are not code-signed, so Windows SmartScreen warns on first launch; choose **More info → Run anyway**.
 
@@ -24,7 +25,7 @@ gh attestation verify <file> --repo Delta1035/devhub
 There are two ways to add projects, both from the **添加** (Add) button in the sidebar:
 
 - **A single project**: pick a project folder. Its scripts are listed on the right.
-- **A workspace** (**添加工作区**): pick a folder that contains many repositories. DevHub finds the projects inside — any folder with `package.json`, `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)` or `.devhub.yaml` — and keeps the list in sync: new repositories are added when you rescan or switch back to the window. By default only direct subfolders are scanned; the workspace settings allow 1 to 5 levels.
+- **A workspace** (**添加工作区**): pick a folder that contains many repositories. DevHub finds the projects inside — any folder with `package.json`, `pom.xml`, `build.gradle(.kts)`, `settings.gradle(.kts)`, `go.mod` / `go.work`, `pyproject.toml` / `requirements.txt` / `Pipfile` / `setup.py` / `manage.py` or `.devhub.yaml` — and keeps the list in sync: new repositories are added when you rescan or switch back to the window. By default only direct subfolders are scanned; the workspace settings allow 1 to 5 levels.
 
 Removing a project that belongs to a workspace excludes it from later scans; you can restore it in the workspace settings. A project whose folder disappears is kept and marked as missing, so switching branches or unplugging a drive does not wipe its history.
 
@@ -38,13 +39,15 @@ Removing a project that belongs to a workspace excludes it from later scans; you
 3. Stopping a script ends its whole process tree, including servers started by a wrapper such as `mvnw` or `pnpm`.
 4. The history button lists the last 20 runs of the script, with their logs.
 
-If a port is already taken when you start a script, DevHub tells you which process holds it before starting.
+If a port is already taken when you start a script, DevHub tells you which process holds it before starting. For ports explicitly declared in `.devhub.yaml`, you can have DevHub stop the holder first; see [Port conflicts](./devhub-yaml#port-conflicts). Inferred ports only report the conflict.
 
 DevHub also detects:
 
 - **npm**: `package.json` scripts, run with pnpm / yarn / npm according to the `packageManager` field or the lockfile; packages in a monorepo inherit the root's package manager.
 - **Maven**: common lifecycle goals, plus `spring-boot:run` for Spring Boot; multi-module builds get a start command per application module.
 - **Gradle**: `clean` / `build` / `test`, plus `bootRun` / `run` depending on plugins; multi-project builds are supported.
+- **Go**: `go.mod` / `go.work`, with `run` / `build` / `test` / `tidy` scripts for the root and each `cmd/<app>` entry.
+- **Python**: `pyproject.toml`, `requirements.txt` and friends; detects uv / poetry / pdm / pipenv / venv, extracts declared scripts and entry points, adds run / test / dependency scripts, and infers framework ports such as FastAPI / Uvicorn.
 
 Commands it cannot detect go in [`.devhub.yaml`](./devhub-yaml).
 

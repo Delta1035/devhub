@@ -1,6 +1,6 @@
 # DevHub GPUI 实验原型
 
-这是独立的 Rust / GPUI 源码实验项目，范围与限制见 [ADR 0032](../../docs/decisions/0032-gpui-prototype.md)。正式客户端仍为 `apps/desktop`。
+这是独立的 Rust / GPUI 源码实验项目，范围与限制见 [ADR 0033](../../docs/decisions/0033-gpui-prototype.md)。正式客户端仍为 `apps/desktop`。
 
 在仓库根目录执行：
 

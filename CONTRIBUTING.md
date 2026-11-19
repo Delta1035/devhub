@@ -27,7 +27,7 @@ pnpm e2e      # 构建并用 Playwright 驱动真实应用（约 1 分钟）
 
 ```
 apps/desktop/
-  src/main/core/   核心逻辑（项目、脚本探测、进程、批量、健康检查…），不依赖 Electron
+  src/main/core/   核心逻辑（项目、脚本探测、进程、批量、健康检查、定时任务…），不依赖 Electron
   src/main/        Electron 主进程：窗口、托盘、IPC 自动映射
   src/preload/     暴露类型化 API
   src/renderer/    React UI，只通过 @renderer/api 访问核心

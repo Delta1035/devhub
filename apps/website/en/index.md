@@ -4,7 +4,7 @@ layout: home
 hero:
   name: DevHub
   text: All your local scripts, one window
-  tagline: Detects npm / Maven / Gradle / custom scripts, then starts, stops and tails them — individually or in batches. For Windows and Linux.
+  tagline: Detects npm / Maven / Gradle / Go / Python / custom scripts, then starts, stops and tails them — individually or in batches. For Windows and Linux, with an Android remote client.
   image:
     src: /logo.png
     alt: DevHub
@@ -21,7 +21,7 @@ hero:
 
 features:
   - title: Script detection
-    details: Reads package.json scripts (pnpm / yarn / npm), Maven and Gradle builds including multi-module ones, and prefers mvnw / gradlew. Anything else goes in .devhub.yaml.
+    details: Reads package.json scripts (pnpm / yarn / npm), Maven and Gradle builds including multi-module ones, and Go and Python projects; prefers mvnw / gradlew. Anything else goes in .devhub.yaml.
   - title: Runs and logs
     details: Start, stop and restart; stopping kills the whole process tree. Each run gets an interactive terminal tab with search and clickable links.
   - title: Ports and health

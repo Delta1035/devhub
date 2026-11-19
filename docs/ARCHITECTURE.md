@@ -36,12 +36,13 @@ devhub/                        pnpm monorepo
 │       │       ├── ports/           推断脚本端口、查找占用进程、启动前冲突检测
 │       │       ├── health/          运行中脚本的就绪检查：启动中 / 就绪 / 无响应（ADR 0011）
 │       │       ├── history/         运行历史、异常中断恢复与每次运行的持久化日志（ADR 0015）
+│       │       ├── schedules/       定时任务：规则计算、schedules.json 持久化与触发（ADR 0032）
 │       │       ├── net/             本地端口连通性检测、HTTP 检查
 │       │       └── fs/              文件系统小工具；finder.ts：按候选位置查找已安装程序
 │       ├── preload/           暴露 window.devhub（DevhubApi）、window.devhubEvents（事件订阅）与 window.devhubShell（ShellApi）
 │       └── renderer/src/      React UI
 │           ├── api/           ★ UI 访问核心的唯一入口
-│           ├── features/<x>/  按功能组织：组件 + hooks（projects、scripts、terminal）
+│           ├── features/<x>/  按功能组织：组件 + hooks（projects、scripts、schedules、terminal）
 │           ├── components/ui/ shadcn 生成的组件（由 CLI 管理，不手改）
 │           └── lib/           工具函数
 ├── apps/mobile/               Expo 原生客户端骨架（Expo SDK 57 + expo-router，ADR 0028），以后 Expo 客户端的基础；当前 Android 以 Capacitor 为准（ADR 0027）
@@ -206,7 +207,7 @@ Linux 已打包版本由 `APPIMAGE` 或 electron-builder 写入 `resources/packa
 
 ## GPUI 实验原型（独立项目）
 
-- `apps/desktop-gpui/` 是独立 Cargo 项目（ADR 0032），`src/domain` 放 Rust 模型，`src/core` 放脚本发现、存储、PTY、批量任务和历史的原型实现，`src/ui` 与 `app_state.rs` 放 GPUI 界面和交互状态。它尚未接入 shared API 契约，也不进入现有 pnpm 构建与发布流程；正式客户端仍为 Electron。
+- `apps/desktop-gpui/` 是独立 Cargo 项目（ADR 0033），`src/domain` 放 Rust 模型，`src/core` 放脚本发现、存储、PTY、批量任务和历史的原型实现，`src/ui` 与 `app_state.rs` 放 GPUI 界面和交互状态。它尚未接入 shared API 契约，也不进入现有 pnpm 构建与发布流程；正式客户端仍为 Electron。
 - Rust 格式、编译和测试单独用 Cargo 验证；Electron E2E 不覆盖 GPUI。原型默认存储位置可能与正式客户端重叠，运行前必须按原型 README 隔离配置；GPUI UI、Windows 与数据兼容性待验收。
 
 ## 定时任务（`core/schedules/`，ADR 0032）

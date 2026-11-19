@@ -11,7 +11,7 @@
 [![CI](https://github.com/Delta1035/devhub/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Delta1035/devhub/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/Delta1035/devhub?sort=semver)](https://github.com/Delta1035/devhub/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/Delta1035/devhub/total)](https://github.com/Delta1035/devhub/releases)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-informational)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20Android-informational)
 [![License](https://img.shields.io/github/license/Delta1035/devhub)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -36,14 +36,19 @@
   - npm：读取 `package.json` 的 scripts，按 `packageManager` 字段或 lockfile 选择 pnpm / yarn / npm；monorepo 子包会继承仓库根目录的包管理器
   - Maven：常用生命周期命令，Spring Boot 项目加 `spring-boot:run`；支持多模块项目，为每个应用模块生成单独的启动命令
   - Gradle：`clean` / `build` / `test`，按插件加 `bootRun` / `run`；支持多项目构建
+  - Go：识别 `go.mod` / `go.work`，为根目录和 `cmd/<app>` 入口生成 `run` / `build` / `test` / `tidy` 脚本
+  - Python：识别 `pyproject.toml` / `requirements.txt` 等，嗅探 uv / poetry / pdm / pipenv / venv，生成运行、测试与依赖同步脚本并推断框架端口
   - 优先使用项目自带的 `mvnw` / `gradlew`
   - 识别不到的命令写进 [`.devhub.yaml`](#自定义脚本devhubyaml)
+- **工作区**：指定代码目录，自动发现其中的项目并随仓库增删保持同步；有运行中的脚本时优先显示，也支持手动置顶
 - **运行与日志**：启动 / 停止 / 重启，停止时结束整棵进程树；每个运行一个终端标签页，可交互输入，支持搜索、复制粘贴和可点击链接
 - **端口与健康检查**：从命令推断端口，指出占用进程，可在启动服务前自动结束占用者；运行中显示启动中 / 就绪 / 无响应
 - **批量任务**：跨项目组合脚本，并行或串行启动；串行步骤可以等待成功退出、输出出现指定文字、端口可连接、HTTP 返回成功或固定秒数后再继续，失败时停止后续步骤并说明原因
+- **定时任务（已合并到 main，尚未发布）**：为单个脚本或批量任务设置单次、每天、每周、固定间隔或 5 段 Cron 规则；目标已在运行时可跳过或停止后重跑，仅在 DevHub 运行期间执行
 - **运行历史**：每个脚本保留最近 20 次运行的结果与日志，重启 DevHub 后仍可查看
 - **项目内终端**：在项目目录中打开 bash / PowerShell / cmd 或自定义 shell
-- **其他**：用 VS Code / IntelliJ IDEA 打开项目、托盘常驻、深浅色主题、自动更新
+- **手机访问**：开启远程访问后，用浏览器 / PWA 或 Android App 查看状态、启停脚本（远程终端默认关闭，见[手机访问](apps/website/guide/remote.md)）
+- **其他**：用 VS Code / IntelliJ IDEA 打开项目、全局搜索与消息通知、托盘常驻、深浅色主题、自动更新
 
 ## 安装
 
@@ -53,6 +58,7 @@
 | ------- | -------------------------------------------- |
 | Windows | `devhub-*-setup.exe`（安装向导，可选择目录） |
 | Linux   | `.AppImage` 或 `.deb`（均支持应用内更新）    |
+| Android | `DevHub-*.apk`（远程客户端，需配合桌面端）   |
 
 安装包未签名，Windows 首次运行会出现 SmartScreen 提示，选择「更多信息 → 仍要运行」。
 
@@ -108,6 +114,8 @@ pnpm e2e      # 构建并用 Playwright 驱动真实应用
 
 ## 文档
 
+- [使用文档（官网，中英双语）](https://delta1035.github.io/devhub/)
+- [定时任务（即将发布）](apps/website/guide/scheduled-tasks.md)
 - [产品需求](docs/PRD.md)
 - [架构](docs/ARCHITECTURE.md)
 - [进度与已知问题](docs/PROGRESS.md)

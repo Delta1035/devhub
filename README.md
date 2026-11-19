@@ -11,7 +11,7 @@ One place to run the scripts of all your local projects: detects npm / Maven / G
 [![CI](https://github.com/Delta1035/devhub/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Delta1035/devhub/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/Delta1035/devhub?sort=semver)](https://github.com/Delta1035/devhub/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/Delta1035/devhub/total)](https://github.com/Delta1035/devhub/releases)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-informational)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20Android-informational)
 [![License](https://img.shields.io/github/license/Delta1035/devhub)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -36,14 +36,19 @@ Runs on Windows and Linux (Ubuntu / X11). The UI is currently in Chinese.
   - npm: reads `package.json` scripts and picks pnpm / yarn / npm from the `packageManager` field or the lockfile; monorepo packages inherit the repository root's package manager
   - Maven: common lifecycle goals, plus `spring-boot:run` for Spring Boot projects; multi-module builds get a start command per application module
   - Gradle: `clean` / `build` / `test`, plus `bootRun` / `run` depending on plugins; multi-project builds are supported
+  - Go: `go.mod` / `go.work` workspaces, with `run` / `build` / `test` / `tidy` scripts for the root and each `cmd/<app>` entry
+  - Python: `pyproject.toml` / `requirements.txt` and friends, with uv / poetry / pdm / pipenv / venv detection, run / test / dependency scripts and framework port inference
   - Project wrappers (`mvnw` / `gradlew`) are preferred
   - Anything else goes in [`.devhub.yaml`](#custom-scripts-devhubyaml)
+- **Workspaces**: point DevHub at a code folder and it discovers the projects inside, keeps the list in sync, and floats active or pinned projects to the top
 - **Runs and logs**: start / stop / restart, stopping the whole process tree; one terminal tab per run with interactive input, search, copy/paste and clickable links
 - **Ports and health checks**: infers ports from commands, names processes holding a port and can stop them before starting a service; running scripts show starting / ready / unresponsive
 - **Batch tasks**: combine scripts across projects and start them in parallel or in sequence; a sequential step can wait for a successful exit, a text (or regex) in the output, an open port, an HTTP 2xx or a fixed delay, and a failure stops the remaining steps with a reason
+- **Scheduled tasks (merged to main, not yet released)**: run a script or a batch task once, daily, weekly, at a fixed interval or by a 5-field Cron expression; skip or stop-and-restart when the target is already running. Schedules run only while DevHub is open.
 - **Run history**: the last 20 runs of each script, with their logs, survive a DevHub restart
 - **Project terminals**: open bash / PowerShell / cmd or a custom shell in the project directory
-- **Also**: open projects in VS Code / IntelliJ IDEA, tray icon, light and dark themes, auto-update
+- **Phone access**: with remote access enabled, use the browser / PWA or the Android app to check status and start / stop scripts (remote terminal is off by default; see [Phone access](apps/website/en/guide/remote.md))
+- **Also**: open projects in VS Code / IntelliJ IDEA, global search and notifications, tray icon, light and dark themes, auto-update
 
 ## Install
 
@@ -104,6 +109,16 @@ pnpm dev      # run the desktop app with hot reload
 pnpm check    # format + lint + types + tests
 pnpm e2e      # build, then drive the real app with Playwright
 ```
+
+## Docs
+
+- [User guide (website, Chinese and English)](https://delta1035.github.io/devhub/en/)
+- [Scheduled tasks (coming soon)](apps/website/en/guide/scheduled-tasks.md)
+- [Product requirements](docs/PRD.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Progress and known issues](docs/PROGRESS.md)
+- [Architecture decision records](docs/decisions/)
+- [AI collaboration rules](AGENTS.md)
 
 See [Contributing](CONTRIBUTING.md) for the project layout, conventions, commit style and release process. Design documents in `docs/` are written in Chinese.
 

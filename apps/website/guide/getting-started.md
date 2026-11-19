@@ -10,6 +10,7 @@ DevHub 支持 Windows 与 Linux（Ubuntu / X11）。
 | ------- | -------------------------------------------- |
 | Windows | `devhub-*-setup.exe`（安装向导，可选择目录） |
 | Linux   | `.AppImage` 或 `.deb`（均支持应用内更新）    |
+| Android | `DevHub-*.apk`（远程客户端，需配合桌面端）   |
 
 安装包未签名，Windows 首次运行会出现 SmartScreen 提示，选择「更多信息 → 仍要运行」。
 
@@ -24,7 +25,7 @@ gh attestation verify <文件> --repo Delta1035/devhub
 在侧栏点击「添加」，有两种方式：
 
 - **单个项目**：选择项目文件夹，右侧列出识别到的脚本。
-- **工作区**（「添加工作区」）：选择存放多个仓库的目录。DevHub 会找出其中的项目——含有 `package.json`、`pom.xml`、`build.gradle(.kts)`、`settings.gradle(.kts)` 或 `.devhub.yaml` 的文件夹——并保持同步：重新扫描或切回窗口时自动添加新仓库。默认只扫描直接子目录，可在工作区设置中改为 1～5 层。
+- **工作区**（「添加工作区」）：选择存放多个仓库的目录。DevHub 会找出其中的项目——含有 `package.json`、`pom.xml`、`build.gradle(.kts)`、`settings.gradle(.kts)`、`go.mod` / `go.work`、`pyproject.toml` / `requirements.txt` / `Pipfile` / `setup.py` / `manage.py` 或 `.devhub.yaml` 的文件夹——并保持同步：重新扫描或切回窗口时自动添加新仓库。默认只扫描直接子目录，可在工作区设置中改为 1～5 层。
 
 从侧栏移除工作区中的项目后，以后的扫描不会再加回它，可在工作区设置中恢复。项目目录消失时不会被自动移除，而是标记为「目录缺失」，切换分支或拔掉移动硬盘不会清空它的历史。
 
@@ -38,13 +39,15 @@ gh attestation verify <文件> --repo Delta1035/devhub
 3. 停止脚本会结束整棵进程树，包括 `mvnw`、`pnpm` 等包装命令拉起的服务。
 4. 「历史」按钮列出该脚本最近 20 次运行及其日志。
 
-启动时如果端口已被占用，DevHub 会先提示占用它的进程。
+启动时如果端口已被占用，DevHub 会先提示占用它的进程。对 `.devhub.yaml` 中明确声明的端口，可设置为先结束占用者再启动，见[端口冲突策略](./devhub-yaml#端口冲突策略)；从命令推断出的端口始终只报告冲突。
 
 DevHub 能自动识别：
 
 - **npm**：`package.json` 的 scripts，按 `packageManager` 字段或 lockfile 选择 pnpm / yarn / npm；monorepo 子包继承仓库根目录的包管理器。
 - **Maven**：常用生命周期命令，Spring Boot 项目加 `spring-boot:run`；多模块项目为每个应用模块生成启动命令。
 - **Gradle**：`clean` / `build` / `test`，按插件加 `bootRun` / `run`；支持多项目构建。
+- **Go**：`go.mod` / `go.work`，根目录和 `cmd/<app>` 入口的 `run` / `build` / `test` / `tidy` 脚本。
+- **Python**：`pyproject.toml`、`requirements.txt` 等；嗅探 uv / poetry / pdm / pipenv / venv，提取声明的脚本与入口，提供运行、测试、依赖同步脚本，并推断 FastAPI / Uvicorn 等框架端口。
 
 识别不到的命令写进 [`.devhub.yaml`](./devhub-yaml)。
 

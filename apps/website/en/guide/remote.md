@@ -46,6 +46,7 @@ The app reconnects by itself from then on. When the desktop is upgraded, the app
 ## What the phone can do
 
 - Browse projects, scripts, batch tasks and run history; start / stop / restart scripts and run batch tasks.
+- List scheduled tasks with their next run time and trigger one manually; creating, editing and deleting tasks stays on the computer.
 - Read terminal output. **远程终端** (remote terminal) is off by default: the phone cannot open terminals or type into them. Turned on, the phone can run any command on the computer; enable it with care.
 - Adding / removing projects, changing DevHub's settings, opening projects in an editor and other actions that change the computer stay on the computer.
 
