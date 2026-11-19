@@ -1,7 +1,7 @@
 {
   "name": "@devhub/desktop",
   "productName": "DevHub",
-  "version": "1.10.9",
+  "version": "1.11.0",
   "private": true,
   "description": "DevHub desktop client: manage and run scripts across local projects",
   "homepage": "https://github.com/Delta1035/devhub",
@@ -15,6 +15,8 @@
     "typecheck:e2e": "tsc --noEmit -p tsconfig.e2e.json --composite false",
     "typecheck": "pnpm typecheck:node && pnpm typecheck:web && pnpm typecheck:e2e",
     "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:int": "vitest run --project integration",
     "e2e": "electron-vite build && pnpm build:web && playwright test",
     "start": "electron-vite preview",
     "dev": "electron-vite dev",

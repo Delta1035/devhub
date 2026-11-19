@@ -11,6 +11,8 @@
     "lint": "eslint --cache .",
     "typecheck": "pnpm -r typecheck",
     "test": "node --test \"scripts/*.test.mjs\" && pnpm -r test",
+    "test:unit": "pnpm --filter @devhub/desktop test:unit",
+    "test:int": "pnpm --filter @devhub/desktop test:int",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "e2e": "pnpm --filter @devhub/desktop e2e",
