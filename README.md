@@ -44,7 +44,7 @@ Runs on Windows and Linux (Ubuntu / X11). The UI is currently in Chinese.
 - **Runs and logs**: start / stop / restart, stopping the whole process tree; one terminal tab per run with interactive input, search, copy/paste and clickable links
 - **Ports and health checks**: infers ports from commands, names processes holding a port and can stop them before starting a service; running scripts show starting / ready / unresponsive
 - **Batch tasks**: combine scripts across projects and start them in parallel or in sequence; a sequential step can wait for a successful exit, a text (or regex) in the output, an open port, an HTTP 2xx or a fixed delay, and a failure stops the remaining steps with a reason
-- **Scheduled tasks (merged to main, not yet released)**: run a script or a batch task once, daily, weekly, at a fixed interval or by a 5-field Cron expression; skip or stop-and-restart when the target is already running. Schedules run only while DevHub is open.
+- **Scheduled tasks (since v1.11.0)**: run a script or a batch task once, daily, weekly, at a fixed interval or by a 5-field Cron expression; skip or stop-and-restart when the target is already running. Schedules run only while DevHub is open.
 - **Run history**: the last 20 runs of each script, with their logs, survive a DevHub restart
 - **Project terminals**: open bash / PowerShell / cmd or a custom shell in the project directory
 - **Phone access**: with remote access enabled, use the browser / PWA or the Android app to check status and start / stop scripts (remote terminal is off by default; see [Phone access](apps/website/en/guide/remote.md))
@@ -113,7 +113,7 @@ pnpm e2e      # build, then drive the real app with Playwright
 ## Docs
 
 - [User guide (website, Chinese and English)](https://delta1035.github.io/devhub/en/)
-- [Scheduled tasks (coming soon)](apps/website/en/guide/scheduled-tasks.md)
+- [Scheduled tasks](apps/website/en/guide/scheduled-tasks.md)
 - [Product requirements](docs/PRD.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Progress and known issues](docs/PROGRESS.md)

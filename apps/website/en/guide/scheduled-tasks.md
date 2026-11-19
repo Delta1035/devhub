@@ -1,7 +1,7 @@
 # Scheduled tasks
 
-::: warning Availability
-Scheduled tasks are merged to main but are not part of the latest stable release (v1.10.9). This page describes the feature expected in the next release.
+::: tip Availability
+Scheduled tasks are available from v1.11.0 onward.
 :::
 
 Scheduled tasks trigger an existing script or batch task on a schedule, without clicking run each time. Create one under **定时** (Schedules) in the sidebar: pick a target, a time rule and an overlap policy, then enable it.
