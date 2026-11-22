@@ -70,21 +70,18 @@ export function SidebarRunningSection({
       )}
       aria-label="运行中任务"
     >
-      <header className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-1.5">
-          <span
-            className={cn(
-              'font-semibold tracking-wider text-muted-foreground',
-              page ? 'text-sm' : 'text-[11px]'
-            )}
-          >
-            运行中
-          </span>
-          <span className="rounded bg-success/15 px-1.5 py-0.5 font-mono text-[10px] font-medium text-success">
-            {totalCount}
-          </span>
-        </div>
-      </header>
+      {!page && (
+        <header className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-semibold tracking-wider text-muted-foreground">
+              运行中
+            </span>
+            <span className="rounded bg-success/15 px-1.5 py-0.5 font-mono text-[10px] font-medium text-success">
+              {totalCount}
+            </span>
+          </div>
+        </header>
+      )}
 
       {actionError && (
         <p className="flex items-start gap-1 px-1.5 text-xs text-destructive">
@@ -104,7 +101,10 @@ export function SidebarRunningSection({
               return (
                 <li
                   key={group.groupId}
-                  className="group flex items-center justify-between gap-1.5 rounded-lg border border-border/50 bg-card/60 px-2 py-1.5 transition-colors hover:bg-muted/50"
+                  className={cn(
+                    'group flex items-center justify-between gap-1.5 rounded-lg border border-border/50 bg-card/60 transition-colors hover:bg-muted/50',
+                    page ? 'px-3 py-2.5' : 'px-2 py-1.5'
+                  )}
                 >
                   <button
                     type="button"
@@ -162,7 +162,10 @@ export function SidebarRunningSection({
             return (
               <li
                 key={run.id}
-                className="group flex items-center justify-between gap-1.5 rounded-lg border border-border/50 bg-card/60 px-2 py-1.5 transition-colors hover:bg-muted/50"
+                className={cn(
+                  'group flex items-center justify-between gap-1.5 rounded-lg border border-border/50 bg-card/60 transition-colors hover:bg-muted/50',
+                  page ? 'px-3 py-2.5' : 'px-2 py-1.5'
+                )}
               >
                 <button
                   type="button"
