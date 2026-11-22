@@ -42,7 +42,9 @@ export function BatchHeader({ onNewGroup }: BatchHeaderProps): React.JSX.Element
   return (
     <header className="flex shrink-0 items-center justify-between border-b border-border bg-card/60 px-6 py-3.5">
       <div className="flex flex-col gap-0.5">
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">批量任务</h1>
+        <h1 className="font-heading text-lg font-semibold tracking-tight text-foreground">
+          批量任务
+        </h1>
         <p className="text-xs text-muted-foreground">
           把多个项目的脚本串成一条流水线，并行或按顺序启动，失败即停止。
         </p>

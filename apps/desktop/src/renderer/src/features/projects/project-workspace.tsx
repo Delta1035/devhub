@@ -27,10 +27,12 @@ export function ProjectWorkspace({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <header className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3 md:px-6">
-        <div>
-          <h1 className="font-heading text-base font-semibold text-foreground">项目</h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">选择项目查看脚本、终端与运行历史</p>
+      <header className="flex shrink-0 items-center justify-between border-b border-border bg-card/60 px-6 py-3.5">
+        <div className="flex flex-col gap-0.5">
+          <h1 className="font-heading text-lg font-semibold tracking-tight text-foreground">
+            项目
+          </h1>
+          <p className="text-xs text-muted-foreground">选择项目查看脚本、终端与运行历史</p>
         </div>
       </header>
       <div className="flex min-h-0 flex-1 flex-col sm:flex-row">

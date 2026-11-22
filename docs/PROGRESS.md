@@ -95,6 +95,7 @@ M4-3 Android：
 - #137 已发布（v1.12.0）：修复批量任务子任务运行态仍显示灰色已完成与编辑弹窗名称输入框左边框遮挡；抽离纯 TS 状态解析函数 `resolveGroupStatus` 并补齐单测，批量列表与详情联动长任务活跃态高亮，更新相关 E2E 断言；`pnpm check` 与 Playwright `pnpm e2e` 全部通过。
 - #138 已发布（v1.12.0）：项目详情脚本列表支持显式排序（默认/名称升降序/运行中优先），排序保持来源分组内生效，持久化存入 localStorage；纯函数测试与 Playwright E2E 全部通过。
 - #141 已发布（v1.12.0）：为每一个脚本增加启动成功的检测标识与多模态就绪感知；支持 ports/http/output/alive 多模态探针与 alive 默认存活窗口，UI 渲染启动呼吸/就绪常亮/无响应警告指示灯与悬停目标提示，无障碍友好；单测与 Playwright E2E 全部通过。
+- #143 已完成：统一右侧工作区顶栏与操作按钮样式规范；统一使用 bg-card/60 顶栏容器底色与 px-6 py-3.5 内边距，统一主副标题间距（gap-0.5）与 font-heading 字族，统一新建操作按钮尺寸（h-8 px-3 text-xs font-semibold shadow-xs）与图标尺寸（size-3.5）；pnpm check 与 Playwright pnpm e2e 全部通过。
 
 桌面 MVP 发布：
 
