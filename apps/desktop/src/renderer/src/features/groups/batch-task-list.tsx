@@ -23,6 +23,7 @@ import {
 } from '@renderer/components/ui/dropdown-menu'
 import { useRuns } from '@renderer/features/runs/use-runs'
 import { cn } from '@renderer/lib/utils'
+import { resolveGroupStatus } from './group-status'
 import { GROUP_SORT_STORAGE_KEY, getStoredGroupSortOrder } from './group-sort'
 import { GroupSortMenu } from './group-sort-menu'
 import {
@@ -67,7 +68,8 @@ export function BatchTaskList({
     }
   }
 
-  const activeIds = new Set(activeGroups(states.data ?? [], runs).map((group) => group.groupId))
+  const activeList = activeGroups(states.data ?? [], runs)
+  const activeIds = new Set(activeList.map((group) => group.groupId))
   const sortedGroups = sortGroups(groups.data ?? [], activeIds, {
     order: sortOrder,
     states: states.data
@@ -114,10 +116,9 @@ export function BatchTaskList({
       <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
         {sortedGroups.map((group) => {
           const state = states.data?.find((s) => s.groupId === group.id)
+          const active = activeList.find((a) => a.groupId === group.id)
+          const presentation = resolveGroupStatus({ group, state, active })
           const isSelected = group.id === selectedGroupId
-          const running = state?.status === 'running'
-          const failed = state?.status === 'failed'
-          const done = state?.status === 'done'
           const busy =
             (start.isPending && start.variables === group.id) ||
             (stop.isPending && stop.variables === group.id)
@@ -140,10 +141,11 @@ export function BatchTaskList({
                 <span
                   className={cn(
                     'size-1.5 shrink-0 rounded-full',
-                    running && 'animate-pulse bg-primary',
-                    failed && 'bg-destructive',
-                    done && 'bg-muted-foreground/60',
-                    !state && 'bg-muted-foreground/30'
+                    presentation.dotState === 'starting' && 'animate-pulse bg-primary',
+                    presentation.dotState === 'running' && 'bg-primary',
+                    presentation.dotState === 'failed' && 'bg-destructive',
+                    presentation.dotState === 'done' && 'bg-muted-foreground/60',
+                    presentation.dotState === 'idle' && 'bg-muted-foreground/30'
                   )}
                 />
 
@@ -168,21 +170,15 @@ export function BatchTaskList({
                   variant="secondary"
                   className={cn(
                     'h-4 shrink-0 px-1 font-mono text-[9px] font-normal border-0',
-                    running && 'bg-primary/15 text-primary font-medium',
-                    failed && 'bg-destructive/15 text-destructive font-medium',
-                    done && 'bg-secondary text-muted-foreground',
-                    !state && 'bg-secondary/60 text-muted-foreground/60'
+                    presentation.isActive && 'bg-primary/15 text-primary font-medium',
+                    presentation.phase === 'failed' &&
+                      'bg-destructive/15 text-destructive font-medium',
+                    (presentation.phase === 'done' || presentation.phase === 'stopped') &&
+                      'bg-secondary text-muted-foreground',
+                    presentation.phase === 'idle' && 'bg-secondary/60 text-muted-foreground/60'
                   )}
                 >
-                  {running
-                    ? '运行中'
-                    : failed
-                      ? '失败'
-                      : done
-                        ? '已完成'
-                        : group.mode === 'parallel'
-                          ? '并行'
-                          : '串行'}
+                  {presentation.badgeText}
                 </Badge>
               </div>
 
@@ -191,14 +187,8 @@ export function BatchTaskList({
                 <span>
                   {group.steps.length} 步 · {group.mode === 'parallel' ? '并行' : '串行'}
                 </span>
-                <span>
-                  {running
-                    ? '运行中'
-                    : failed
-                      ? (state?.steps?.find((s) => s.state === 'failed')?.message ?? '失败')
-                      : state?.finishedAt
-                        ? `已完成 · ${formatFinished(state.finishedAt)}`
-                        : '未运行'}
+                <span className={cn(presentation.phase === 'failed' && 'text-destructive')}>
+                  {presentation.summaryText}
                 </span>
               </div>
 
@@ -208,12 +198,12 @@ export function BatchTaskList({
                   variant="ghost"
                   size="icon-xs"
                   onClick={() => start.mutate(group.id, { onError: (e) => setError(e.message) })}
-                  disabled={busy || running}
+                  disabled={busy || presentation.phase === 'starting'}
                   aria-label={`执行 ${group.name}`}
-                  title="执行任务"
+                  title={presentation.isActive ? '重新执行任务' : '执行任务'}
                   className="size-6 text-muted-foreground hover:text-foreground"
                 >
-                  {busy && !running ? (
+                  {busy && presentation.phase === 'starting' ? (
                     <Loader2 className="size-3 animate-spin" />
                   ) : (
                     <Play className="size-3" />
@@ -224,10 +214,15 @@ export function BatchTaskList({
                   variant="ghost"
                   size="icon-xs"
                   onClick={() => stop.mutate(group.id, { onError: (e) => setError(e.message) })}
-                  disabled={busy}
+                  disabled={busy || !presentation.isActive}
                   aria-label={`停止 ${group.name}`}
                   title="停止全部"
-                  className="size-6 text-muted-foreground hover:text-foreground"
+                  className={cn(
+                    'size-6 transition-colors',
+                    presentation.isActive
+                      ? 'text-destructive hover:bg-destructive/15 hover:text-destructive'
+                      : 'text-muted-foreground/40 hover:text-muted-foreground'
+                  )}
                 >
                   <Square className="size-3" />
                 </Button>
@@ -308,12 +303,4 @@ export function BatchTaskList({
       )}
     </section>
   )
-}
-
-function formatFinished(iso: string): string {
-  const date = new Date(iso)
-  const time = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-  return date.toDateString() === new Date().toDateString()
-    ? time
-    : `${date.getMonth() + 1}月${date.getDate()}日 ${time}`
 }

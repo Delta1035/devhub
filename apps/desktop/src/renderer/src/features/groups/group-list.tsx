@@ -17,6 +17,7 @@ import {
 import {
   activeGroups,
   sortGroups,
+  type ActiveGroup,
   type Group,
   type GroupRunState,
   type GroupSortOrder,
@@ -36,6 +37,7 @@ import { useProjects } from '@renderer/features/projects/use-projects'
 import { useRuns } from '@renderer/features/runs/use-runs'
 import { cn } from '@renderer/lib/utils'
 import { GroupEditor } from './group-editor'
+import { resolveGroupStatus } from './group-status'
 import { GROUP_SORT_STORAGE_KEY, getStoredGroupSortOrder } from './group-sort'
 import { GroupSortMenu } from './group-sort-menu'
 import {
@@ -84,7 +86,8 @@ export function GroupList({
     }
   }
 
-  const activeIds = new Set(activeGroups(states.data ?? [], runs).map((group) => group.groupId))
+  const activeList = activeGroups(states.data ?? [], runs)
+  const activeIds = new Set(activeList.map((group) => group.groupId))
   const sortedGroups = sortGroups(groups.data ?? [], activeIds, {
     order: sortOrder,
     states: states.data
@@ -142,6 +145,7 @@ export function GroupList({
             selected={group.id === selectedGroupId}
             onSelect={() => onSelectGroup(group.id)}
             state={states.data?.find((state) => state.groupId === group.id)}
+            active={activeList.find((a) => a.groupId === group.id)}
             projects={projects}
             busy={
               (start.isPending && start.variables === group.id) ||
@@ -178,6 +182,7 @@ interface GroupItemProps {
   onSelect: () => void
   group: Group
   state: GroupRunState | undefined
+  active: ActiveGroup | undefined
   projects: Project[]
   busy: boolean
   onStart: () => void
@@ -189,18 +194,12 @@ interface GroupItemProps {
   onSelectProject: (projectId: string) => void
 }
 
-const statusLabels: Record<GroupRunState['status'], string> = {
-  running: '执行中',
-  done: '已完成',
-  failed: '失败',
-  stopped: '已停止'
-}
-
 function GroupItem({
   selected,
   onSelect,
   group,
   state,
+  active,
   projects,
   busy,
   onStart,
@@ -211,9 +210,11 @@ function GroupItem({
   onSelectProject
 }: GroupItemProps): React.JSX.Element {
   const deleteGroup = useDeleteGroup()
-  const running = state?.status === 'running'
+  const presentation = resolveGroupStatus({ group, state, active })
   // Show the steps while something is happening or went wrong; finished groups stay compact.
-  const showSteps = state && (state.status === 'running' || state.status === 'failed')
+  const showSteps =
+    state &&
+    (state.status === 'running' || state.status === 'failed' || presentation.phase === 'running')
 
   return (
     <li
@@ -241,31 +242,31 @@ function GroupItem({
           <p
             className={cn(
               'truncate text-xs text-muted-foreground',
-              state?.status === 'failed' && 'text-destructive'
+              presentation.phase === 'failed' && 'text-destructive'
             )}
           >
-            {state
-              ? [statusLabels[state.status], state.finishedAt && formatFinished(state.finishedAt)]
-                  .filter(Boolean)
-                  .join(' · ')
-              : `${group.steps.length} 个脚本`}
+            {state ? presentation.summaryText : `${group.steps.length} 个脚本`}
           </p>
         </button>
         <Button
           variant="ghost"
           size="icon-xs"
           onClick={onStart}
-          disabled={busy || running}
+          disabled={busy || presentation.phase === 'starting'}
           aria-label={`执行 ${group.name}`}
-          title="执行"
+          title={presentation.isActive ? '重新执行' : '执行'}
         >
-          {busy && !running ? <Loader2 className="animate-spin" /> : <Play />}
+          {busy && presentation.phase === 'starting' ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Play />
+          )}
         </Button>
         <Button
           variant="ghost"
           size="icon-xs"
           onClick={onStop}
-          disabled={busy}
+          disabled={busy || !presentation.isActive}
           aria-label={`停止 ${group.name}`}
           title="停止全部（结束每个脚本的整个进程树）"
         >
@@ -363,13 +364,4 @@ function StepIcon({ state }: { state: GroupStepState }): React.JSX.Element {
     default:
       return <CircleDashed className={cn(className, 'text-muted-foreground')} aria-label="未开始" />
   }
-}
-
-/** "10:32" today, "10月1日 10:32" otherwise. */
-function formatFinished(iso: string): string {
-  const date = new Date(iso)
-  const time = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-  return date.toDateString() === new Date().toDateString()
-    ? time
-    : `${date.getMonth() + 1}月${date.getDate()}日 ${time}`
 }

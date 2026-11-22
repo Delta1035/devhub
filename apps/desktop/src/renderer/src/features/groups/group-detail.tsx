@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pencil, Play, RotateCcw, Square } from 'lucide-react'
-import { formatDuration, type Group, type GroupRunState, type Run } from '@devhub/shared'
+import { activeGroups, formatDuration, type Group, type Run } from '@devhub/shared'
 import { access } from '@renderer/api'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
@@ -12,15 +12,9 @@ import { cn } from '@renderer/lib/utils'
 import { GroupEditor } from './group-editor'
 import { GroupOutputPanel } from './group-output-panel'
 import { GroupProgressBar } from './group-progress-bar'
+import { resolveGroupStatus } from './group-status'
 import { GroupStepCard } from './group-step-card'
 import { useGroupStates, useStartGroup, useStopGroup } from './use-groups'
-
-const statusLabels: Record<GroupRunState['status'], string> = {
-  running: '执行中',
-  done: '已完成',
-  failed: '失败',
-  stopped: '已停止'
-}
 
 export function GroupDetail({
   group,
@@ -29,11 +23,14 @@ export function GroupDetail({
   group: Group
   onOpenRun: (run: Run) => void
 }): React.JSX.Element {
-  const state = useGroupStates().data?.find((candidate) => candidate.groupId === group.id)
+  const allStates = useGroupStates().data ?? []
+  const state = allStates.find((candidate) => candidate.groupId === group.id)
   const execution = state?.group ?? group
   const projects = useProjects().data ?? []
   const runs = useRuns().data ?? []
   const health = useRunHealth().data ?? []
+  const active = activeGroups(allStates, runs).find((candidate) => candidate.groupId === group.id)
+  const presentation = resolveGroupStatus({ group, state, active })
   const start = useStartGroup()
   const stop = useStopGroup()
   const [editing, setEditing] = useState(false)
@@ -74,7 +71,6 @@ export function GroupDetail({
   )
 
   const isParallel = execution.mode === 'parallel'
-  const currentStepNum = Math.min(completed + 1, execution.steps.length)
 
   return (
     <section
@@ -92,32 +88,29 @@ export function GroupDetail({
             {/* Run status badge */}
             <Badge
               variant={
-                state?.status === 'failed'
+                presentation.phase === 'failed'
                   ? 'destructive'
-                  : state?.status === 'done' || running
+                  : presentation.isActive
                     ? 'default'
                     : 'secondary'
               }
               className={cn(
                 'h-5 gap-1.5 px-2 text-[10px]',
-                (state?.status === 'done' || running) &&
+                presentation.isActive &&
                   'border-transparent bg-accent/15 text-accent hover:bg-accent/20'
               )}
             >
               <span
                 className={cn(
                   'size-1.5 rounded-full',
-                  running && 'animate-pulse bg-accent',
-                  state?.status === 'done' && 'bg-accent',
-                  state?.status === 'failed' && 'bg-destructive',
-                  !state && 'bg-muted-foreground'
+                  presentation.dotState === 'starting' && 'animate-pulse bg-accent',
+                  presentation.dotState === 'running' && 'bg-accent',
+                  presentation.dotState === 'failed' && 'bg-destructive',
+                  (presentation.dotState === 'done' || presentation.dotState === 'idle') &&
+                    'bg-muted-foreground'
                 )}
               />
-              {running
-                ? `第 ${currentStepNum} / ${execution.steps.length} 步 · 运行中`
-                : state
-                  ? statusLabels[state.status]
-                  : '尚未执行'}
+              {presentation.detailBadgeText}
             </Badge>
           </div>
 
@@ -205,15 +198,7 @@ export function GroupDetail({
         totalCount={execution.steps.length}
         stepStates={stepStates}
         durationText={groupDurationMs !== null ? formatDuration(groupDurationMs) : null}
-        statusHint={
-          running
-            ? `正在执行第 ${currentStepNum} 步`
-            : state?.status === 'done'
-              ? '全部步骤就绪'
-              : state?.status === 'failed'
-                ? '执行中断'
-                : '待执行'
-        }
+        statusHint={presentation.progressHint}
       />
 
       {/* Main body scrollable area */}
@@ -237,9 +222,15 @@ export function GroupDetail({
           </p>
         )}
 
-        {state?.status === 'done' && (
+        {presentation.phase === 'running' && (
           <p className="rounded-md border border-accent/20 bg-accent/5 p-3 text-sm text-foreground">
-            步骤已完成，服务进程可能仍在运行。当前有 {activeRuns.length} 个活动脚本。
+            步骤已就绪，服务进程正在运行中。当前有 {activeRuns.length} 个活动脚本。
+          </p>
+        )}
+
+        {presentation.phase === 'done' && (
+          <p className="rounded-md border border-border/80 bg-muted/40 p-3 text-sm text-muted-foreground">
+            上次执行步骤已完成，相关服务均已停止。
           </p>
         )}
 
