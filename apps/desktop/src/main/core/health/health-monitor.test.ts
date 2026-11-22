@@ -153,4 +153,98 @@ describe('createHealthMonitor', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(states()).toEqual(['starting', null])
   })
+
+  it('handles alive targets: transitions to ready after delay if still running', async () => {
+    target = { type: 'alive', delayMs: 2000 }
+    monitor.dispose()
+    monitor = createHealthMonitor({
+      subscribe: (listener) => {
+        listeners.push(listener)
+        return () => (listeners = listeners.filter((l) => l !== listener))
+      },
+      resolveTarget: async () => target,
+      checkers: {
+        checkPort: async () => false,
+        checkHttp: async () => false,
+        checkAlive: async () => true
+      },
+      emit: (event) => emitted.push(event),
+      startingIntervalMs: 1000,
+      readyIntervalMs: 5000,
+      now: () => new Date('2026-10-02T00:00:00.000Z')
+    })
+
+    const run = scriptRun({ startedAt: '2026-10-02T00:00:00.000Z' })
+    publish({ type: 'run-updated', run })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(states()).toEqual(['starting'])
+    expect(monitor.list()).toMatchObject([
+      { runId: 'r1', state: 'starting', target: '进程稳定运行' }
+    ])
+
+    // After 1000ms: still starting
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(states()).toEqual(['starting'])
+
+    // Advancing time past 2000ms
+    monitor.dispose()
+    let currentTime = 0
+    monitor = createHealthMonitor({
+      subscribe: (listener) => {
+        listeners.push(listener)
+        return () => (listeners = listeners.filter((l) => l !== listener))
+      },
+      resolveTarget: async () => target,
+      checkers: {
+        checkPort: async () => false,
+        checkHttp: async () => false,
+        checkAlive: async () => true
+      },
+      emit: (event) => emitted.push(event),
+      startingIntervalMs: 1000,
+      readyIntervalMs: 5000,
+      now: () => new Date(Date.parse('2026-10-02T00:00:00.000Z') + currentTime)
+    })
+    emitted = []
+    publish({ type: 'run-updated', run })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(states()).toEqual(['starting'])
+    currentTime = 2500
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(states()).toEqual(['starting', 'ready'])
+  })
+
+  it('handles output targets: transitions to ready when pattern is found', async () => {
+    target = { type: 'output', pattern: 'Server started' }
+    let hasOutput = false
+    monitor.dispose()
+    monitor = createHealthMonitor({
+      subscribe: (listener) => {
+        listeners.push(listener)
+        return () => (listeners = listeners.filter((l) => l !== listener))
+      },
+      resolveTarget: async () => target,
+      checkers: {
+        checkPort: async () => false,
+        checkHttp: async () => false,
+        checkOutput: async () => hasOutput
+      },
+      emit: (event) => emitted.push(event),
+      startingIntervalMs: 1000
+    })
+
+    publish({ type: 'run-updated', run: scriptRun() })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(states()).toEqual(['starting'])
+    expect(monitor.list()).toMatchObject([
+      { runId: 'r1', state: 'starting', target: '输出包含「Server started」' }
+    ])
+
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(states()).toEqual(['starting'])
+
+    hasOutput = true
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(states()).toEqual(['starting', 'ready'])
+  })
 })

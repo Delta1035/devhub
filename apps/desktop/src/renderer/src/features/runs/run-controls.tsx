@@ -2,6 +2,7 @@ import { Loader2, Play, RotateCw, Square } from 'lucide-react'
 import type { Run, RunHealth } from '@devhub/shared'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
+import { cn } from '@renderer/lib/utils'
 import { healthLabels, useHealthOf } from './use-run-health'
 import { PortConflictError, useRestartRun, useStartScript, useStopRun } from './use-runs'
 
@@ -100,9 +101,23 @@ const healthBadgeClass: Record<RunHealth['state'], string> = {
 function RunStatusBadge({ run }: { run: Run }): React.JSX.Element {
   const health = useHealthOf(run.status === 'running' ? run.id : undefined)
   if (health) {
+    const isAlive = health.target.includes('进程')
+    const label = isAlive ? '运行中' : healthLabels[health.state]
     return (
-      <Badge className={healthBadgeClass[health.state]} title={`检查：${health.target}`}>
-        {healthLabels[health.state]}
+      <Badge
+        className={cn('inline-flex items-center gap-1.5', healthBadgeClass[health.state])}
+        title={`检查：${health.target}`}
+      >
+        <span
+          aria-hidden="true"
+          className={cn(
+            'size-1.5 rounded-full',
+            health.state === 'starting' && 'animate-pulse bg-warning',
+            health.state === 'ready' && 'bg-success',
+            health.state === 'unhealthy' && 'bg-destructive'
+          )}
+        />
+        {label}
       </Badge>
     )
   }

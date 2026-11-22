@@ -33,6 +33,7 @@ interface Tracker {
   /** Null while the target is being resolved, or when the run has nothing to check. */
   health: RunHealth | null
   failures: number
+  startedAt?: string
   timer?: ReturnType<typeof setTimeout>
 }
 
@@ -68,7 +69,11 @@ export function createHealthMonitor({
   }
 
   const poll = async (runId: string, tracker: Tracker, target: HealthTarget): Promise<void> => {
-    const ok = await checkHealthTarget(target, checkers)
+    const ok = await checkHealthTarget(target, checkers, {
+      runId,
+      startedAt: tracker.startedAt,
+      now: now()
+    })
     // The run may have stopped while the check was in flight.
     const health = tracker.health
     if (tracked.get(runId) !== tracker || !health) return
@@ -84,7 +89,11 @@ export function createHealthMonitor({
   }
 
   const track = async (run: ScriptRun): Promise<void> => {
-    const tracker: Tracker = { health: null, failures: 0 }
+    const tracker: Tracker = {
+      health: null,
+      failures: 0,
+      startedAt: run.startedAt
+    }
     // Registered before resolving, so repeated `run-updated` events do not track twice.
     tracked.set(run.id, tracker)
     const target = await resolveTarget(run).catch(() => null)

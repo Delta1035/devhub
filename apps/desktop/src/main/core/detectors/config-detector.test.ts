@@ -83,6 +83,32 @@ scripts:
     await expect(detect()).rejects.toThrow('scripts.api.health 必须以 / 开头且不含空白')
   })
 
+  it('reads output and alive health configs', async () => {
+    await write(`
+scripts:
+  worker:
+    command: node worker.js
+    health:
+      type: output
+      pattern: worker ready
+  watch:
+    command: npm run watch
+    health:
+      type: alive
+      delayMs: 1500
+`)
+    await expect(detect()).resolves.toMatchObject([
+      {
+        id: 'custom:worker',
+        healthConfig: { type: 'output', pattern: 'worker ready' }
+      },
+      {
+        id: 'custom:watch',
+        healthConfig: { type: 'alive', delayMs: 1500 }
+      }
+    ])
+  })
+
   it('also reads .devhub.yml', async () => {
     await write('scripts:\n  a:\n    command: echo a\n', '.devhub.yml')
     await expect(detect()).resolves.toMatchObject([{ id: 'custom:a' }])

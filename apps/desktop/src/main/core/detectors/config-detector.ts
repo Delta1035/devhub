@@ -1,6 +1,6 @@
 import { isAbsolute, join, relative, resolve } from 'path'
 import { parse, YAMLParseError } from 'yaml'
-import { projectConfigSchema, type Script } from '@devhub/shared'
+import { projectConfigSchema, type Script, type ScriptHealthConfig } from '@devhub/shared'
 import { inferNpmPorts } from '../ports/infer-ports'
 import { readOptionalFile } from './fs-utils'
 import type { ScriptDetector } from './types'
@@ -68,9 +68,28 @@ export function createConfigDetector({ platform }: ConfigDetectorDeps): ScriptDe
         }
 
         const ports = entry.ports ?? (entry.port ? [entry.port] : inferNpmPorts(command))
-        if (entry.health && ports.length === 0) {
+        if (typeof entry.health === 'string' && ports.length === 0) {
           throw new Error(`${fileName} 中脚本 ${name} 设置了 health，但不知道端口：请同时填写 port`)
         }
+        if (
+          entry.health &&
+          typeof entry.health === 'object' &&
+          entry.health.type === 'http' &&
+          !entry.health.port &&
+          ports.length === 0
+        ) {
+          throw new Error(
+            `${fileName} 中脚本 ${name} 设置了 http health，但不知道端口：请同时填写 port`
+          )
+        }
+
+        const healthConfig: ScriptHealthConfig | undefined =
+          typeof entry.health === 'string'
+            ? ports.length > 0
+              ? { type: 'http', path: entry.health, port: ports[0] }
+              : undefined
+            : entry.health
+
         scripts.push({
           id: `custom:${name}`,
           name,
@@ -82,7 +101,8 @@ export function createConfigDetector({ platform }: ConfigDetectorDeps): ScriptDe
           ...(ports.length > 0 && entry.ports === undefined && entry.port === undefined
             ? { portsInferred: true }
             : {}),
-          ...(entry.health ? { healthPath: entry.health } : {}),
+          ...(typeof entry.health === 'string' ? { healthPath: entry.health } : {}),
+          ...(healthConfig ? { healthConfig } : {}),
           ...(entry.portConflictPolicy ? { portConflictPolicy: entry.portConflictPolicy } : {})
         })
       }
