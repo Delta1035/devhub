@@ -19,6 +19,7 @@ import {
   sortGroups,
   type Group,
   type GroupRunState,
+  type GroupSortOrder,
   type GroupStepState,
   type Project
 } from '@devhub/shared'
@@ -35,6 +36,8 @@ import { useProjects } from '@renderer/features/projects/use-projects'
 import { useRuns } from '@renderer/features/runs/use-runs'
 import { cn } from '@renderer/lib/utils'
 import { GroupEditor } from './group-editor'
+import { GROUP_SORT_STORAGE_KEY, getStoredGroupSortOrder } from './group-sort'
+import { GroupSortMenu } from './group-sort-menu'
 import {
   useDeleteGroup,
   useGroupStates,
@@ -70,8 +73,22 @@ export function GroupList({
   // undefined: closed; null: creating; Group: editing.
   const [editing, setEditing] = useState<Group | null | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
+  const [sortOrder, setSortOrder] = useState<GroupSortOrder>(getStoredGroupSortOrder)
+
+  const handleSortOrderChange = (order: GroupSortOrder): void => {
+    setSortOrder(order)
+    try {
+      localStorage.setItem(GROUP_SORT_STORAGE_KEY, order)
+    } catch {
+      // ignore
+    }
+  }
+
   const activeIds = new Set(activeGroups(states.data ?? [], runs).map((group) => group.groupId))
-  const sortedGroups = sortGroups(groups.data ?? [], activeIds)
+  const sortedGroups = sortGroups(groups.data ?? [], activeIds, {
+    order: sortOrder,
+    states: states.data
+  })
 
   return (
     <section className="flex flex-col gap-3" aria-label="批量任务">
@@ -86,17 +103,20 @@ export function GroupList({
             </span>
           )}
         </div>
-        {access.manage && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 gap-1 px-2 text-xs"
-            onClick={() => setEditing(null)}
-          >
-            <Plus className="size-3.5" data-icon="inline-start" />
-            新建
-          </Button>
-        )}
+        <div className="flex items-center gap-1">
+          <GroupSortMenu sortOrder={sortOrder} onSortOrderChange={handleSortOrderChange} />
+          {access.manage && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1 px-2 text-xs"
+              onClick={() => setEditing(null)}
+            >
+              <Plus className="size-3.5" data-icon="inline-start" />
+              新建
+            </Button>
+          )}
+        </div>
       </header>
 
       {error && (

@@ -39,6 +39,54 @@ describe('groupSchema and sorting', () => {
       'idle-b'
     ])
   })
+
+  it('sorts groups by name ascending and descending keeping pins first', () => {
+    const gA = group('alpha')
+    const gB = group('beta')
+    const gC = group('charlie', '2026-01-01T00:00:00.000Z')
+
+    const asc = sortGroups([gB, gA, gC], new Set(), { order: 'name-asc' })
+    expect(asc.map((g) => g.id)).toEqual(['charlie', 'alpha', 'beta'])
+
+    const desc = sortGroups([gA, gB, gC], new Set(), { order: 'name-desc' })
+    expect(desc.map((g) => g.id)).toEqual(['charlie', 'beta', 'alpha'])
+  })
+
+  it('sorts groups by recent activity', () => {
+    const g1 = group('never-run')
+    const g2 = group('ran-yesterday')
+    const g3 = group('ran-today')
+    const gActive = group('running-now')
+    const gPinned = group('pinned', '2026-01-01T00:00:00.000Z')
+
+    const states = [
+      {
+        groupId: 'ran-yesterday',
+        status: 'done' as const,
+        finishedAt: '2026-01-01T10:00:00.000Z',
+        steps: []
+      },
+      {
+        groupId: 'ran-today',
+        status: 'done' as const,
+        finishedAt: '2026-01-02T10:00:00.000Z',
+        steps: []
+      }
+    ]
+
+    const sorted = sortGroups([g1, g2, g3, gActive, gPinned], new Set(['running-now']), {
+      order: 'recent',
+      states
+    })
+
+    expect(sorted.map((g) => g.id)).toEqual([
+      'pinned',
+      'running-now',
+      'ran-today',
+      'ran-yesterday',
+      'never-run'
+    ])
+  })
 })
 
 describe('groupRunStateSchema', () => {

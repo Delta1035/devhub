@@ -1,9 +1,29 @@
 import type { Project, Run } from './domain'
 
+export type ProjectSortOrder = 'default' | 'name-asc' | 'name-desc' | 'path-asc' | 'path-desc'
+
 export interface SortProjectsOptions {
   /**
-   * Secondary comparison function when both projects have equal activity.
-   * Defaults to comparing project name and path alphabetically.
+   * Explicit sort order.
+   * - 'default': active projects first (by latest run timestamp descending), then secondary comparator.
+   * - 'name-asc': project name A-Z.
+   * - 'name-desc': project name Z-A.
+   * - 'path-asc': project path ascending.
+   * - 'path-desc': project path descending.
+   *
+   * In all modes, pinned projects (pinnedAt) always appear first.
+   */
+  order?: ProjectSortOrder
+
+  /**
+   * Optional path getter for path-based sorting (e.g. relative to workspace).
+   * Defaults to `project.path`.
+   */
+  getPath?: (project: Project) => string
+
+  /**
+   * Secondary comparison function when both projects have equal activity or equal sorting key.
+   * In 'default' mode, defaults to comparing project name and path alphabetically.
    */
   secondary?: (a: Project, b: Project) => number
 }
@@ -52,19 +72,23 @@ export function sortProjects(
   runs: readonly Run[],
   options?: SortProjectsOptions
 ): Project[] {
+  const order = options?.order ?? 'default'
   const secondary = options?.secondary ?? defaultSecondary
+  const getPath = options?.getPath ?? ((p: Project) => p.path)
 
   const stats = new Map<string, ProjectActivityStats>()
-  for (const run of runs) {
-    if (run.status === 'exited') continue
-    const time = Date.parse(run.startedAt) || 0
-    const existing = stats.get(run.projectId)
-    if (!existing) {
-      stats.set(run.projectId, { count: 1, latestStartedAt: time })
-    } else {
-      existing.count += 1
-      if (time > existing.latestStartedAt) {
-        existing.latestStartedAt = time
+  if (order === 'default') {
+    for (const run of runs) {
+      if (run.status === 'exited') continue
+      const time = Date.parse(run.startedAt) || 0
+      const existing = stats.get(run.projectId)
+      if (!existing) {
+        stats.set(run.projectId, { count: 1, latestStartedAt: time })
+      } else {
+        existing.count += 1
+        if (time > existing.latestStartedAt) {
+          existing.latestStartedAt = time
+        }
       }
     }
   }
@@ -77,6 +101,31 @@ export function sortProjects(
       if (byPinnedAt !== 0) return byPinnedAt
     }
 
+    if (order === 'name-asc') {
+      const byName = a.name.localeCompare(b.name)
+      if (byName !== 0) return byName
+      return getPath(a).localeCompare(getPath(b))
+    }
+
+    if (order === 'name-desc') {
+      const byName = b.name.localeCompare(a.name)
+      if (byName !== 0) return byName
+      return getPath(b).localeCompare(getPath(a))
+    }
+
+    if (order === 'path-asc') {
+      const byPath = getPath(a).localeCompare(getPath(b))
+      if (byPath !== 0) return byPath
+      return a.name.localeCompare(b.name)
+    }
+
+    if (order === 'path-desc') {
+      const byPath = getPath(b).localeCompare(getPath(a))
+      if (byPath !== 0) return byPath
+      return b.name.localeCompare(a.name)
+    }
+
+    // 'default'
     const aStats = stats.get(a.id)
     const bStats = stats.get(b.id)
     const aActive = (aStats?.count ?? 0) > 0

@@ -11,7 +11,7 @@ import {
   Trash2,
   X as XIcon
 } from 'lucide-react'
-import { activeGroups, sortGroups, type Group } from '@devhub/shared'
+import { activeGroups, sortGroups, type Group, type GroupSortOrder } from '@devhub/shared'
 import { access } from '@renderer/api'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
@@ -23,6 +23,8 @@ import {
 } from '@renderer/components/ui/dropdown-menu'
 import { useRuns } from '@renderer/features/runs/use-runs'
 import { cn } from '@renderer/lib/utils'
+import { GROUP_SORT_STORAGE_KEY, getStoredGroupSortOrder } from './group-sort'
+import { GroupSortMenu } from './group-sort-menu'
 import {
   useDeleteGroup,
   useGroupStates,
@@ -54,9 +56,22 @@ export function BatchTaskList({
   const setPinned = useSetGroupPinned()
   const deleteGroup = useDeleteGroup()
   const [error, setError] = useState<string | null>(null)
+  const [sortOrder, setSortOrder] = useState<GroupSortOrder>(getStoredGroupSortOrder)
+
+  const handleSortOrderChange = (order: GroupSortOrder): void => {
+    setSortOrder(order)
+    try {
+      localStorage.setItem(GROUP_SORT_STORAGE_KEY, order)
+    } catch {
+      // ignore
+    }
+  }
 
   const activeIds = new Set(activeGroups(states.data ?? [], runs).map((group) => group.groupId))
-  const sortedGroups = sortGroups(groups.data ?? [], activeIds)
+  const sortedGroups = sortGroups(groups.data ?? [], activeIds, {
+    order: sortOrder,
+    states: states.data
+  })
 
   return (
     <section
@@ -69,8 +84,8 @@ export function BatchTaskList({
         <span className="text-[11px] font-semibold text-muted-foreground/70">
           任务 · {groups.data?.length ?? 0}
         </span>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-muted-foreground/50">最近运行</span>
+        <div className="flex items-center gap-1.5">
+          <GroupSortMenu sortOrder={sortOrder} onSortOrderChange={handleSortOrderChange} />
           {access.manage && (
             <Button
               size="icon-xs"

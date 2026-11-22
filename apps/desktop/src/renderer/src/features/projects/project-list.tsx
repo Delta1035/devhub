@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import { ChevronDown, FolderPlus, FolderTree } from 'lucide-react'
-import { sortProjects, type Project, type Run, type WorkspaceView } from '@devhub/shared'
+import {
+  sortProjects,
+  type Project,
+  type ProjectSortOrder,
+  type Run,
+  type WorkspaceView
+} from '@devhub/shared'
 import { access, shell } from '@renderer/api'
 import { Button } from '@renderer/components/ui/button'
 import {
@@ -24,6 +30,8 @@ import { WorkspaceSettingsDialog } from '@renderer/features/workspaces/workspace
 import { notify } from '@renderer/lib/notifications'
 import { ProjectDetailsDialog, RemoveProjectDialog } from './project-dialogs'
 import { ProjectItem } from './project-item'
+import { PROJECT_SORT_STORAGE_KEY, getStoredProjectSortOrder } from './project-sort'
+import { ProjectSortMenu } from './project-sort-menu'
 import { useAddProject, useProjects } from './use-projects'
 
 const removeStandaloneTitle = '从 DevHub 移除，并清理运行历史与历史日志（不会删除项目文件）'
@@ -60,6 +68,16 @@ export function ProjectList({
   const [settingsId, setSettingsId] = useState<string | null>(null)
   // Dialogs are opened from an item (× button or context menu) but live here, once per list.
   const [dialog, setDialog] = useState<ProjectDialog | null>(null)
+  const [sortOrder, setSortOrder] = useState<ProjectSortOrder>(getStoredProjectSortOrder)
+
+  const handleSortOrderChange = (order: ProjectSortOrder): void => {
+    setSortOrder(order)
+    try {
+      localStorage.setItem(PROJECT_SORT_STORAGE_KEY, order)
+    } catch {
+      // ignore
+    }
+  }
 
   useEffect(() => {
     const queryError = projects.error ?? workspaces.error ?? rescan.error
@@ -77,6 +95,8 @@ export function ProjectList({
       allProjects.filter((project) => project.workspaceId === workspace.id),
       activeRuns,
       {
+        order: sortOrder,
+        getPath: (project) => relativeToWorkspace(project.path, workspace),
         secondary: (a, b) =>
           relativeToWorkspace(a.path, workspace).localeCompare(
             relativeToWorkspace(b.path, workspace)
@@ -87,7 +107,10 @@ export function ProjectList({
   // Active projects sort to the top; inactive projects sort alphabetically.
   const standalone = sortProjects(
     allProjects.filter((project) => !project.workspaceId || !known.has(project.workspaceId)),
-    activeRuns
+    activeRuns,
+    {
+      order: sortOrder
+    }
   )
   const settingsWorkspace = workspaceList.find((workspace) => workspace.id === settingsId)
 
@@ -146,40 +169,43 @@ export function ProjectList({
             </span>
           )}
         </div>
-        {shell && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={addProject.isPending || addWorkspace.isPending}
-                className="h-7 gap-1 px-2 text-xs"
-              >
-                <FolderPlus className="size-3.5" data-icon="inline-start" />
-                添加
-                <ChevronDown className="size-3 text-muted-foreground" data-icon="inline-end" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-56">
-              <DropdownMenuItem onSelect={handleAddProject}>
-                <FolderPlus />
-                <span className="flex flex-col">
-                  添加项目
-                  <span className="text-xs text-muted-foreground">选择一个代码目录</span>
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={handleAddWorkspace}>
-                <FolderTree />
-                <span className="flex flex-col">
-                  添加工作区
-                  <span className="text-xs text-muted-foreground">
-                    自动发现目录中的项目并保持同步
+        <div className="flex items-center gap-1">
+          <ProjectSortMenu sortOrder={sortOrder} onSortOrderChange={handleSortOrderChange} />
+          {shell && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={addProject.isPending || addWorkspace.isPending}
+                  className="h-7 gap-1 px-2 text-xs"
+                >
+                  <FolderPlus className="size-3.5" data-icon="inline-start" />
+                  添加
+                  <ChevronDown className="size-3 text-muted-foreground" data-icon="inline-end" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-56">
+                <DropdownMenuItem onSelect={handleAddProject}>
+                  <FolderPlus />
+                  <span className="flex flex-col">
+                    添加项目
+                    <span className="text-xs text-muted-foreground">选择一个代码目录</span>
                   </span>
-                </span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={handleAddWorkspace}>
+                  <FolderTree />
+                  <span className="flex flex-col">
+                    添加工作区
+                    <span className="text-xs text-muted-foreground">
+                      自动发现目录中的项目并保持同步
+                    </span>
+                  </span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </header>
 
       {(projects.isLoading || workspaces.isLoading) && (
