@@ -10,6 +10,31 @@ export const portConflictPolicySchema = z.enum(['error', 'terminate'])
 export type PortConflictPolicy = z.infer<typeof portConflictPolicySchema>
 
 /** A runnable command inside a project, either auto-detected or user-defined. */
+export const scriptHealthConfigSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('http'),
+    path: healthPathSchema,
+    port: z.number().int().min(1).max(65535).optional()
+  }),
+  z.object({
+    type: z.literal('output'),
+    pattern: z.string().trim().min(1).max(200),
+    regex: z.boolean().optional()
+  }),
+  z.object({
+    type: z.literal('ports'),
+    ports: z.array(z.number().int().min(1).max(65535)).min(1)
+  }),
+  z.object({
+    type: z.literal('alive'),
+    delayMs: z.number().int().min(500).max(30000).optional()
+  })
+])
+export type ScriptHealthConfig = z.infer<typeof scriptHealthConfigSchema>
+
+export const scriptConfigHealthSchema = z.union([healthPathSchema, scriptHealthConfigSchema])
+export type ScriptConfigHealth = z.infer<typeof scriptConfigHealthSchema>
+
 export const scriptSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -24,6 +49,8 @@ export const scriptSchema = z.object({
   portsInferred: z.literal(true).optional(),
   /** HTTP path checked on the first port to decide readiness; otherwise the ports are. */
   healthPath: healthPathSchema.optional(),
+  /** Multi-modal health/readiness configuration. */
+  healthConfig: scriptHealthConfigSchema.optional(),
   /** Overrides the host setting for this script; absent means inherit. */
   portConflictPolicy: portConflictPolicySchema.optional()
 })
@@ -133,8 +160,8 @@ export const projectConfigSchema = z
             /** Ports checked before starting; inferred from the command when omitted. */
             port: z.number().int().min(1).max(65535).optional(),
             ports: z.array(z.number().int().min(1).max(65535)).optional(),
-            /** HTTP path that must answer 2xx for the script to count as ready. */
-            health: healthPathSchema.optional(),
+            /** HTTP path or health config to decide readiness. */
+            health: scriptConfigHealthSchema.optional(),
             /** Overrides the host's port conflict policy for this script. */
             portConflictPolicy: portConflictPolicySchema.optional()
           })

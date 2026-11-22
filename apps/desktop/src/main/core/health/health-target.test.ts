@@ -16,7 +16,7 @@ const script = (overrides: Partial<Script> = {}): Script => ({
 })
 
 describe('healthTargetOf', () => {
-  it('checks the ports, or an HTTP path on the first port, and nothing without a port', () => {
+  it('checks the ports, an HTTP path on the first port, or falls back to alive check', () => {
     expect(healthTargetOf(script({ ports: [5173, 24678] }))).toEqual({
       type: 'ports',
       ports: [5173, 24678]
@@ -24,8 +24,26 @@ describe('healthTargetOf', () => {
     expect(healthTargetOf(script({ ports: [8080, 9090], healthPath: '/actuator/health' }))).toEqual(
       { type: 'http', port: 8080, path: '/actuator/health' }
     )
-    expect(healthTargetOf(script())).toBeNull()
-    expect(healthTargetOf(script({ ports: [] }))).toBeNull()
+    expect(healthTargetOf(script())).toEqual({ type: 'alive', delayMs: 2000 })
+    expect(healthTargetOf(script({ ports: [] }))).toEqual({ type: 'alive', delayMs: 2000 })
+  })
+
+  it('respects custom healthConfig', () => {
+    expect(
+      healthTargetOf(
+        script({
+          healthConfig: { type: 'output', pattern: 'Compiled successfully', regex: false }
+        })
+      )
+    ).toEqual({
+      type: 'output',
+      pattern: 'Compiled successfully',
+      regex: false
+    })
+    expect(healthTargetOf(script({ healthConfig: { type: 'alive', delayMs: 3000 } }))).toEqual({
+      type: 'alive',
+      delayMs: 3000
+    })
   })
 
   it('describes the target for display', () => {
@@ -33,13 +51,17 @@ describe('healthTargetOf', () => {
     expect(describeHealthTarget({ type: 'http', port: 8080, path: '/health' })).toBe(
       'GET http://localhost:8080/health'
     )
+    expect(describeHealthTarget({ type: 'output', pattern: 'Ready' })).toBe('输出包含「Ready」')
+    expect(describeHealthTarget({ type: 'alive' })).toBe('进程稳定运行')
   })
 })
 
 describe('checkHealthTarget', () => {
   const checkers = (open: number[], healthy: string[] = []) => ({
     checkPort: async (port: number) => open.includes(port),
-    checkHttp: async (port: number, path: string) => healthy.includes(`${port}${path}`)
+    checkHttp: async (port: number, path: string) => healthy.includes(`${port}${path}`),
+    checkAlive: async () => true,
+    checkOutput: async (_id: string, pattern: string) => pattern === 'ready'
   })
 
   it('needs every port to accept connections', async () => {
@@ -52,6 +74,36 @@ describe('checkHealthTarget', () => {
     const target = { type: 'http', port: 8080, path: '/health' } as const
     await expect(checkHealthTarget(target, checkers([8080], ['8080/health']))).resolves.toBe(true)
     await expect(checkHealthTarget(target, checkers([8080]))).resolves.toBe(false)
+  })
+
+  it('checks output pattern matching', async () => {
+    const target = { type: 'output', pattern: 'ready' } as const
+    await expect(checkHealthTarget(target, checkers([], []), { runId: 'r1' })).resolves.toBe(true)
+    await expect(
+      checkHealthTarget({ type: 'output', pattern: 'other' }, checkers([], []), { runId: 'r1' })
+    ).resolves.toBe(false)
+  })
+
+  it('checks alive target with delay', async () => {
+    const target: HealthTarget = { type: 'alive', delayMs: 1000 }
+    const now = new Date('2026-11-22T20:00:02.000Z')
+    // Elapsed 2000 >= 1000 -> ready
+    await expect(
+      checkHealthTarget(target, checkers([], []), {
+        runId: 'r1',
+        startedAt: '2026-11-22T20:00:00.000Z',
+        now
+      })
+    ).resolves.toBe(true)
+
+    // Elapsed 500 < 1000 -> not ready
+    await expect(
+      checkHealthTarget(target, checkers([], []), {
+        runId: 'r1',
+        startedAt: '2026-11-22T20:00:01.500Z',
+        now
+      })
+    ).resolves.toBe(false)
   })
 
   it('counts a failing checker as not ready', async () => {

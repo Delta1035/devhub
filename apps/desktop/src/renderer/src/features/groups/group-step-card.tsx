@@ -204,7 +204,21 @@ export function GroupStepCard({
 
         {/* Card footer: process info, reuse label, view log button */}
         <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
-          <span title={readiness?.target} className="text-muted-foreground">
+          <span
+            title={readiness?.target ? `检查：${readiness.target}` : undefined}
+            className="inline-flex items-center gap-1.5 text-muted-foreground"
+          >
+            {readiness && (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'size-1.5 rounded-full',
+                  readiness.state === 'starting' && 'animate-pulse bg-warning',
+                  readiness.state === 'ready' && 'bg-success',
+                  readiness.state === 'unhealthy' && 'bg-destructive'
+                )}
+              />
+            )}
             进程：{processLabel}
           </span>
           {stepProgress?.runId && (

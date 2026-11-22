@@ -32,11 +32,11 @@ import {
 } from './groups/group-history'
 import { createGroupRunner } from './groups/group-runner'
 import { createGroupService, emptyGroupsFile, groupsFileSchema } from './groups/group-service'
+import { createScheduleTargetExecutor } from './schedules/schedule-executor'
 import {
   createScheduleService,
   emptySchedulesFile,
-  schedulesFileSchema,
-  type ScheduleTargetExecutor
+  schedulesFileSchema
 } from './schedules/schedule-service'
 import { createEventBus } from './events/event-bus'
 import { createIdentityReader } from './process/process-identity'
@@ -228,56 +228,13 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
     )
   })
 
-  const scheduleExecutor: ScheduleTargetExecutor = {
-    validate: async (target) => {
-      if (target.kind === 'script') {
-        await scripts.find(target.projectId, target.scriptId)
-      } else {
-        await groupService.get(target.groupId)
-      }
-    },
-    isRunning: async (target) => {
-      if (target.kind === 'script') {
-        return runs
-          .list()
-          .some(
-            (run) =>
-              run.kind === 'script' &&
-              run.projectId === target.projectId &&
-              run.scriptId === target.scriptId &&
-              run.status !== 'exited'
-          )
-      }
-      return groupRunner.isRunning(target.groupId)
-    },
-    start: async (target) => {
-      if (target.kind === 'script') await runs.start(target.projectId, target.scriptId)
-      else await groupRunner.start(target.groupId)
-    },
-    stop: async (target) => {
-      if (target.kind === 'script') {
-        const activeRuns = runs
-          .list()
-          .filter(
-            (run) =>
-              run.kind === 'script' &&
-              run.projectId === target.projectId &&
-              run.scriptId === target.scriptId &&
-              run.status !== 'exited'
-          )
-        await Promise.all(activeRuns.map((run) => runs.stop(run.id)))
-      } else {
-        await groupRunner.stop(target.groupId)
-      }
-    }
-  }
   const schedules = createScheduleService({
     store: createJsonStore({
       filePath: join(env.dataDir, 'schedules.json'),
       schema: schedulesFileSchema,
       fallback: emptySchedulesFile
     }),
-    executor: scheduleExecutor,
+    executor: createScheduleTargetExecutor({ scripts, runs, groupService, groupRunner }),
     emit: (event) => events.emit(event)
   })
 
@@ -307,7 +264,20 @@ export function createDevhubCore(env: CoreEnvironment): DevhubCore {
       healthTargetOf((await scripts.find(run.projectId, run.scriptId)).script),
     checkers: {
       checkPort: checkLocalPort,
-      checkHttp: (port, path) => checkLocalHttp(port, path)
+      checkHttp: (port, path) => checkLocalHttp(port, path),
+      checkAlive: async (runId) =>
+        runs.list().some((r) => r.id === runId && r.status === 'running'),
+      checkOutput: async (runId, pattern, regex) => {
+        try {
+          const text = runs.output(runId).data
+          if (regex) {
+            return new RegExp(pattern).test(text)
+          }
+          return text.includes(pattern)
+        } catch {
+          return false
+        }
+      }
     },
     emit: (event) => events.emit(event)
   })

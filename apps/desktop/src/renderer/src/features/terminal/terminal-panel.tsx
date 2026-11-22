@@ -277,6 +277,7 @@ function RunTab({ run, selected, closing, onSelect, onClose }: RunTabProps): Rea
         )}
       >
         <span
+          aria-hidden="true"
           title={health ? `${healthLabels[health.state]}（${health.target}）` : undefined}
           className={cn(
             'size-2 rounded-full',
