@@ -88,7 +88,7 @@ export function GroupEditor({
           <DialogDescription>把多个项目的脚本组合在一起，一键启动或停止。</DialogDescription>
         </DialogHeader>
 
-        <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-1">
+        <div className="flex min-h-0 flex-col gap-4 overflow-y-auto px-1">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="group-name">名称</Label>
             <Input

@@ -83,7 +83,7 @@ test('a serial group across projects waits for each step, then stops everything'
   await expect(bar).toContainText(/front1启动中 \d\/2/)
   await expect(titleBar).toHaveCount(0)
   await page.getByRole('button', { name: '批量', exact: true }).click()
-  await expect(item).toContainText('已完成', { timeout: 30_000 })
+  await expect(item).toContainText('运行中 2/2', { timeout: 30_000 })
   // The navigation badge and bar remain while the servers keep running after the execution ended.
   await expect(running).toHaveText(/\d+/)
   await page.getByRole('button', { name: '运行中', exact: true }).click()
@@ -91,7 +91,7 @@ test('a serial group across projects waits for each step, then stops everything'
   await expect(titleBar).toHaveCount(0)
   await page.getByRole('button', { name: '批量', exact: true }).click()
   await expect(detail).toContainText('2/2 个步骤完成')
-  await expect(detail).toContainText('服务进程可能仍在运行')
+  await expect(detail).toContainText('服务进程正在运行中')
   await expect(detail.getByRole('button', { name: '停止全部' })).toBeEnabled()
   await expect(detail.getByRole('listitem', { name: '运行步骤 1' })).toContainText('本次启动')
   await detail
@@ -194,7 +194,7 @@ test('waits for a regex in the output and remembers the result after a restart',
 
   const item = () => page.getByRole('listitem', { name: '批量任务 backend' })
   await item().getByRole('button', { name: '执行 backend' }).click()
-  await expect(item()).toContainText(/已完成 · \d{2}:\d{2}/)
+  await expect(item()).toContainText('运行中 1/1', { timeout: 30_000 })
   await item().getByRole('button', { name: '查看 backend' }).click()
   const detail = () => page.getByRole('region', { name: '任务运行 backend' })
   await expect(detail()).toContainText('本次启动')
