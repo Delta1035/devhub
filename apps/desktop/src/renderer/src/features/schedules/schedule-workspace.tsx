@@ -24,16 +24,22 @@ export function ScheduleWorkspace(): React.JSX.Element {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
-      <header className="flex shrink-0 items-center justify-between border-b border-border px-5 py-4">
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight">定时任务</h1>
-          <p className="mt-1 text-xs text-muted-foreground">
+      <header className="flex shrink-0 items-center justify-between border-b border-border bg-card/60 px-6 py-3.5">
+        <div className="flex flex-col gap-0.5">
+          <h1 className="font-heading text-lg font-semibold tracking-tight text-foreground">
+            定时任务
+          </h1>
+          <p className="text-xs text-muted-foreground">
             按计划启动脚本或批量任务。DevHub 退出后不会执行，也不会补执行错过的计划。
           </p>
         </div>
         {access.manage && (
-          <Button size="sm" onClick={() => setEditing(null)} className="gap-1.5">
-            <Plus className="size-4" data-icon="inline-start" />
+          <Button
+            size="sm"
+            onClick={() => setEditing(null)}
+            className="h-8 gap-1.5 bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90"
+          >
+            <Plus className="size-3.5" data-icon="inline-start" />
             新建定时任务
           </Button>
         )}
