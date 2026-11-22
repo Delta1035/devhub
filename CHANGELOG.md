@@ -4,6 +4,19 @@ User-facing changes in each DevHub release. `pnpm release` generates each sectio
 Conventional Commits since the previous tag (`scripts/changelog.mjs`), and the Release workflow
 uses it as the GitHub Release notes.
 
+## v1.12.0 - 2026-11-22
+
+### Features
+
+- **health:** 为每一个脚本增加启动成功的检测标识与多模态就绪感知 (Closes #141) (#142) (d3e8ee4)
+- 项目详情支持脚本列表显式排序 (Closes #138) (c7d59f7)
+- 项目详情支持脚本列表显式排序 (Closes #138) (50dab47)
+- 项目和批量任务将隐式排序改为可操作按钮 (Closes #126) (3a360ac)
+
+### Fixes
+
+- **groups:** 修复批量任务子任务运行态仍显示灰色已完成与编辑弹窗输入框左边框遮挡 (Closes #137) (c8985f3)
+
 ## v1.11.0 - 2026-11-18
 
 ### Features
