@@ -80,14 +80,66 @@ export const groupSchema = z.object({
 })
 export type Group = z.infer<typeof groupSchema>
 
-/** Pinned groups come first, followed by active groups; all remaining ties stay stable. */
-export function sortGroups(groups: readonly Group[], activeGroupIds: ReadonlySet<string>): Group[] {
+export type GroupSortOrder = 'default' | 'name-asc' | 'name-desc' | 'recent'
+
+export interface SortGroupsOptions {
+  order?: GroupSortOrder
+  states?: readonly GroupRunState[]
+}
+
+/** Pinned groups come first, followed by active groups or specified sort order. */
+export function sortGroups(
+  groups: readonly Group[],
+  activeGroupIds: ReadonlySet<string>,
+  options?: SortGroupsOptions
+): Group[] {
+  const order = options?.order ?? 'default'
+
+  const stateByGroup = new Map<string, GroupRunState>()
+  if (options?.states) {
+    for (const state of options.states) {
+      stateByGroup.set(state.groupId, state)
+    }
+  }
+
+  const getRecentTime = (groupId: string): number => {
+    if (activeGroupIds.has(groupId)) {
+      return Number.MAX_SAFE_INTEGER
+    }
+    const state = stateByGroup.get(groupId)
+    if (state?.finishedAt) {
+      return Date.parse(state.finishedAt) || 0
+    }
+    return 0
+  }
+
   return [...groups].sort((a, b) => {
     if (a.pinnedAt && !b.pinnedAt) return -1
     if (!a.pinnedAt && b.pinnedAt) return 1
     if (a.pinnedAt && b.pinnedAt) {
       const byPinnedAt = Date.parse(b.pinnedAt) - Date.parse(a.pinnedAt)
       if (byPinnedAt !== 0) return byPinnedAt
+    }
+
+    if (order === 'name-asc') {
+      const byName = a.name.localeCompare(b.name)
+      if (byName !== 0) return byName
+      return 0
+    }
+
+    if (order === 'name-desc') {
+      const byName = b.name.localeCompare(a.name)
+      if (byName !== 0) return byName
+      return 0
+    }
+
+    if (order === 'recent') {
+      const timeA = getRecentTime(a.id)
+      const timeB = getRecentTime(b.id)
+      if (timeB !== timeA) {
+        return timeB - timeA
+      }
+      return a.name.localeCompare(b.name)
     }
 
     const aActive = activeGroupIds.has(a.id)

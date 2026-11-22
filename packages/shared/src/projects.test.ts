@@ -151,4 +151,37 @@ describe('sortProjects', () => {
     sortProjects(original, [])
     expect(original).toEqual(shallow)
   })
+
+  it('sorts by name ascending and descending while keeping pinned projects first', () => {
+    const pA = makeProject('1', 'alpha', '/z')
+    const pB = makeProject('2', 'beta', '/y')
+    const pC = { ...makeProject('3', 'charlie', '/x'), pinnedAt: '2026-01-01T00:00:00.000Z' }
+
+    const asc = sortProjects([pB, pA, pC], [], { order: 'name-asc' })
+    expect(asc.map((p) => p.id)).toEqual(['3', '1', '2'])
+
+    const desc = sortProjects([pA, pB, pC], [], { order: 'name-desc' })
+    expect(desc.map((p) => p.id)).toEqual(['3', '2', '1'])
+  })
+
+  it('sorts by path ascending and descending with optional getPath', () => {
+    const p1 = makeProject('1', 'charlie', '/root/b')
+    const p2 = makeProject('2', 'alpha', '/root/a')
+    const p3 = makeProject('3', 'beta', '/root/c')
+
+    const pathAsc = sortProjects([p3, p1, p2], [], { order: 'path-asc' })
+    expect(pathAsc.map((p) => p.id)).toEqual(['2', '1', '3'])
+
+    const pathDesc = sortProjects([p1, p2, p3], [], { order: 'path-desc' })
+    expect(pathDesc.map((p) => p.id)).toEqual(['3', '1', '2'])
+
+    // with custom getPath (e.g. relative path in workspace)
+    const customGetPath = (p: Project): string => {
+      if (p.id === '1') return 'rel/01'
+      if (p.id === '2') return 'rel/02'
+      return 'rel/03'
+    }
+    const customAsc = sortProjects([p3, p2, p1], [], { order: 'path-asc', getPath: customGetPath })
+    expect(customAsc.map((p) => p.id)).toEqual(['1', '2', '3'])
+  })
 })
