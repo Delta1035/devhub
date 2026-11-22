@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import { TriangleAlert, Workflow, X } from 'lucide-react'
-import type { Project } from '@devhub/shared'
+import type { Project, ScriptSortOrder } from '@devhub/shared'
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
 import { useGroups } from '@renderer/features/groups/use-groups'
 import { useRuns, useStartScript } from '@renderer/features/runs/use-runs'
 import { ScriptList } from '@renderer/features/scripts/script-list'
+import {
+  SCRIPT_SORT_STORAGE_KEY,
+  getStoredScriptSortOrder
+} from '@renderer/features/scripts/script-sort'
 import { useProjectScripts } from '@renderer/features/scripts/use-scripts'
 import { TerminalPanel } from '@renderer/features/terminal/terminal-panel'
 import { ProjectHeader } from './project-header'
@@ -38,6 +42,16 @@ export function ProjectDetail({
   const [filterQuery, setFilterQuery] = useState('')
   const [activeRunId, setActiveRunId] = useState<string | null>(initialRunId)
   const [editorError, setEditorError] = useState<Error | null>(null)
+  const [scriptSortOrder, setScriptSortOrder] = useState<ScriptSortOrder>(getStoredScriptSortOrder)
+
+  const handleScriptSortOrderChange = (order: ScriptSortOrder): void => {
+    setScriptSortOrder(order)
+    try {
+      localStorage.setItem(SCRIPT_SORT_STORAGE_KEY, order)
+    } catch {
+      // ignore
+    }
+  }
 
   useEffect(() => {
     onTerminalViewChange?.(currentTab === 'terminals')
@@ -86,6 +100,8 @@ export function ProjectDetail({
         tasksCount={projectBatchTasks.length}
         filterQuery={filterQuery}
         onFilterChange={setFilterQuery}
+        scriptSortOrder={scriptSortOrder}
+        onScriptSortOrderChange={handleScriptSortOrderChange}
         onQuickStart={scriptItems.length > 0 ? handleStartAll : undefined}
         isStarting={startScript.isPending}
       />
@@ -114,6 +130,7 @@ export function ProjectDetail({
           <ScriptList
             project={project}
             filterQuery={filterQuery}
+            sortOrder={scriptSortOrder}
             onRunStarted={(run) => setActiveRunId(run.id)}
             onViewTerminal={(runId) => {
               setActiveRunId(runId)
