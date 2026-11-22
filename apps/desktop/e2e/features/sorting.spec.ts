@@ -138,3 +138,65 @@ test('sorts batch tasks by name and persists selection after restart', async ({
   await expect(restartedGroupItems.nth(1)).toContainText('A-Task')
   await expect(page.getByRole('button', { name: '批量任务排序' })).toContainText('名称降序')
 })
+
+test('sorts scripts by name and retains sort order after restart', async ({
+  launchDevhub,
+  createProject
+}) => {
+  const dir = await createProject('script-sort-app', {
+    'package.json': packageJson({
+      echo: 'node -v',
+      build: 'node -v',
+      test: 'node -v'
+    })
+  })
+
+  const first = await launchDevhub()
+  const { app } = first
+  let { page } = first
+  await addProjectViaApi(page, dir)
+
+  // Navigate to project detail by clicking project in list
+  await projectList(page)
+    .getByRole('button', { name: /^script-sort-app/ })
+    .click()
+
+  const projectContent = page.getByRole('region', { name: '项目内容' })
+  const scriptItems = projectContent.locator('section ul li')
+
+  // Default order is declaration order: echo, build, test
+  await expect(scriptItems.nth(0)).toContainText('echo')
+  await expect(scriptItems.nth(1)).toContainText('build')
+  await expect(scriptItems.nth(2)).toContainText('test')
+
+  // Switch to Name Ascending (A-Z) -> build, echo, test
+  await projectContent.getByRole('button', { name: '脚本排序' }).click()
+  await page.getByRole('menuitemradio', { name: '名称升序 (A-Z)' }).click()
+
+  await expect(scriptItems.nth(0)).toContainText('build')
+  await expect(scriptItems.nth(1)).toContainText('echo')
+  await expect(scriptItems.nth(2)).toContainText('test')
+
+  // Switch to Name Descending (Z-A) -> test, echo, build
+  await projectContent.getByRole('button', { name: '脚本排序' }).click()
+  await page.getByRole('menuitemradio', { name: '名称降序 (Z-A)' }).click()
+
+  await expect(scriptItems.nth(0)).toContainText('test')
+  await expect(scriptItems.nth(1)).toContainText('echo')
+  await expect(scriptItems.nth(2)).toContainText('build')
+
+  // Restart app and verify sort order persists
+  await app.close()
+  page = (await launchDevhub()).page
+
+  await projectList(page)
+    .getByRole('button', { name: /^script-sort-app/ })
+    .click()
+  const restartedContent = page.getByRole('region', { name: '项目内容' })
+  const restartedScriptItems = restartedContent.locator('section ul li')
+
+  await expect(restartedScriptItems.nth(0)).toContainText('test')
+  await expect(restartedScriptItems.nth(1)).toContainText('echo')
+  await expect(restartedScriptItems.nth(2)).toContainText('build')
+  await expect(restartedContent.getByRole('button', { name: '脚本排序' })).toContainText('名称降序')
+})

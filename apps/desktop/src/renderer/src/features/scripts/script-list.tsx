@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { ChevronRight, FileCode, FolderX, TriangleAlert, X } from 'lucide-react'
-import type { Project, Run, Script, ScriptSource } from '@devhub/shared'
+import {
+  sortScripts,
+  type Project,
+  type Run,
+  type Script,
+  type ScriptSortOrder,
+  type ScriptSource
+} from '@devhub/shared'
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
 import { Skeleton } from '@renderer/components/ui/skeleton'
@@ -13,6 +20,7 @@ import { useProjectScripts } from './use-scripts'
 interface ScriptListProps {
   project: Project
   filterQuery?: string
+  sortOrder?: ScriptSortOrder
   /** Called with a freshly started run so the terminal panel can switch to it. */
   onRunStarted: (run: Run) => void
   onViewTerminal?: (runId: string) => void
@@ -22,6 +30,7 @@ interface ScriptListProps {
 export function ScriptList({
   project,
   filterQuery = '',
+  sortOrder = 'default',
   onRunStarted,
   onViewTerminal,
   onOpenSettings
@@ -141,20 +150,27 @@ export function ScriptList({
         </p>
       )}
 
-      {groupBySource(displayItems).map(([source, group]) => (
-        <ScriptGroup
-          key={source}
-          projectId={project.id}
-          source={source}
-          scripts={group}
-          runs={runs.data ?? []}
-          activeGroups={activeGroups}
-          onRunError={(error, retry) => setRunError({ error, retry })}
-          onRunStarted={onRunStarted}
-          onViewTerminal={onViewTerminal}
-          onOpenSettings={onOpenSettings}
-        />
-      ))}
+      {groupBySource(displayItems).map(([source, group]) => {
+        const sortedScripts = sortScripts(group, {
+          order: sortOrder,
+          runs: runs.data,
+          projectId: project.id
+        })
+        return (
+          <ScriptGroup
+            key={source}
+            projectId={project.id}
+            source={source}
+            scripts={sortedScripts}
+            runs={runs.data ?? []}
+            activeGroups={activeGroups}
+            onRunError={(error, retry) => setRunError({ error, retry })}
+            onRunStarted={onRunStarted}
+            onViewTerminal={onViewTerminal}
+            onOpenSettings={onOpenSettings}
+          />
+        )
+      })}
 
       {/* 自定义脚本提示条 (对齐 pen/devhub.pen) */}
       <div className="flex items-center justify-between rounded-lg border border-border bg-card/60 px-4 py-2.5 text-xs">

@@ -8,7 +8,9 @@ import {
   Workflow,
   X
 } from 'lucide-react'
+import type { ScriptSortOrder } from '@devhub/shared'
 import { Button } from '@renderer/components/ui/button'
+import { ScriptSortMenu } from '@renderer/features/scripts/script-sort-menu'
 import { cn } from '@renderer/lib/utils'
 
 export type ProjectViewTab = 'scripts' | 'terminals' | 'history' | 'tasks' | 'settings'
@@ -22,6 +24,8 @@ interface ProjectSubnavProps {
   tasksCount?: number
   filterQuery: string
   onFilterChange: (query: string) => void
+  scriptSortOrder?: ScriptSortOrder
+  onScriptSortOrderChange?: (order: ScriptSortOrder) => void
   onQuickStart?: () => void
   isStarting?: boolean
 }
@@ -35,6 +39,8 @@ export function ProjectSubnav({
   tasksCount = 0,
   filterQuery,
   onFilterChange,
+  scriptSortOrder,
+  onScriptSortOrderChange,
   onQuickStart,
   isStarting
 }: ProjectSubnavProps): React.JSX.Element {
@@ -176,26 +182,34 @@ export function ProjectSubnav({
       {/* Right Controls: Filter & Quick Action */}
       <div className="flex items-center gap-2">
         {currentTab === 'scripts' && (
-          <div className="relative flex items-center">
-            <Search className="pointer-events-none absolute left-2 size-3 text-muted-foreground" />
-            <input
-              type="text"
-              value={filterQuery}
-              onChange={(e) => onFilterChange(e.target.value)}
-              placeholder="筛选脚本..."
-              className="h-7 w-36 rounded-md border border-border bg-secondary/60 pl-6.5 pr-6 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-ring focus:bg-background focus:outline-none focus:ring-1 focus:ring-ring sm:w-44"
-            />
-            {filterQuery && (
-              <button
-                type="button"
-                onClick={() => onFilterChange('')}
-                className="absolute right-1.5 text-muted-foreground hover:text-foreground"
-                aria-label="清空筛选"
-              >
-                <X className="size-3" />
-              </button>
+          <>
+            <div className="relative flex items-center">
+              <Search className="pointer-events-none absolute left-2 size-3 text-muted-foreground" />
+              <input
+                type="text"
+                value={filterQuery}
+                onChange={(e) => onFilterChange(e.target.value)}
+                placeholder="筛选脚本..."
+                className="h-7 w-36 rounded-md border border-border bg-secondary/60 pl-6.5 pr-6 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-ring focus:bg-background focus:outline-none focus:ring-1 focus:ring-ring sm:w-44"
+              />
+              {filterQuery && (
+                <button
+                  type="button"
+                  onClick={() => onFilterChange('')}
+                  className="absolute right-1.5 text-muted-foreground hover:text-foreground"
+                  aria-label="清空筛选"
+                >
+                  <X className="size-3" />
+                </button>
+              )}
+            </div>
+            {scriptSortOrder && onScriptSortOrderChange && (
+              <ScriptSortMenu
+                sortOrder={scriptSortOrder}
+                onSortOrderChange={onScriptSortOrderChange}
+              />
             )}
-          </div>
+          </>
         )}
 
         {onQuickStart && (
