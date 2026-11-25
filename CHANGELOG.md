@@ -4,6 +4,13 @@ User-facing changes in each DevHub release. `pnpm release` generates each sectio
 Conventional Commits since the previous tag (`scripts/changelog.mjs`), and the Release workflow
 uses it as the GitHub Release notes.
 
+## v1.12.2 - 2026-11-25
+
+### Fixes
+
+- **ui:** 优化项目选中态、批量列表整卡选中与运行中父子层级 (928f3b7)
+- **ui:** 优化多任务运行时的底部状态栏与健康详情定位 (5b7efc7)
+
 ## v1.12.1 - 2026-11-22
 
 ### Features
