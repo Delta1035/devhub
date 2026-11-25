@@ -182,7 +182,7 @@ function App(): React.JSX.Element {
           </div>
         </main>
       </div>
-      <StatusBar />
+      <StatusBar onOpenRun={openRun} onOpenRunningView={() => selectView('running')} />
       <Toaster />
     </div>
   )

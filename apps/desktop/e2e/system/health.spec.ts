@@ -49,3 +49,56 @@ test('a server shows as starting, then ready once its health endpoint answers', 
   await expect(badge).toBeHidden()
   await expect(row.getByText('已停止')).toBeVisible()
 })
+
+test('status bar summarizes multiple healthy runs cleanly and popover identifies alive processes', async ({
+  launchDevhub,
+  createProject
+}) => {
+  const port = await freePort()
+  const dir = await createProject('multi-status-app', {
+    'package.json': packageJson({
+      'worker-a': 'node keepalive.js a',
+      'worker-b': 'node keepalive.js b'
+    }),
+    'keepalive.js': 'setInterval(() => {}, 1000)',
+    'server.js': `require('http').createServer((_, res) => res.end('ok')).listen(${port}, '127.0.0.1')`,
+    '.devhub.yaml': `scripts:\n  web:\n    command: node server.js\n    port: ${port}\n`
+  })
+  const { page } = await launchDevhub()
+  await addProjectViaApi(page, dir)
+
+  await page.getByRole('button', { name: '运行 web' }).click()
+  await page.getByRole('button', { name: '运行 worker-a' }).click()
+  await page.getByRole('button', { name: '运行 worker-b' }).click()
+
+  const statusBar = page.getByRole('status', { name: '系统状态' })
+  const healthTrigger = statusBar.getByRole('button', { name: '查看运行健康详情' })
+  await expect(healthTrigger).toContainText(`端口 ${port} 就绪`)
+  await expect(healthTrigger).toContainText('2 项稳定')
+  await expect(statusBar).not.toContainText('进程稳定运行')
+
+  const barBox = await statusBar.boundingBox()
+  expect(barBox?.height).toBeLessThanOrEqual(28)
+
+  await healthTrigger.click()
+  const popover = page.getByRole('dialog', { name: '运行健康详情列表' })
+  await expect(popover).toBeVisible()
+  await expect(popover).toContainText('multi-status-app · web')
+  await expect(popover).toContainText('multi-status-app · worker-a')
+  await expect(popover).toContainText('multi-status-app · worker-b')
+  await expect(popover).toContainText('进程稳定运行')
+  await expect(popover).toContainText('PID ')
+
+  // Clicking an alive item jumps straight to that script's terminal tab.
+  await popover.getByRole('button', { name: /multi-status-app · worker-a/ }).click()
+  await expect(popover).toBeHidden()
+  await expect(page.getByRole('button', { name: 'worker-a', exact: true })).toHaveAttribute(
+    'aria-current',
+    'true'
+  )
+
+  await page.getByRole('button', { name: /^脚本/ }).click()
+  await page.getByRole('button', { name: '停止 web' }).click()
+  await page.getByRole('button', { name: '停止 worker-a' }).click()
+  await page.getByRole('button', { name: '停止 worker-b' }).click()
+})
