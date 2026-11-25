@@ -97,6 +97,7 @@ M4-3 Android：
 - #141 已发布（v1.12.0）：为每一个脚本增加启动成功的检测标识与多模态就绪感知；支持 ports/http/output/alive 多模态探针与 alive 默认存活窗口，UI 渲染启动呼吸/就绪常亮/无响应警告指示灯与悬停目标提示，无障碍友好；单测与 Playwright E2E 全部通过。
 - #143 已发布（v1.12.1）：统一右侧工作区顶栏与操作按钮样式规范；统一使用 bg-card/60 顶栏容器底色与 px-6 py-3.5 内边距，统一主副标题间距（gap-0.5）与 font-heading 字族，统一新建操作按钮尺寸（h-8 px-3 text-xs font-semibold shadow-xs）与图标尺寸（size-3.5）；pnpm check 与 Playwright pnpm e2e 全部通过。
 - #145 已发布（v1.12.1）：对齐「运行中」工作区顶栏与页面布局规范；统一顶栏为通栏 bg-card/60 与 px-6 py-3.5 内边距，移除大图标方块与双重标题，内容区增加 max-w-4xl 居中约束并优化空状态与条目内边距；pnpm check 与 Playwright pnpm e2e 全部通过。
+- #148 已完成：优化底部状态栏在多任务运行时的单行紧凑摘要与健康详情 Popover 定位，抽离纯函数状态汇总模块 `status-bar-summary.ts` 并补齐单测，点击详情条目可直达对应脚本终端；`pnpm check` 与 `pnpm e2e` 通过。
 
 桌面 MVP 发布：
 
