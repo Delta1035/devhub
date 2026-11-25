@@ -89,11 +89,23 @@ scripts:
     description: Backend # optional
     port: 8081 # optional, or ports: [8081, 8082]; inferred from the command when omitted
     portConflictPolicy: terminate # optional: stop port holders before starting this script
-    health: /actuator/health # optional; readiness then means this path returns HTTP 2xx
+    health: /actuator/health # optional; HTTP path string or probe object (see below)
   db:
     command: docker compose up postgres
     cwd: deploy # optional, relative to the project; cannot leave it
+  worker:
+    command: node worker.js
+    health:
+      type: output
+      pattern: worker ready
 ```
+
+In addition to an HTTP path string (e.g. `/actuator/health`, expecting HTTP 2xx on the script's first port), `health` supports multi-modal health probe objects:
+
+- `{ type: http, path: string, port?: number }`: requests `path` on `port` (or the script's first port when `port` is omitted) and expects HTTP 2xx.
+- `{ type: output, pattern: string, regex?: boolean }`: marks the script ready once its output matches `pattern` (treated as a regular expression when `regex: true`).
+- `{ type: ports, ports: number[] }`: marks the script ready once every port in `ports` accepts connections.
+- `{ type: alive, delayMs?: number }`: marks the script ready after staying alive for `delayMs` milliseconds (default `2000`, i.e., 2 seconds); this is the default behavior when no ports are known/configured and `health` is omitted.
 
 Changes apply on refresh or when the window regains focus; mistakes are reported in the script list with a line number or field path.
 

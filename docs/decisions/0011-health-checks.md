@@ -11,10 +11,17 @@
 
 ### 检查什么
 
-- 默认：脚本已推断出的端口（`Script.ports`，与启动前端口冲突检测共用）全部能连上即为就绪。
-- 可选：`.devhub.yaml` 中为脚本写 `health: /actuator/health`，改为请求 `http://localhost:<第一个端口><路径>`，返回 2xx 才算就绪；不跟随重定向（跳到登录页不算健康）。写了 `health` 却无法确定端口时，配置报错。
-- 没有端口的脚本不做检查，界面仍显示「运行中」。
-- 只看端口时**不发 HTTP 请求**：数据库、gRPC 等非 HTTP 服务会被误判。
+支持 `ports`、`http`、`output`、`alive` 四种多模态健康检查探针，按以下规则确定检查目标：
+
+- **显式探针配置**（`.devhub.yaml` 中的 `health` 对象）：
+  - `ports`（`{ type: 'ports', ports: number[] }`）：指定的端口全部能连上即为就绪。
+  - `http`（`{ type: 'http', path: string, port?: number }`）：请求 `http://localhost:<port 或第一个端口><path>`，返回 2xx 才算就绪；不跟随重定向（跳到登录页不算健康）。未指定 `port` 且脚本无已知端口时，配置报错。
+  - `output`（`{ type: 'output', pattern: string, regex?: boolean }`）：进程输出包含 `pattern`（`regex: true` 时按正则匹配）即为就绪。
+  - `alive`（`{ type: 'alive', delayMs?: number }`）：进程保持运行且启动后稳定存活达到 `delayMs`（默认 `2000` ms，范围 500～30000 ms）即为就绪。
+- **有已知或推断端口时**（`Script.ports`，与启动前端口冲突检测共用）：
+  - 若 `.devhub.yaml` 中写了路径字符串 `health: /actuator/health`，改为在第一个端口上做 `http` 检查；写了该字段却无法确定端口时，配置报错。
+  - 否则默认做 `ports` 检查：全部端口能连上即为就绪。只看端口时**不发 HTTP 请求**，避免数据库、gRPC 等非 HTTP 服务被误判。
+- **未显式配置端口或探针的脚本**：默认应用 `alive` 检测（`delayMs: 2000`），即启动后稳定存活 2 秒即标记为就绪，不再跳过检查。
 
 ### 状态与节奏
 
@@ -41,5 +48,5 @@
 
 ## 已知限制
 
-- 端口靠推断：脚本里没写端口、也不是已知工具时没有健康状态，可在 `.devhub.yaml` 中写 `port`。
+- 端口靠推断：脚本里没写端口、也不是已知工具时仅默认应用 `alive` 存活检测，可在 `.devhub.yaml` 中写 `port` 或显式配置 `health` 探针。
 - 端口被其他进程占用时（用户选择了「仍然启动」），端口检查会连到那个进程，显示为就绪。
