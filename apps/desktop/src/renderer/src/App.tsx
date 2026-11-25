@@ -6,6 +6,7 @@ import { useGroupEventsSync } from '@renderer/features/groups/use-groups'
 import { ProjectWorkspace } from '@renderer/features/projects/project-workspace'
 import { useProjects } from '@renderer/features/projects/use-projects'
 import { OrphansBanner } from '@renderer/features/runs/orphans-banner'
+import { countSidebarRunningBadge } from '@renderer/features/runs/running-hierarchy'
 import { RunningWorkspace } from '@renderer/features/runs/running-workspace'
 import { useRunEventsSync, useRuns } from '@renderer/features/runs/use-runs'
 import { ScheduleWorkspace } from '@renderer/features/schedules/schedule-workspace'
@@ -52,7 +53,8 @@ function App(): React.JSX.Element {
   const [drawerReady, setDrawerReady] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const activeRuns = (runs ?? []).filter((run) => run.status !== 'exited')
-  const activeGroupCount = useActiveGroups().length
+  const activeGroups = useActiveGroups()
+  const runningBadgeCount = countSidebarRunningBadge(activeRuns, activeGroups)
 
   const selectView = (view: SidebarView): void => {
     setActiveView(view)
@@ -131,7 +133,7 @@ function App(): React.JSX.Element {
               {drawerReady || reducedMotion ? (
                 <Sidebar
                   activeView={activeView}
-                  activeCount={activeRuns.length + activeGroupCount}
+                  activeCount={runningBadgeCount}
                   onViewChange={selectView}
                   compact={false}
                 />
@@ -144,7 +146,7 @@ function App(): React.JSX.Element {
           <aside className="flex w-14 shrink-0 flex-col border-r border-border bg-sidebar p-2">
             <Sidebar
               activeView={activeView}
-              activeCount={activeRuns.length + activeGroupCount}
+              activeCount={runningBadgeCount}
               onViewChange={selectView}
               compact={true}
             />

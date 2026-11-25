@@ -130,6 +130,18 @@ setInterval(() => console.log('tick ' + ++n), 200)
     .getByRole('button', { name: /^alpha-app/ })
     .click()
   await expect(page.getByRole('heading', { name: 'alpha-app' })).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: '项目列表' }).getByRole('button', { name: /^alpha-app/ })
+  ).toHaveAttribute('aria-current', 'true')
+  await expect(
+    page.getByRole('region', { name: '项目列表' }).getByRole('button', { name: /^charlie-app/ })
+  ).not.toHaveAttribute('aria-current', 'true')
+  await expect(
+    page
+      .getByRole('region', { name: '项目列表' })
+      .getByRole('button', { name: /^charlie-app/ })
+      .getByRole('status', { name: '1 个活动终端' })
+  ).toBeVisible()
 
   // Remove alpha-app: should fall back to charlie-app (active) rather than beta-app (first inactive)
   await page.getByRole('button', { name: '移除 alpha-app' }).click()

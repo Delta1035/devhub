@@ -254,7 +254,9 @@ for (const mode of ['serial', 'parallel'] as const) {
     await page.reload()
     await page.getByRole('button', { name: '批量', exact: true }).click()
     const item = page.getByRole('listitem', { name: '批量任务 replace listeners' })
-    await item.getByRole('button', { name: '执行 replace listeners' }).click()
+    await item.getByRole('button', { name: '查看 replace listeners' }).click()
+    const detail = page.getByRole('region', { name: '任务运行 replace listeners' })
+    await detail.getByRole('button', { name: '执行', exact: true }).click()
 
     // Windows performs verified CIM snapshots for each sequential port takeover.
     await expect(item).toContainText('运行中 2/2', { timeout: 35_000 })
@@ -264,7 +266,7 @@ for (const mode of ['serial', 'parallel'] as const) {
     expect(hasExited(unrelated)).toBe(false)
     expect(await httpBody(unrelated.port)).toBe('outside the group')
 
-    await item.getByRole('button', { name: '停止 replace listeners' }).click()
+    await detail.getByRole('button', { name: '停止全部' }).click()
     await expect.poll(() => canBind(first.port)).toBe(true)
     await expect.poll(() => canBind(second.port)).toBe(true)
     expect(await httpBody(unrelated.port)).toBe('outside the group')

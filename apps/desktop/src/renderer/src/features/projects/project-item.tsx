@@ -45,6 +45,16 @@ export function ProjectItem(props: ProjectItemProps): React.JSX.Element {
   return props.narrow ? <NarrowProjectItem {...props} /> : <DesktopProjectItem {...props} />
 }
 
+function projectRowClass(selected: boolean, extra?: string): string {
+  return cn(
+    'relative flex items-center gap-1 rounded-lg border pr-1 transition-colors',
+    selected
+      ? 'border-primary/40 bg-primary/10 shadow-xs before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-full before:bg-primary'
+      : 'border-transparent hover:border-border/60 hover:bg-muted/50',
+    extra
+  )
+}
+
 function NarrowProjectItem({
   project,
   subtitle,
@@ -57,12 +67,7 @@ function NarrowProjectItem({
   onError
 }: ProjectItemProps): React.JSX.Element {
   return (
-    <li
-      className={cn(
-        'flex items-center gap-1 rounded-lg pr-1 transition-colors',
-        selected ? 'bg-secondary' : 'hover:bg-muted/50'
-      )}
-    >
+    <li className={projectRowClass(selected)}>
       <ProjectButton
         project={project}
         subtitle={subtitle}
@@ -100,12 +105,7 @@ function DesktopProjectItem({
     onRemove
   }
   const item = (
-    <li
-      className={cn(
-        'group flex items-center gap-1 rounded-lg pr-1 transition-colors',
-        selected ? 'bg-secondary' : 'hover:bg-muted/60'
-      )}
-    >
+    <li className={projectRowClass(selected, 'group')}>
       <ProjectButton
         project={project}
         subtitle={subtitle}
@@ -142,8 +142,6 @@ function ProjectButton({
 }: Pick<ProjectItemProps, 'project' | 'subtitle' | 'selected' | 'activeRuns'> & {
   onChoose: () => void
 } & Omit<React.ComponentProps<'button'>, 'onSelect'>): React.JSX.Element {
-  const isRunning = activeRuns.length > 0
-
   return (
     <button
       {...buttonProps}
@@ -156,10 +154,8 @@ function ProjectButton({
         className={cn(
           'flex size-7 shrink-0 items-center justify-center rounded-md transition-colors',
           selected
-            ? 'bg-primary/15 text-primary'
-            : isRunning
-              ? 'bg-success/15 text-success'
-              : 'bg-muted/80 text-muted-foreground group-hover/btn:text-foreground'
+            ? 'bg-primary text-primary-foreground shadow-2xs'
+            : 'bg-muted/80 text-muted-foreground group-hover/btn:text-foreground'
         )}
       >
         <ProjectIcon projectName={project.name} className="size-3.5" />

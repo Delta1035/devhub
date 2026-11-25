@@ -40,7 +40,7 @@ export function ProjectWorkspace({
           aria-label="项目列表"
           style={narrow ? undefined : { width: projectList.width }}
           className={cn(
-            'relative flex min-h-[13rem] w-full shrink-0 flex-col border-b border-border sm:min-h-0 sm:border-b-0 sm:border-r',
+            'relative flex min-h-[13rem] w-full shrink-0 flex-col border-b border-border bg-card/40 sm:min-h-0 sm:border-b-0 sm:border-r',
             // On a phone the terminal tab needs the whole height; the list returns on other tabs.
             narrow && terminalView && 'hidden'
           )}

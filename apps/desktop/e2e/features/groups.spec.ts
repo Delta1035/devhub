@@ -59,7 +59,10 @@ test('a serial group across projects waits for each step, then stops everything'
 
   const item = groups.getByRole('listitem', { name: '批量任务 front1' })
   await expect(item).toContainText('串行')
-  await item.getByRole('button', { name: '查看 front1' }).click()
+  await expect(item.getByRole('button', { name: '执行 front1' })).toHaveCount(0)
+  await expect(item.getByRole('button', { name: '停止 front1' })).toHaveCount(0)
+  // Clicking anywhere on the task card (not only the title) selects the batch task.
+  await item.getByText('2 步 · 串行').click()
   const detail = page.getByRole('region', { name: '任务运行 front1' })
   await expect(detail).toContainText('输出出现文字「API ready」')
   // Batch workspace does not cause window-level page scrolling.
@@ -73,7 +76,7 @@ test('a serial group across projects waits for each step, then stops everything'
   expect(windowScrolls.overflows).toBe(false)
   expect(windowScrolls.scrollY).toBe(0)
   expect(windowScrolls.scrollTop).toBe(0)
-  await item.getByRole('button', { name: '执行 front1' }).click()
+  await detail.getByRole('button', { name: '执行', exact: true }).click()
   // The feature navigation and the persistent bar name the group while it starts.
   const running = page.getByRole('button', { name: '运行中', exact: true }).getByRole('status')
   const titleBar = page.getByRole('banner').getByRole('button', { name: /^正在运行：/ })
@@ -85,9 +88,13 @@ test('a serial group across projects waits for each step, then stops everything'
   await page.getByRole('button', { name: '批量', exact: true }).click()
   await expect(item).toContainText('运行中 2/2', { timeout: 30_000 })
   // The navigation badge and bar remain while the servers keep running after the execution ended.
-  await expect(running).toHaveText(/\d+/)
+  await expect(running).toHaveText('2')
   await page.getByRole('button', { name: '运行中', exact: true }).click()
   await expect(bar).toContainText('front1运行中 2/2')
+  const childrenList = bar.getByRole('list', { name: 'front1 的子任务' })
+  await expect(childrenList).toContainText('api · serve')
+  await expect(childrenList).toContainText('web · serve')
+  await expect(bar.getByRole('button', { name: '重新执行批量任务 front1' })).toBeEnabled()
   await expect(titleBar).toHaveCount(0)
   await page.getByRole('button', { name: '批量', exact: true }).click()
   await expect(detail).toContainText('2/2 个步骤完成')
@@ -122,7 +129,11 @@ test('a serial group across projects waits for each step, then stops everything'
   const groupsView = await openGroups(page)
   await groupsView
     .getByRole('listitem', { name: '批量任务 front1' })
-    .getByRole('button', { name: '停止 front1' })
+    .getByText('2 步 · 串行')
+    .click()
+  await page
+    .getByRole('region', { name: '任务运行 front1' })
+    .getByRole('button', { name: '停止全部' })
     .click()
   await expect
     .poll(async () => (await listRuns(page)).filter((run) => run.status !== 'exited').length, {
@@ -156,11 +167,11 @@ test('a failing serial step stops the sequence and explains why', async ({
   await dialog.getByRole('button', { name: '保存' }).click()
 
   const item = groups.getByRole('listitem', { name: '批量任务 broken' })
-  await item.getByRole('button', { name: '执行 broken' }).click()
-  await expect(item).toContainText('失败')
-  await expect(item).toContainText('进程退出码 1')
   await item.getByRole('button', { name: '查看 broken' }).click()
   const detail = page.getByRole('region', { name: '任务运行 broken' })
+  await detail.getByRole('button', { name: '执行', exact: true }).click()
+  await expect(item).toContainText('失败')
+  await expect(item).toContainText('进程退出码 1')
   await expect(detail.getByRole('listitem', { name: '运行步骤 1' })).toContainText('进程退出码 1')
   await expect(detail.getByRole('listitem', { name: '运行步骤 2' })).toContainText('已取消')
 
@@ -193,10 +204,10 @@ test('waits for a regex in the output and remembers the result after a restart',
   await expect(dialog).toBeHidden()
 
   const item = () => page.getByRole('listitem', { name: '批量任务 backend' })
-  await item().getByRole('button', { name: '执行 backend' }).click()
-  await expect(item()).toContainText('运行中 1/1', { timeout: 30_000 })
   await item().getByRole('button', { name: '查看 backend' }).click()
   const detail = () => page.getByRole('region', { name: '任务运行 backend' })
+  await detail().getByRole('button', { name: '执行', exact: true }).click()
+  await expect(item()).toContainText('运行中 1/1', { timeout: 30_000 })
   await expect(detail()).toContainText('本次启动')
   await detail().getByRole('button', { name: '执行', exact: true }).click()
   await expect(detail()).toContainText('复用已有运行')
@@ -209,4 +220,96 @@ test('waits for a regex in the output and remembers the result after a restart',
   await item().getByRole('button', { name: '查看 backend' }).click()
   await expect(detail()).toContainText('日志不可用')
   await expect(detail().getByRole('button', { name: '查看日志' })).toHaveCount(0)
+})
+
+test('shows parent-child hierarchy, cross-group reuse links, and standalone runs in running view', async ({
+  launchDevhub,
+  createProject
+}) => {
+  const api = await createProject('api', {
+    'package.json': packageJson({ serve: 'node server.js' }),
+    'server.js': slowServer('API ready', 100)
+  })
+  const web = await createProject('web', {
+    'package.json': packageJson({ dev: 'node server.js' }),
+    'server.js': slowServer('Web ready', 100)
+  })
+  const tools = await createProject('tools', {
+    'package.json': packageJson({ watch: 'node watch.js' }),
+    'watch.js': 'setInterval(() => {}, 1000)'
+  })
+
+  const { page } = await launchDevhub()
+  await addProjectViaApi(page, api)
+  await addProjectViaApi(page, web)
+  await addProjectViaApi(page, tools)
+
+  // Start standalone tools:watch
+  await page
+    .getByRole('region', { name: '项目列表' })
+    .getByRole('button', { name: /^tools/ })
+    .click()
+  await page.getByRole('button', { name: '运行 watch' }).click()
+
+  // Create two batch groups that share api:serve, starting backend-only first so full-stack reuses it.
+  const groupIds = await page.evaluate(async () => {
+    const devhub = (window as unknown as DevhubWindow).devhub
+    const projects = await devhub.listProjects()
+    const apiId = projects.find((p) => p.name === 'api')?.id
+    const webId = projects.find((p) => p.name === 'web')?.id
+    if (!apiId || !webId) throw new Error('missing projects')
+    const g1 = await devhub.saveGroup({
+      name: 'backend-only',
+      mode: 'parallel',
+      steps: [
+        { projectId: apiId, scriptId: 'npm:serve', continueWhen: { type: 'delay', seconds: 0 } }
+      ]
+    })
+    const g2 = await devhub.saveGroup({
+      name: 'full-stack',
+      mode: 'parallel',
+      steps: [
+        { projectId: apiId, scriptId: 'npm:serve', continueWhen: { type: 'delay', seconds: 0 } },
+        { projectId: webId, scriptId: 'npm:dev', continueWhen: { type: 'delay', seconds: 0 } }
+      ]
+    })
+    await devhub.startGroup(g1.id)
+    return { g1: g1.id, g2: g2.id }
+  })
+
+  await expect
+    .poll(async () => {
+      const states = await page.evaluate(() =>
+        (window as unknown as DevhubWindow).devhub.listGroupStates()
+      )
+      return states.find((s) => s.groupId === groupIds.g1)?.status
+    })
+    .toBe('done')
+
+  await page.evaluate(
+    (id) => (window as unknown as DevhubWindow).devhub.startGroup(id),
+    groupIds.g2
+  )
+
+  await page.getByRole('button', { name: '运行中', exact: true }).click()
+  const runningBadge = page.getByRole('button', { name: '运行中', exact: true }).getByRole('status')
+  await expect(runningBadge).toHaveText('3')
+
+  const batchRegion = page.getByRole('region', { name: '正在运行的批量任务' })
+  const backendChildren = batchRegion.getByRole('list', { name: 'backend-only 的子任务' })
+  const fullStackChildren = batchRegion.getByRole('list', { name: 'full-stack 的子任务' })
+  await expect(backendChildren).toContainText('api · serve')
+  await expect(backendChildren).toContainText('关联：full-stack')
+  await expect(fullStackChildren).toContainText('api · serve')
+  await expect(fullStackChildren).toContainText('关联：backend-only')
+  await expect(fullStackChildren).toContainText('web · dev')
+
+  const standaloneRegion = page.getByRole('region', { name: '独立运行' })
+  await expect(standaloneRegion).toContainText('tools · watch')
+
+  // Re-run from Running view reuses the running api:serve process
+  await batchRegion.getByRole('button', { name: '重新执行批量任务 backend-only' }).click()
+  await batchRegion.getByRole('button', { name: '查看运行中的批量任务 backend-only' }).click()
+  const detail = page.getByRole('region', { name: '任务运行 backend-only' })
+  await expect(detail).toContainText('复用已有运行')
 })

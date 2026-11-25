@@ -98,6 +98,9 @@ M4-3 Android：
 - #143 已发布（v1.12.1）：统一右侧工作区顶栏与操作按钮样式规范；统一使用 bg-card/60 顶栏容器底色与 px-6 py-3.5 内边距，统一主副标题间距（gap-0.5）与 font-heading 字族，统一新建操作按钮尺寸（h-8 px-3 text-xs font-semibold shadow-xs）与图标尺寸（size-3.5）；pnpm check 与 Playwright pnpm e2e 全部通过。
 - #145 已发布（v1.12.1）：对齐「运行中」工作区顶栏与页面布局规范；统一顶栏为通栏 bg-card/60 与 px-6 py-3.5 内边距，移除大图标方块与双重标题，内容区增加 max-w-4xl 居中约束并优化空状态与条目内边距；pnpm check 与 Playwright pnpm e2e 全部通过。
 - #148 已完成：优化底部状态栏在多任务运行时的单行紧凑摘要与健康详情 Popover 定位，抽离纯函数状态汇总模块 `status-bar-summary.ts` 并补齐单测，点击详情条目可直达对应脚本终端；`pnpm check` 与 `pnpm e2e` 通过。
+- #147 已完成：解耦项目列表选中态与运行态视觉表现，选中项使用主色边框/浅底与左侧指示条，运行状态由右侧 `ActiveRunsIndicator` 表达；`pnpm check` 与 `pnpm e2e` 通过。
+- #125 已完成：移除批量任务列表冗余的执行与停止全部按钮，将整张任务卡改为可点击直接选中；`pnpm check` 与 `pnpm e2e` 通过。
+- #127 已完成：在「运行中」页面按批量任务父卡片与缩进子任务树展示父子层级与跨批量关联关系，抽离纯逻辑 `running-hierarchy.ts` 并补齐单测，支持运行中页面快捷重新执行批量任务；`pnpm check` 与 `pnpm e2e` 通过。
 
 桌面 MVP 发布：
 

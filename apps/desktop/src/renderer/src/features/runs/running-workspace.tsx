@@ -1,9 +1,13 @@
+import { useMemo } from 'react'
 import { Activity } from 'lucide-react'
 import type { Run } from '@devhub/shared'
 import { useActiveGroups } from '@renderer/features/groups/use-active-groups'
+import { useGroupStates } from '@renderer/features/groups/use-groups'
 import { useProjects } from '@renderer/features/projects/use-projects'
-import { useRuns } from './use-runs'
 import { SidebarRunningSection } from '@renderer/features/sidebar/sidebar-running-section'
+import { buildRunningHierarchy } from './running-hierarchy'
+import { useRunHealth } from './use-run-health'
+import { useRuns } from './use-runs'
 
 interface RunningWorkspaceProps {
   onSelectGroup: (groupId: string) => void
@@ -15,9 +19,23 @@ export function RunningWorkspace({
   onOpenRun
 }: RunningWorkspaceProps): React.JSX.Element {
   const activeGroups = useActiveGroups()
-  const activeRuns = (useRuns().data ?? []).filter((run) => run.status !== 'exited')
+  const groupStates = useGroupStates().data ?? []
+  const runs = useRuns().data
+  const activeRuns = useMemo(() => (runs ?? []).filter((run) => run.status !== 'exited'), [runs])
   const projects = useProjects().data ?? []
-  const totalCount = activeGroups.length + activeRuns.length
+  const health = useRunHealth().data ?? []
+
+  const hierarchy = useMemo(
+    () =>
+      buildRunningHierarchy({
+        activeGroups,
+        groupStates,
+        activeRuns,
+        projects,
+        health
+      }),
+    [activeGroups, groupStates, activeRuns, projects, health]
+  )
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
@@ -26,20 +44,16 @@ export function RunningWorkspace({
           <h1 className="font-heading text-lg font-semibold tracking-tight text-foreground">
             运行中
           </h1>
-          <p className="text-xs text-muted-foreground">
-            {totalCount > 0 ? `${totalCount} 个活动项正在运行` : '查看当前项目脚本和批量任务'}
-          </p>
+          <p className="text-xs text-muted-foreground">{hierarchy.subtitle}</p>
         </div>
       </header>
 
       <main className="min-h-0 flex-1 overflow-y-auto p-5">
-        {totalCount > 0 ? (
+        {hierarchy.hasActive ? (
           <div className="mx-auto flex max-w-4xl flex-col gap-3">
             <SidebarRunningSection
               variant="page"
-              activeRuns={activeRuns}
-              activeGroups={activeGroups}
-              projects={projects}
+              hierarchy={hierarchy}
               onSelectGroup={onSelectGroup}
               onOpenRun={onOpenRun}
             />

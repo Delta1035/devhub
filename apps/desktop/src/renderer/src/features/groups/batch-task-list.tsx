@@ -1,16 +1,5 @@
 import { useState } from 'react'
-import {
-  Ellipsis,
-  Loader2,
-  Pencil,
-  Pin,
-  PinOff,
-  Play,
-  Plus,
-  Square,
-  Trash2,
-  X as XIcon
-} from 'lucide-react'
+import { Ellipsis, Pencil, Pin, PinOff, Plus, Trash2, X as XIcon } from 'lucide-react'
 import { activeGroups, sortGroups, type Group, type GroupSortOrder } from '@devhub/shared'
 import { access } from '@renderer/api'
 import { Badge } from '@renderer/components/ui/badge'
@@ -26,14 +15,7 @@ import { cn } from '@renderer/lib/utils'
 import { resolveGroupStatus } from './group-status'
 import { GROUP_SORT_STORAGE_KEY, getStoredGroupSortOrder } from './group-sort'
 import { GroupSortMenu } from './group-sort-menu'
-import {
-  useDeleteGroup,
-  useGroupStates,
-  useGroups,
-  useSetGroupPinned,
-  useStartGroup,
-  useStopGroup
-} from './use-groups'
+import { useDeleteGroup, useGroupStates, useGroups, useSetGroupPinned } from './use-groups'
 import { toast } from '@renderer/lib/toast'
 
 interface BatchTaskListProps {
@@ -52,8 +34,6 @@ export function BatchTaskList({
   const groups = useGroups()
   const states = useGroupStates()
   const runs = useRuns().data ?? []
-  const start = useStartGroup()
-  const stop = useStopGroup()
   const setPinned = useSetGroupPinned()
   const deleteGroup = useDeleteGroup()
   const [error, setError] = useState<string | null>(null)
@@ -119,9 +99,6 @@ export function BatchTaskList({
           const active = activeList.find((a) => a.groupId === group.id)
           const presentation = resolveGroupStatus({ group, state, active })
           const isSelected = group.id === selectedGroupId
-          const busy =
-            (start.isPending && start.variables === group.id) ||
-            (stop.isPending && stop.variables === group.id)
           const pinPending = setPinned.isPending && setPinned.variables?.groupId === group.id
 
           return (
@@ -130,103 +107,74 @@ export function BatchTaskList({
               role="listitem"
               aria-label={`批量任务 ${group.name}`}
               className={cn(
-                'group relative flex flex-col gap-1.5 rounded-lg border p-2.5 transition-colors',
+                'group relative rounded-lg border transition-colors',
                 isSelected
-                  ? 'border-border-strong bg-accent text-accent-foreground'
-                  : 'border-transparent hover:border-border/60 hover:bg-muted/40'
+                  ? 'border-primary/40 bg-primary/10 text-foreground shadow-xs before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-full before:bg-primary'
+                  : 'border-transparent hover:border-border/60 hover:bg-muted/50'
               )}
             >
-              <div className="flex items-center gap-2">
-                {/* 状态指示点 */}
-                <span
-                  className={cn(
-                    'size-1.5 shrink-0 rounded-full',
-                    presentation.dotState === 'starting' && 'animate-pulse bg-primary',
-                    presentation.dotState === 'running' && 'bg-primary',
-                    presentation.dotState === 'failed' && 'bg-destructive',
-                    presentation.dotState === 'done' && 'bg-muted-foreground/60',
-                    presentation.dotState === 'idle' && 'bg-muted-foreground/30'
-                  )}
-                />
+              {/* 整卡直接点击选中 */}
+              <button
+                type="button"
+                onClick={() => onSelectGroup(group.id)}
+                aria-label={`查看 ${group.name}`}
+                aria-current={isSelected ? 'true' : undefined}
+                className="flex w-full cursor-pointer flex-col gap-1.5 rounded-lg p-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <div className="flex w-full items-center gap-2 pr-7">
+                  {/* 状态指示点 */}
+                  <span
+                    className={cn(
+                      'size-1.5 shrink-0 rounded-full',
+                      presentation.dotState === 'starting' && 'animate-pulse bg-primary',
+                      presentation.dotState === 'running' && 'bg-primary',
+                      presentation.dotState === 'failed' && 'bg-destructive',
+                      presentation.dotState === 'done' && 'bg-muted-foreground/60',
+                      presentation.dotState === 'idle' && 'bg-muted-foreground/30'
+                    )}
+                  />
 
-                {/* 任务名称与点击选择 */}
-                <button
-                  type="button"
-                  onClick={() => onSelectGroup(group.id)}
-                  aria-label={`查看 ${group.name}`}
-                  aria-current={isSelected ? 'true' : undefined}
-                  className="flex min-w-0 flex-1 items-center gap-1.5 text-left outline-none"
-                >
-                  <span className="truncate text-xs font-semibold text-foreground">
-                    {group.name}
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                    <span className="truncate text-xs font-semibold text-foreground">
+                      {group.name}
+                    </span>
+                    {group.pinnedAt && (
+                      <Pin
+                        className="size-2.5 shrink-0 text-muted-foreground"
+                        aria-label="已置顶"
+                      />
+                    )}
                   </span>
-                  {group.pinnedAt && (
-                    <Pin className="size-2.5 shrink-0 text-muted-foreground" aria-label="已置顶" />
-                  )}
-                </button>
 
-                {/* 状态徽标 */}
-                <Badge
-                  variant="secondary"
-                  className={cn(
-                    'h-4 shrink-0 px-1 font-mono text-[9px] font-normal border-0',
-                    presentation.isActive && 'bg-primary/15 text-primary font-medium',
-                    presentation.phase === 'failed' &&
-                      'bg-destructive/15 text-destructive font-medium',
-                    (presentation.phase === 'done' || presentation.phase === 'stopped') &&
-                      'bg-secondary text-muted-foreground',
-                    presentation.phase === 'idle' && 'bg-secondary/60 text-muted-foreground/60'
-                  )}
-                >
-                  {presentation.badgeText}
-                </Badge>
-              </div>
+                  {/* 状态徽标 */}
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      'h-4 shrink-0 border-0 px-1 font-mono text-[9px] font-normal',
+                      presentation.isActive && 'bg-primary/15 font-medium text-primary',
+                      presentation.phase === 'failed' &&
+                        'bg-destructive/15 font-medium text-destructive',
+                      (presentation.phase === 'done' || presentation.phase === 'stopped') &&
+                        'bg-secondary text-muted-foreground',
+                      presentation.phase === 'idle' && 'bg-secondary/60 text-muted-foreground/60'
+                    )}
+                  >
+                    {presentation.badgeText}
+                  </Badge>
+                </div>
 
-              {/* 第二行：步骤数、模式与时间 */}
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground/70">
-                <span>
-                  {group.steps.length} 步 · {group.mode === 'parallel' ? '并行' : '串行'}
-                </span>
-                <span className={cn(presentation.phase === 'failed' && 'text-destructive')}>
-                  {presentation.summaryText}
-                </span>
-              </div>
+                {/* 第二行：步骤数、模式与时间 */}
+                <div className="flex w-full items-center justify-between text-[10px] text-muted-foreground/70">
+                  <span>
+                    {group.steps.length} 步 · {group.mode === 'parallel' ? '并行' : '串行'}
+                  </span>
+                  <span className={cn(presentation.phase === 'failed' && 'text-destructive')}>
+                    {presentation.summaryText}
+                  </span>
+                </div>
+              </button>
 
-              {/* 悬停/快捷操作条 */}
-              <div className="flex items-center justify-end gap-1 pt-0.5">
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => start.mutate(group.id, { onError: (e) => setError(e.message) })}
-                  disabled={busy || presentation.phase === 'starting'}
-                  aria-label={`执行 ${group.name}`}
-                  title={presentation.isActive ? '重新执行任务' : '执行任务'}
-                  className="size-6 text-muted-foreground hover:text-foreground"
-                >
-                  {busy && presentation.phase === 'starting' ? (
-                    <Loader2 className="size-3 animate-spin" />
-                  ) : (
-                    <Play className="size-3" />
-                  )}
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => stop.mutate(group.id, { onError: (e) => setError(e.message) })}
-                  disabled={busy || !presentation.isActive}
-                  aria-label={`停止 ${group.name}`}
-                  title="停止全部"
-                  className={cn(
-                    'size-6 transition-colors',
-                    presentation.isActive
-                      ? 'text-destructive hover:bg-destructive/15 hover:text-destructive'
-                      : 'text-muted-foreground/40 hover:text-muted-foreground'
-                  )}
-                >
-                  <Square className="size-3" />
-                </Button>
-
+              <div className="absolute top-2 right-2 z-10">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -234,9 +182,9 @@ export function BatchTaskList({
                       size="icon-xs"
                       aria-label={`${group.name} 的更多操作`}
                       title="更多操作"
-                      className="size-6 text-muted-foreground hover:text-foreground"
+                      className="size-6 text-muted-foreground/70 hover:text-foreground"
                     >
-                      <Ellipsis className="size-3" />
+                      <Ellipsis className="size-3.5" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" aria-label={`${group.name} 的操作`}>
