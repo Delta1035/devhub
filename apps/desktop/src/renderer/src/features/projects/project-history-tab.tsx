@@ -82,7 +82,7 @@ export function ProjectHistoryTab({ project, scripts }: ProjectHistoryTabProps):
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-1 overflow-hidden">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
       {/* 左栏：运行表与筛选 */}
       <div className="flex min-w-0 flex-1 flex-col gap-3 p-4 md:p-6 overflow-y-auto">
         {/* Header aligned with pen/devhub.pen */}
@@ -225,7 +225,7 @@ export function ProjectHistoryTab({ project, scripts }: ProjectHistoryTabProps):
         </div>
 
         {/* History Table */}
-        <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-border/80 bg-card/60">
+        <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border/80 bg-card/60">
           {filteredRecords.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center">
               <History className="size-8 text-muted-foreground/40 mb-2" />
@@ -238,7 +238,7 @@ export function ProjectHistoryTab({ project, scripts }: ProjectHistoryTabProps):
               </p>
             </div>
           ) : (
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[720px] text-left text-xs">
               <thead className="border-b border-border/80 bg-secondary/40 text-[11px] font-medium text-muted-foreground">
                 <tr>
                   <th className="px-4 py-2.5">脚本</th>
@@ -361,13 +361,21 @@ export function ProjectHistoryTab({ project, scripts }: ProjectHistoryTabProps):
 
       {/* 右栏：运行详情内联面板 (zvLWR) */}
       {activeRecord && (
-        <RunDetailPanel
-          record={activeRecord}
-          scriptName={selectedScript?.name ?? activeRecord.scriptId}
-          onClose={() => setActiveRecord(null)}
-          onRerun={() => handleRerun(activeRecord)}
-          onViewFullLog={() => setViewLogRecord(activeRecord)}
-        />
+        <>
+          <button
+            type="button"
+            aria-label="关闭运行详情"
+            onClick={() => setActiveRecord(null)}
+            className="fixed inset-0 z-30 bg-black/20 md:hidden"
+          />
+          <RunDetailPanel
+            record={activeRecord}
+            scriptName={selectedScript?.name ?? activeRecord.scriptId}
+            onClose={() => setActiveRecord(null)}
+            onRerun={() => handleRerun(activeRecord)}
+            onViewFullLog={() => setViewLogRecord(activeRecord)}
+          />
+        </>
       )}
 
       {/* 全屏日志弹窗 */}

@@ -15,6 +15,7 @@ import { healthLabels, useRunHealth } from '@renderer/features/runs/use-run-heal
 import { useRuns } from '@renderer/features/runs/use-runs'
 import { useRemoteState } from '@renderer/features/settings/use-remote'
 import { cn } from '@renderer/lib/utils'
+import { narrowQuery, useMediaQuery } from '@renderer/lib/use-media-query'
 import { buildStatusBarSummary, type StatusBarHealthItem } from './status-bar-summary'
 
 interface StatusBarProps {
@@ -95,6 +96,8 @@ export function StatusBar({
   const { data: health = [] } = useRunHealth()
   const { data: projects = [] } = useProjects()
   const { data: remote } = useRemoteState()
+  const narrow = useMediaQuery(narrowQuery)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [online, setOnline] = useState(() =>
     typeof navigator !== 'undefined' ? navigator.onLine : true
@@ -118,7 +121,100 @@ export function StatusBar({
 
   const handleOpenHealthRun = (run: Run): void => {
     setPopoverOpen(false)
+    setMobileOpen(false)
     onOpenRun?.(run)
+  }
+
+  if (narrow) {
+    const activeLabel = summary.activeCount > 0 ? `${summary.activeCount} 个运行中` : '空闲'
+    return (
+      <Popover open={mobileOpen} onOpenChange={setMobileOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label="展开系统状态"
+            aria-expanded={mobileOpen}
+            className={cn(
+              'app-no-drag fixed right-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-40 flex h-9 items-center gap-2 rounded-full border border-border bg-card/95 px-3 text-[11px] font-medium text-foreground shadow-lg backdrop-blur transition-colors hover:bg-card',
+              hasUnhealthy && 'border-destructive/40 text-destructive'
+            )}
+          >
+            <CircleDot
+              className={cn(
+                'size-3 shrink-0',
+                hasUnhealthy
+                  ? 'bg-destructive'
+                  : summary.activeCount > 0
+                    ? 'animate-pulse bg-success'
+                    : 'bg-muted-foreground/60'
+              )}
+            />
+            <span>{activeLabel}</span>
+            {summary.healthItems.length > 0 && (
+              <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                {summary.counts.total}
+              </span>
+            )}
+            <ChevronUp
+              className={cn('size-3.5 shrink-0 transition-transform', mobileOpen && 'rotate-180')}
+            />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          side="top"
+          align="end"
+          sideOffset={8}
+          aria-label="系统状态详情"
+          className="w-[min(20rem,calc(100vw-1.5rem))] gap-0 p-0"
+        >
+          <div className="flex items-center justify-between border-b border-border px-3 py-2">
+            <span className="text-xs font-semibold text-foreground">系统状态</span>
+            <span className="text-[11px] text-muted-foreground">{activeLabel}</span>
+          </div>
+          {summary.activeCount > 0 && onOpenRunningView && (
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOpen(false)
+                onOpenRunningView()
+              }}
+              className="flex w-full items-center gap-1.5 border-b border-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted/60"
+            >
+              <CircleDot className="size-3 animate-pulse text-success" />
+              查看运行中任务
+            </button>
+          )}
+          {summary.healthItems.length > 0 && (
+            <div className="max-h-72 overflow-y-auto p-1.5">
+              {summary.healthItems.map((item) => (
+                <HealthPopoverRow
+                  key={item.runId}
+                  item={item}
+                  onSelect={onOpenRun ? handleOpenHealthRun : undefined}
+                />
+              ))}
+            </div>
+          )}
+          <div className="flex items-center justify-between border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Smartphone
+                className={cn(
+                  'size-3 shrink-0',
+                  remote?.enabled ? 'text-primary' : 'text-muted-foreground/60'
+                )}
+              />
+              {remote?.enabled ? '远程访问已开启' : '远程未开启'}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Wifi
+                className={cn('size-3 shrink-0', online ? 'text-success' : 'text-destructive')}
+              />
+              {online ? '在线' : '离线'}
+            </span>
+          </div>
+        </PopoverContent>
+      </Popover>
+    )
   }
 
   return (

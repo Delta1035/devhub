@@ -47,7 +47,10 @@ export function ProjectSubnav({
   return (
     <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border bg-card/20 px-4 py-2 md:px-6">
       {/* 5 Tabs aligned with pen/devhub.pen */}
-      <nav aria-label="项目导航" className="flex items-center gap-1 sm:gap-2">
+      <nav
+        aria-label="项目导航"
+        className="flex max-w-full items-center gap-1 overflow-x-auto sm:gap-2"
+      >
         {/* 脚本 */}
         <button
           type="button"
@@ -55,7 +58,7 @@ export function ProjectSubnav({
           aria-label={scriptsCount > 0 ? `脚本 (${scriptsCount} 个)` : '脚本'}
           aria-current={currentTab === 'scripts' ? 'page' : undefined}
           className={cn(
-            'flex items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-xs font-medium transition-colors',
+            'flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-xs font-medium transition-colors',
             currentTab === 'scripts'
               ? 'border-primary text-foreground'
               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -82,7 +85,7 @@ export function ProjectSubnav({
           aria-label={historyCount > 0 ? `运行历史 (${historyCount} 项)` : '运行历史'}
           aria-current={currentTab === 'history' ? 'page' : undefined}
           className={cn(
-            'flex items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-xs font-medium transition-colors',
+            'flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-xs font-medium transition-colors',
             currentTab === 'history'
               ? 'border-primary text-foreground'
               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -111,7 +114,7 @@ export function ProjectSubnav({
           aria-label={activeTerminalsCount > 0 ? `终端 (${activeTerminalsCount} 个)` : '终端'}
           aria-current={currentTab === 'terminals' ? 'page' : undefined}
           className={cn(
-            'flex items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-xs font-medium transition-colors',
+            'flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-xs font-medium transition-colors',
             currentTab === 'terminals'
               ? 'border-primary text-foreground'
               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -140,7 +143,7 @@ export function ProjectSubnav({
           aria-label={tasksCount > 0 ? `任务 (${tasksCount} 个)` : '任务'}
           aria-current={currentTab === 'tasks' ? 'page' : undefined}
           className={cn(
-            'flex items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-xs font-medium transition-colors',
+            'flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-xs font-medium transition-colors',
             currentTab === 'tasks'
               ? 'border-primary text-foreground'
               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -168,7 +171,7 @@ export function ProjectSubnav({
           onClick={() => onTabChange('settings')}
           aria-current={currentTab === 'settings' ? 'page' : undefined}
           className={cn(
-            'flex items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-xs font-medium transition-colors',
+            'flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-xs font-medium transition-colors',
             currentTab === 'settings'
               ? 'border-primary text-foreground'
               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -180,7 +183,7 @@ export function ProjectSubnav({
       </nav>
 
       {/* Right Controls: Filter & Quick Action */}
-      <div className="flex items-center gap-2">
+      <div className="flex w-full items-center gap-2 sm:w-auto">
         {currentTab === 'scripts' && (
           <>
             <div className="relative flex items-center">

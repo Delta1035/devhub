@@ -160,9 +160,9 @@ export function ProjectSettingsTab({
       </header>
 
       {/* Split Body */}
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {/* Left Nav (196px) */}
-        <aside className="w-52 shrink-0 border-r border-border bg-sidebar p-3 flex flex-col gap-1">
+        <aside className="flex w-full shrink-0 gap-1 overflow-x-auto border-b border-border bg-sidebar p-2 md:w-52 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:p-3">
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = activeSection === item.key
@@ -172,7 +172,7 @@ export function ProjectSettingsTab({
                 type="button"
                 onClick={() => setActiveSection(item.key)}
                 className={cn(
-                  'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs transition-colors',
+                  'flex shrink-0 items-center gap-2 rounded-md px-2.5 py-1.5 text-xs transition-colors md:w-full',
                   isActive
                     ? 'bg-secondary font-medium text-foreground shadow-xs'
                     : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
@@ -189,10 +189,10 @@ export function ProjectSettingsTab({
             )
           })}
 
-          <div className="flex-1" />
+          <div className="hidden flex-1 md:block" />
 
           {/* Config file path card */}
-          <div className="rounded-lg border border-border bg-card/60 p-2.5 text-xs">
+          <div className="hidden rounded-lg border border-border bg-card/60 p-2.5 text-xs md:block">
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
               配置文件路径
             </span>
@@ -203,7 +203,7 @@ export function ProjectSettingsTab({
         </aside>
 
         {/* Right Content Area */}
-        <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto p-3 md:p-6">
           {activeSection === 'general' && <ProjectSettingsGeneral project={project} />}
 
           {activeSection === 'scripts' && (

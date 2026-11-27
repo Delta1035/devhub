@@ -114,7 +114,7 @@ export function ProjectHeader({
   return (
     <header className="flex flex-col gap-2 border-b border-border bg-card/40 px-4 py-3 md:px-6 md:py-3.5">
       {/* Title Row */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <h2 className="min-w-16 truncate font-heading text-lg font-semibold text-foreground md:text-xl">
             {project.name}
@@ -136,7 +136,7 @@ export function ProjectHeader({
           </span>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 md:gap-2">
           {/* VS Code & IDEA Buttons */}
           <EditorButtons
             projectId={project.id}
@@ -170,7 +170,7 @@ export function ProjectHeader({
             className="h-8 gap-1.5 border-border bg-secondary/80 px-2.5 text-xs text-muted-foreground hover:text-foreground"
           >
             <RefreshCw className={cn('size-3.5', isFetching && 'animate-spin')} />
-            刷新
+            <span className="hidden sm:inline">刷新</span>
           </Button>
 
           {/* 更多 */}

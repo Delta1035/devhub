@@ -16,7 +16,8 @@ test('on a phone-sized screen the web app uses a drawer and still drives scripts
 }, testInfo) => {
   const dir = await createProject('app', {
     'package.json': packageJson({ tick: 'node tick.js' }),
-    'tick.js': "let n = 0\nsetInterval(() => console.log('tick ' + ++n), 200)\n"
+    'tick.js':
+      "for (let n = 1; n <= 60; n++) console.log('tick ' + n)\nsetInterval(() => {}, 1000)\n"
   })
   const other = await createProject('other', { 'package.json': packageJson({ dev: 'vite' }) })
   const desktop = await launchDevhub()
@@ -51,6 +52,15 @@ test('on a phone-sized screen the web app uses a drawer and still drives scripts
     return link ? (await fetch(link.href)).json() : null
   })
   expect(manifest).toMatchObject({ start_url: './', scope: './', display: 'standalone' })
+  expect(
+    await web.evaluate(() =>
+      document.querySelector('meta[name="viewport"]')?.getAttribute('content')
+    )
+  ).toContain('interactive-widget=resizes-content')
+
+  // The mobile status summary is a floating action instead of a fixed footer.
+  await expect(web.getByRole('button', { name: '展开系统状态' })).toBeVisible()
+  await expect(web.getByRole('contentinfo')).toHaveCount(0)
 
   // The sidebar is a drawer, closed once a project is chosen.
   let rescans = 0
@@ -98,8 +108,43 @@ test('on a phone-sized screen the web app uses a drawer and still drives scripts
   await web.getByRole('button', { name: '运行 tick' }).click()
   await expect(tickRow.getByText('运行中')).toBeVisible()
   await web.getByRole('button', { name: '查看 tick 终端' }).click()
-  await expect(web.locator('.xterm-rows')).toContainText('tick 2')
+  await expect(web.locator('.xterm-rows')).toContainText('tick 60')
+  const terminalRows = web.locator('.xterm-rows')
+  const terminal = web.locator('[data-terminal-run]')
+  const box = await terminal.boundingBox()
+  if (!box) throw new Error('terminal has no bounding box')
+  const cdp = await web.context().newCDPSession(web)
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 })
+  // Synthetic CDP touches do not continue after xterm captures the pointer.
+  await web.evaluate(() => {
+    Element.prototype.setPointerCapture = () => undefined
+    Element.prototype.releasePointerCapture = () => undefined
+    Element.prototype.hasPointerCapture = () => false
+  })
+  const y = Math.floor(box.y + box.height * 0.8)
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ x: Math.floor(box.x + box.width / 2), y, id: 1 }]
+  })
+  for (let step = 1; step <= 6; step++) {
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: Math.floor(box.x + box.width / 2), y: y - step * 40, id: 1 }]
+    })
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  await expect(terminalRows).not.toContainText('tick 60')
+  await expect(terminalRows).toContainText('tick 30')
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false })
+  await cdp.detach()
   await web.screenshot({ path: testInfo.outputPath('phone-running.png') })
+
+  await web.getByRole('button', { name: '展开系统状态' }).click()
+  const mobileStatus = web.getByRole('dialog', { name: '系统状态详情' })
+  await expect(mobileStatus).toContainText('1 个运行中')
+  await expect(mobileStatus.getByRole('button', { name: '查看运行中任务' })).toBeVisible()
+  await web.keyboard.press('Escape')
+  await expect(mobileStatus).toBeHidden()
   await web.getByRole('button', { name: /^脚本/ }).click()
   await web.getByRole('button', { name: '停止 tick' }).click()
   await expect(tickRow.getByText('已停止')).toBeVisible()

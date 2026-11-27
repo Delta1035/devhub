@@ -56,7 +56,9 @@ export function EditorButtons({
             aria-label={`用 ${editor.name} 打开 ${projectName}`}
           >
             {opening ? <Loader2 className="animate-spin" /> : <EditorMark id={editor.id} />}
-            {variant === 'labeled' && marks[editor.id].short}
+            {variant === 'labeled' && (
+              <span className="hidden md:inline">{marks[editor.id].short}</span>
+            )}
           </Button>
         )
       })}

@@ -40,27 +40,28 @@ export function BatchHeader({ onNewGroup }: BatchHeaderProps): React.JSX.Element
   }
 
   return (
-    <header className="flex shrink-0 items-center justify-between border-b border-border bg-card/60 px-6 py-3.5">
-      <div className="flex flex-col gap-0.5">
+    <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-card/60 px-4 py-3 md:px-6 md:py-3.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <h1 className="font-heading text-lg font-semibold tracking-tight text-foreground">
           批量任务
         </h1>
-        <p className="text-xs text-muted-foreground">
+        <p className="truncate text-[11px] text-muted-foreground sm:text-xs">
           把多个项目的脚本串成一条流水线，并行或按顺序启动，失败即停止。
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         {groups.length > 0 && (
           <Button
             variant="outline"
             size="sm"
             onClick={handleStartAll}
             disabled={startGroup.isPending}
-            className="h-8 gap-1.5 border-border bg-secondary/80 px-3 text-xs text-muted-foreground hover:text-foreground"
+            aria-label="全部启动"
+            className="h-8 gap-1.5 border-border bg-secondary/80 px-2.5 text-xs text-muted-foreground hover:text-foreground"
           >
             <Play className="size-3.5 text-primary" />
-            全部启动
+            <span className="hidden sm:inline">全部启动</span>
           </Button>
         )}
 
@@ -72,7 +73,7 @@ export function BatchHeader({ onNewGroup }: BatchHeaderProps): React.JSX.Element
             className="h-8 gap-1.5 bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90"
           >
             <Plus className="size-3.5" data-icon="inline-start" />
-            新建任务
+            <span className="hidden sm:inline">新建任务</span>
           </Button>
         )}
 

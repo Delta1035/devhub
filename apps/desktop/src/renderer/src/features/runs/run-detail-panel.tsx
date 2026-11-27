@@ -66,7 +66,7 @@ export function RunDetailPanel({
   return (
     <aside
       aria-label="运行详情面板"
-      className="flex h-full w-[360px] shrink-0 flex-col border-l border-border bg-card/60 p-4"
+      className="fixed inset-y-[46px] right-0 z-40 flex w-full max-w-md flex-col border-l border-border bg-card/60 p-4 shadow-xl md:static md:z-auto md:h-full md:w-[360px] md:max-w-none md:shadow-none"
     >
       {/* 面板头部 */}
       <header className="flex items-center justify-between border-b border-border pb-3">

@@ -59,7 +59,7 @@ export function BatchTaskList({
     <section
       role="region"
       aria-label="批量任务"
-      className="flex h-full min-h-0 w-[272px] shrink-0 flex-col overflow-hidden border-r border-border bg-card/40 p-3"
+      className="flex h-full max-h-52 min-h-0 w-full shrink-0 flex-col overflow-hidden border-b border-border bg-card/40 p-3 md:max-h-none md:w-[272px] md:border-b-0 md:border-r"
     >
       {/* 列表头部 */}
       <div className="flex shrink-0 items-center justify-between pb-2">
