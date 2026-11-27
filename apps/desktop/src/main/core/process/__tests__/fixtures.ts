@@ -43,7 +43,8 @@ export const project: Project = {
 
 const scriptsById: Record<string, Script> = {
   'npm:dev': { id: 'npm:dev', name: 'dev', source: 'npm', command: 'pnpm run dev' },
-  'npm:api': { id: 'npm:api', name: 'api', source: 'npm', command: 'pnpm run api', cwd: 'server' }
+  'npm:api': { id: 'npm:api', name: 'api', source: 'npm', command: 'pnpm run api', cwd: 'server' },
+  'npm:worker': { id: 'npm:worker', name: 'worker', source: 'npm', command: 'pnpm run worker' }
 }
 
 /** Installed shells the fake machine reports, in preference order. */

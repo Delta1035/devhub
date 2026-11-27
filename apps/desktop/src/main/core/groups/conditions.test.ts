@@ -157,6 +157,13 @@ describe('waitForCondition', () => {
     await expect(result).resolves.toBe('ok')
   })
 
+  it('fails a fixed delay when the process exits first', async () => {
+    const result = settle(wait({ type: 'delay', seconds: 3 }))
+    exit(0)
+    await expect(result).resolves.toBe('进程已退出，条件未满足')
+    expect(listeners).toEqual([])
+  })
+
   it('is cancelled by the abort signal', async () => {
     const result = settle(wait({ type: 'port', port: 8080, timeoutSeconds: 10 }))
     controller.abort()

@@ -52,8 +52,10 @@ test('a serial group across projects waits for each step, then stops everything'
   await dialog.getByLabel('名称').fill('front1')
   await dialog.getByRole('button', { name: /^串行/ }).click()
   await fillStep(page, 1, 'api', 'serve', 'API ready')
+  await page.getByLabel('第 1 步的任务类型').selectOption({ label: '持续运行任务' })
   await dialog.getByRole('button', { name: '添加步骤' }).click()
   await fillStep(page, 2, 'web', 'serve', 'web up')
+  await page.getByLabel('第 2 步的任务类型').selectOption({ label: '持续运行任务' })
   await dialog.getByRole('button', { name: '保存' }).click()
   await expect(dialog).toBeHidden()
 
@@ -97,8 +99,8 @@ test('a serial group across projects waits for each step, then stops everything'
   await expect(bar.getByRole('button', { name: '重新执行批量任务 front1' })).toBeEnabled()
   await expect(titleBar).toHaveCount(0)
   await page.getByRole('button', { name: '批量', exact: true }).click()
-  await expect(detail).toContainText('2/2 个步骤完成')
-  await expect(detail).toContainText('服务进程正在运行中')
+  await expect(detail).toContainText('2 个已就绪')
+  await expect(detail).toContainText('启动流程已完成')
   await expect(detail.getByRole('button', { name: '停止全部' })).toBeEnabled()
   await expect(detail.getByRole('listitem', { name: '运行步骤 1' })).toContainText('本次启动')
   await detail
@@ -161,7 +163,7 @@ test('a failing serial step stops the sequence and explains why', async ({
   await dialog.getByLabel('名称').fill('broken')
   await dialog.getByRole('button', { name: /^串行/ }).click()
   await fillStep(page, 1, 'app', 'build')
-  await page.getByLabel('第 1 步的继续条件').selectOption({ label: '进程成功退出' })
+  await page.getByLabel('第 1 步的任务类型').selectOption({ label: '一次性任务' })
   await dialog.getByRole('button', { name: '添加步骤' }).click()
   await fillStep(page, 2, 'app', 'serve', 'never')
   await dialog.getByRole('button', { name: '保存' }).click()
@@ -177,6 +179,71 @@ test('a failing serial step stops the sequence and explains why', async ({
 
   const runs = await listRuns(page)
   expect(runs.map((run) => run.title)).toEqual(['build'])
+})
+
+test('a one-shot step completes only after its process exits successfully', async ({
+  launchDevhub,
+  createProject
+}) => {
+  const dir = await createProject('builder', {
+    'package.json': packageJson({ build: 'node -e "setTimeout(() => process.exit(0), 300)"' })
+  })
+  const { page } = await launchDevhub()
+  await addProjectViaApi(page, dir)
+
+  const groups = await openGroups(page)
+  await groups.getByRole('button', { name: '新建', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('名称').fill('release build')
+  await fillStep(page, 1, 'builder', 'build')
+  await dialog.getByLabel('第 1 步的任务类型').selectOption({ label: '一次性任务' })
+  await dialog.getByRole('button', { name: '保存' }).click()
+
+  const item = groups.getByRole('listitem', { name: '批量任务 release build' })
+  await item.getByRole('button', { name: '查看 release build' }).click()
+  const detail = page.getByRole('region', { name: '任务运行 release build' })
+  await detail.getByRole('button', { name: '执行', exact: true }).click()
+  await expect(item).toContainText('已完成', { timeout: 20_000 })
+  await expect(detail).toContainText('1/1 个步骤完成')
+  await expect(detail.getByRole('listitem', { name: '运行步骤 1' })).toContainText('已完成')
+})
+
+test('a failed persistent step stays visible while another persistent run remains alive', async ({
+  launchDevhub,
+  createProject
+}) => {
+  const dir = await createProject('watcher', {
+    'package.json': packageJson({ dev: 'node watcher.js', serve: 'node server.js' }),
+    'watcher.js': `console.log('watching'); setTimeout(() => process.exit(2), 1500)`,
+    'server.js': `console.log('alive'); setInterval(() => {}, 1000)`
+  })
+  const { page } = await launchDevhub()
+  await addProjectViaApi(page, dir)
+
+  const groups = await openGroups(page)
+  await groups.getByRole('button', { name: '新建', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('名称').fill('watch files')
+  await fillStep(page, 1, 'watcher', 'dev', 'watching')
+  await dialog.getByRole('button', { name: '添加步骤' }).click()
+  await fillStep(page, 2, 'watcher', 'serve', 'alive')
+  await dialog.getByRole('button', { name: '保存' }).click()
+
+  const item = groups.getByRole('listitem', { name: '批量任务 watch files' })
+  await item.getByRole('button', { name: '查看 watch files' }).click()
+  const detail = page.getByRole('region', { name: '任务运行 watch files' })
+  await detail.getByRole('button', { name: '执行', exact: true }).click()
+  await expect(item).toContainText('失败', { timeout: 20_000 })
+  await expect(item).toContainText('持续运行任务异常退出（退出码 2）')
+  await expect(detail).toContainText('失败 · 1 个服务仍存活')
+  await expect(detail).toContainText('启动流程异常结束，当前有 1 个持续运行任务')
+  await expect(detail.getByRole('listitem', { name: '运行步骤 1' })).toContainText('异常退出')
+  await expect(detail.getByRole('listitem', { name: '运行步骤 2' })).toContainText('已就绪')
+  await detail.getByRole('button', { name: '停止全部' }).click()
+  await expect
+    .poll(async () => (await listRuns(page)).filter((run) => run.status !== 'exited').length)
+    .toBe(0)
+  await expect(detail.getByRole('listitem', { name: '运行步骤 2' })).toContainText('已停止')
 })
 
 test('waits for a regex in the output and remembers the result after a restart', async ({
@@ -198,6 +265,7 @@ test('waits for a regex in the output and remembers the result after a restart',
   await dialog.getByLabel('名称').fill('backend')
   await dialog.getByRole('button', { name: /^串行/ }).click()
   await fillStep(page, 1, 'api', 'serve')
+  await page.getByLabel('第 1 步的任务类型').selectOption({ label: '持续运行任务' })
   await dialog.getByLabel('第 1 步使用正则').check()
   await dialog.getByLabel('第 1 步等待的文字').fill(String.raw`Started \w+ in [\d.]+ seconds`)
   await dialog.getByRole('button', { name: '保存' }).click()
@@ -211,12 +279,12 @@ test('waits for a regex in the output and remembers the result after a restart',
   await expect(detail()).toContainText('本次启动')
   await detail().getByRole('button', { name: '执行', exact: true }).click()
   await expect(detail()).toContainText('复用已有运行')
-  await expect(detail()).toContainText('1/1 个步骤完成')
+  await expect(detail()).toContainText('1 个已就绪')
 
   await app.close()
   page = (await launchDevhub()).page
   await openGroups(page)
-  await expect(item()).toContainText(/已完成 · \d{2}:\d{2}/)
+  await expect(item()).toContainText(/已停止 · \d{2}:\d{2}/)
   await item().getByRole('button', { name: '查看 backend' }).click()
   await expect(detail()).toContainText('日志不可用')
   await expect(detail().getByRole('button', { name: '查看日志' })).toHaveCount(0)
@@ -262,15 +330,30 @@ test('shows parent-child hierarchy, cross-group reuse links, and standalone runs
       name: 'backend-only',
       mode: 'parallel',
       steps: [
-        { projectId: apiId, scriptId: 'npm:serve', continueWhen: { type: 'delay', seconds: 0 } }
+        {
+          projectId: apiId,
+          scriptId: 'npm:serve',
+          executionKind: 'persistent' as const,
+          continueWhen: { type: 'delay', seconds: 0 }
+        }
       ]
     })
     const g2 = await devhub.saveGroup({
       name: 'full-stack',
       mode: 'parallel',
       steps: [
-        { projectId: apiId, scriptId: 'npm:serve', continueWhen: { type: 'delay', seconds: 0 } },
-        { projectId: webId, scriptId: 'npm:dev', continueWhen: { type: 'delay', seconds: 0 } }
+        {
+          projectId: apiId,
+          scriptId: 'npm:serve',
+          executionKind: 'persistent' as const,
+          continueWhen: { type: 'delay', seconds: 0 }
+        },
+        {
+          projectId: webId,
+          scriptId: 'npm:dev',
+          executionKind: 'persistent' as const,
+          continueWhen: { type: 'delay', seconds: 0 }
+        }
       ]
     })
     await devhub.startGroup(g1.id)
@@ -284,7 +367,7 @@ test('shows parent-child hierarchy, cross-group reuse links, and standalone runs
       )
       return states.find((s) => s.groupId === groupIds.g1)?.status
     })
-    .toBe('done')
+    .toBe('ready')
 
   await page.evaluate(
     (id) => (window as unknown as DevhubWindow).devhub.startGroup(id),

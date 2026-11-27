@@ -5,6 +5,8 @@ import {
   type DevhubEvent,
   type Group,
   type GroupRunState,
+  type GroupStep,
+  type GroupStepExecutionKind,
   type Run
 } from '@devhub/shared'
 import { createGroupRunner } from './group-runner'
@@ -67,6 +69,13 @@ const step = (id: string, scriptId: string, continueWhen: ContinueCondition) => 
   scriptId,
   continueWhen
 })
+
+const lifecycleStep = (
+  id: string,
+  scriptId: string,
+  executionKind: GroupStepExecutionKind,
+  continueWhen: ContinueCondition
+): GroupStep => ({ ...step(id, scriptId, continueWhen), executionKind })
 
 describe('createGroupRunner', () => {
   let listeners: ((event: DevhubEvent) => void)[]
@@ -153,6 +162,38 @@ describe('createGroupRunner', () => {
     ])
   })
 
+  it('records an intentional stop of a ready persistent step without reporting failure', async () => {
+    define({
+      id: 'g',
+      name: 'g',
+      mode: 'parallel',
+      steps: [lifecycleStep('s1', 'npm:dev', 'persistent', { type: 'delay', seconds: 0 })]
+    })
+
+    await runner.start('g')
+    await flush()
+    await manager.stop('run-1')
+    await flush()
+    expect(latest()).toMatchObject({
+      status: 'stopped',
+      steps: [{ state: 'stopped', message: '已主动停止' }]
+    })
+  })
+
+  it('marks ready persistent steps stopped when the whole group is stopped', async () => {
+    define({
+      id: 'g',
+      name: 'g',
+      mode: 'parallel',
+      steps: [lifecycleStep('s1', 'npm:dev', 'persistent', { type: 'delay', seconds: 0 })]
+    })
+    await runner.start('g')
+    await flush()
+
+    await runner.stop('g')
+    expect(latest()).toMatchObject({ status: 'stopped', steps: [{ state: 'stopped' }] })
+  })
+
   it('runs serial steps one after another, each waiting for its condition', async () => {
     define({
       id: 'g',
@@ -186,6 +227,36 @@ describe('createGroupRunner', () => {
       'npm:api',
       'npm:web'
     ])
+  })
+
+  it('advances a typed serial group after completion and readiness respectively', async () => {
+    define({
+      id: 'g',
+      name: 'g',
+      mode: 'serial',
+      steps: [
+        lifecycleStep('s1', 'npm:build', 'oneShot', { type: 'exit', timeoutSeconds: 60 }),
+        lifecycleStep('s2', 'npm:dev', 'persistent', {
+          type: 'output',
+          text: 'ready',
+          timeoutSeconds: 60
+        })
+      ]
+    })
+
+    await runner.start('g')
+    await flush()
+    expect(manager.start).toHaveBeenCalledTimes(1)
+    manager.exit('run-1', 0)
+    await flush()
+    expect(stepStates()).toEqual(['completed', 'running'])
+
+    manager.print('run-2', 'ready')
+    await flush()
+    expect(latest()).toMatchObject({
+      status: 'ready',
+      steps: [{ state: 'completed' }, { state: 'ready' }]
+    })
   })
 
   it('stops the sequence at a failed step and does not start the rest', async () => {

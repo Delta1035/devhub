@@ -39,6 +39,8 @@ export interface GroupRunnerDeps {
 interface Execution {
   state: GroupRunState
   controller: AbortController
+  /** Why an in-progress sequence was aborted by a persistent run monitor. */
+  abortStatus?: 'failed' | 'stopped'
 }
 
 const errorMessage = (error: unknown): string =>
@@ -121,81 +123,159 @@ export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
     return { run: await runs.start(step.projectId, step.scriptId), reused: false }
   }
 
+  const successStatus = (group: Group): GroupRunState['status'] =>
+    group.steps.some((step) => step.executionKind === 'persistent') ? 'ready' : 'done'
+
+  const monitorPersistentRun = (execution: Execution, index: number, runId: string): void => {
+    const { signal } = execution.controller
+    let settled = false
+    let unsubscribe = (): void => undefined
+    const stopWatching = (): void => {
+      if (settled) return
+      settled = true
+      unsubscribe()
+      signal.removeEventListener('abort', stopWatching)
+    }
+    const onExit = (run: Run): void => {
+      if (settled || signal.aborted || run.id !== runId || run.status !== 'exited') return
+      stopWatching()
+      if (run.stopped) {
+        setStep(execution, index, 'stopped', { message: '已主动停止' })
+        if (execution.state.status === 'running') {
+          execution.abortStatus = 'stopped'
+          execution.controller.abort()
+        } else if (
+          execution.state.status === 'ready' &&
+          !execution.state.steps.some((step) => step.state === 'ready')
+        ) {
+          execution.state.status = 'stopped'
+          execution.state.finishedAt = now().toISOString()
+          publish(execution)
+          persist()
+        }
+        return
+      }
+
+      setStep(execution, index, 'failed', {
+        message: `持续运行任务异常退出（退出码 ${run.exitCode ?? '未知'}）`
+      })
+      if (execution.state.status === 'running') {
+        execution.abortStatus = 'failed'
+        execution.controller.abort()
+      } else if (execution.state.status === 'ready') {
+        execution.state.status = 'failed'
+        execution.state.finishedAt = now().toISOString()
+        publish(execution)
+        persist()
+      }
+    }
+
+    unsubscribe = subscribe((event) => {
+      if (event.type === 'run-updated') onExit(event.run)
+    })
+    signal.addEventListener('abort', stopWatching)
+    const current = runs.list().find((run) => run.id === runId)
+    if (current) onExit(current)
+  }
+
+  const executeStep = async (
+    group: Group,
+    execution: Execution,
+    step: GroupStep,
+    index: number
+  ): Promise<void> => {
+    const { signal } = execution.controller
+    setStep(execution, index, 'running', { message: '启动中' })
+
+    let run: Run
+    let reused: boolean
+    try {
+      const started = await startStep(step)
+      run = started.run
+      reused = started.reused
+      setStep(execution, index, 'running', { runId: run.id, reused })
+      if (signal.aborted) {
+        if (!reused) await runs.stop(run.id).catch(() => undefined)
+        setStep(execution, index, 'cancelled', { runId: run.id, reused })
+        return
+      }
+    } catch (error) {
+      setStep(execution, index, signal.aborted ? 'cancelled' : 'failed', {
+        message: signal.aborted ? undefined : errorMessage(error)
+      })
+      return
+    }
+
+    // Parallel groups saved by older versions completed as soon as their processes started.
+    if (!step.executionKind && group.mode === 'parallel') {
+      setStep(execution, index, 'done', {
+        runId: run.id,
+        reused,
+        message: reused ? '已在运行' : '已启动'
+      })
+      return
+    }
+
+    setStep(execution, index, 'running', {
+      runId: run.id,
+      reused,
+      message: describeCondition(step.continueWhen)
+    })
+    try {
+      await waitForCondition(
+        step.continueWhen,
+        run.id,
+        {
+          subscribe,
+          getRun: (runId) => runs.list().find((candidate) => candidate.id === runId),
+          getOutput: (runId) => runs.output(runId).data,
+          checkPort,
+          checkHttp
+        },
+        signal
+      )
+      if (step.executionKind === 'oneShot') {
+        setStep(execution, index, 'completed')
+      } else if (step.executionKind === 'persistent') {
+        setStep(execution, index, 'ready')
+        monitorPersistentRun(execution, index, run.id)
+      } else {
+        setStep(execution, index, 'done')
+      }
+    } catch (error) {
+      if (error instanceof WaitCancelledError) {
+        if (execution.state.steps[index]?.state === 'running') {
+          setStep(execution, index, 'cancelled')
+        }
+        return
+      }
+      setStep(execution, index, 'failed', { message: errorMessage(error) })
+    }
+  }
+
   const runParallel = async (group: Group, execution: Execution): Promise<void> => {
     const { signal } = execution.controller
-    await Promise.all(
-      group.steps.map(async (step, index) => {
-        setStep(execution, index, 'running', { message: '启动中' })
-        try {
-          const { run, reused } = await startStep(step)
-          if (signal.aborted) {
-            if (!reused) await runs.stop(run.id).catch(() => undefined)
-            setStep(execution, index, 'cancelled', { runId: run.id, reused })
-            return
-          }
-          setStep(execution, index, 'done', {
-            runId: run.id,
-            reused,
-            message: reused ? '已在运行' : '已启动'
-          })
-        } catch (error) {
-          setStep(execution, index, signal.aborted ? 'cancelled' : 'failed', {
-            message: signal.aborted ? undefined : errorMessage(error)
-          })
-        }
-      })
-    )
+    await Promise.all(group.steps.map((step, index) => executeStep(group, execution, step, index)))
     const failed = execution.state.steps.some((step) => step.state === 'failed')
-    finish(execution, signal.aborted ? 'stopped' : failed ? 'failed' : 'done')
+    finish(
+      execution,
+      signal.aborted
+        ? (execution.abortStatus ?? 'stopped')
+        : failed
+          ? 'failed'
+          : successStatus(group)
+    )
   }
 
   const runSerial = async (group: Group, execution: Execution): Promise<void> => {
     const { signal } = execution.controller
     for (const [index, step] of group.steps.entries()) {
-      if (signal.aborted) return finish(execution, 'stopped')
-      setStep(execution, index, 'running', { message: '启动中' })
-
-      let run: Run
-      try {
-        const started = await startStep(step)
-        run = started.run
-        setStep(execution, index, 'running', { runId: run.id, reused: started.reused })
-        // Stopped while this step was starting: stop() could not see the new run yet.
-        if (signal.aborted) {
-          if (!started.reused) await runs.stop(run.id).catch(() => undefined)
-          return finish(execution, 'stopped')
-        }
-      } catch (error) {
-        if (signal.aborted) return finish(execution, 'stopped')
-        setStep(execution, index, 'failed', { message: errorMessage(error) })
-        return finish(execution, 'failed')
-      }
-
-      setStep(execution, index, 'running', {
-        runId: run.id,
-        message: describeCondition(step.continueWhen)
-      })
-      try {
-        await waitForCondition(
-          step.continueWhen,
-          run.id,
-          {
-            subscribe,
-            getRun: (runId) => runs.list().find((candidate) => candidate.id === runId),
-            getOutput: (runId) => runs.output(runId).data,
-            checkPort,
-            checkHttp
-          },
-          signal
-        )
-        setStep(execution, index, 'done')
-      } catch (error) {
-        if (error instanceof WaitCancelledError) return finish(execution, 'stopped')
-        setStep(execution, index, 'failed', { message: errorMessage(error) })
-        return finish(execution, 'failed')
-      }
+      if (signal.aborted) return finish(execution, execution.abortStatus ?? 'stopped')
+      await executeStep(group, execution, step, index)
+      if (signal.aborted) return finish(execution, execution.abortStatus ?? 'stopped')
+      if (execution.state.steps[index]?.state === 'failed') return finish(execution, 'failed')
     }
-    finish(execution, 'done')
+    finish(execution, successStatus(group))
   }
 
   return {
@@ -204,6 +284,7 @@ export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
       if (executions.get(group.id)?.state.status === 'running') {
         throw new DevhubError('GROUP_ALREADY_RUNNING', `${group.name} 正在执行`)
       }
+      executions.get(group.id)?.controller.abort()
       const execution: Execution = {
         controller: new AbortController(),
         state: {
@@ -237,7 +318,20 @@ export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
           }
         )
       )
-      if (execution?.state.status === 'running') finish(execution, 'stopped')
+      if (execution) {
+        let stoppedReadyStep = false
+        execution.state.steps = execution.state.steps.map((step) => {
+          if (step.state !== 'ready') return step
+          stoppedReadyStep = true
+          return { ...step, state: 'stopped', message: undefined }
+        })
+        if (execution.state.status === 'running' || execution.state.status === 'ready') {
+          finish(execution, 'stopped')
+        } else if (stoppedReadyStep) {
+          publish(execution)
+          persist()
+        }
+      }
     },
 
     async isRunning(groupId) {

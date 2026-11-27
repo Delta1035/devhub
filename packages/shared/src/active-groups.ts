@@ -8,8 +8,8 @@ import type { GroupRunState } from './groups'
  */
 export interface ActiveGroup {
   groupId: string
-  /** `starting`: the execution is in progress; `running`: it ended, its scripts still run. */
-  phase: 'starting' | 'running'
+  /** A failed execution can still have other persistent processes alive. */
+  phase: 'starting' | 'running' | 'degraded'
   /** Starting: steps done so far; running: scripts still alive. */
   current: number
   total: number
@@ -27,12 +27,14 @@ export function activeGroups(states: GroupRunState[], runs: Run[]): ActiveGroup[
     ].filter((runId) => alive.has(runId))
     const total = state.steps.length
     if (state.status === 'running') {
-      const done = state.steps.filter((step) => step.state === 'done').length
+      const done = state.steps.filter((step) =>
+        ['done', 'ready', 'completed'].includes(step.state)
+      ).length
       result.push({ groupId: state.groupId, phase: 'starting', current: done, total, runIds })
     } else if (runIds.length > 0) {
       result.push({
         groupId: state.groupId,
-        phase: 'running',
+        phase: state.status === 'failed' ? 'degraded' : 'running',
         current: runIds.length,
         total,
         runIds

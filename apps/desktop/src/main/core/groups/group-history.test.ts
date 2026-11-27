@@ -61,6 +61,21 @@ describe('settleInterrupted', () => {
       { stepId: 's', state: 'cancelled', runId: 'r', reused: true, message: undefined }
     ])
   })
+
+  it('settles a previously ready persistent run as stopped after restart', () => {
+    const state: GroupRunState = {
+      groupId: 'g',
+      status: 'ready',
+      finishedAt: '2026-10-02T10:00:00.000Z',
+      steps: [{ stepId: 's', state: 'ready', runId: 'r' }]
+    }
+    expect(settleInterrupted(state, at)).toEqual({
+      groupId: 'g',
+      status: 'stopped',
+      finishedAt: at.toISOString(),
+      steps: [{ stepId: 's', state: 'stopped', runId: 'r', message: undefined }]
+    })
+  })
 })
 
 describe('group runner with history', () => {

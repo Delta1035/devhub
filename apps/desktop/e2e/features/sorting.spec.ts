@@ -88,6 +88,7 @@ test('sorts batch tasks by name and persists selection after restart', async ({
             {
               projectId,
               scriptId: `${projectId}:check`,
+              executionKind: 'oneShot' as const,
               continueWhen: { type: 'exit', timeoutSeconds: 60 }
             }
           ]
@@ -99,6 +100,7 @@ test('sorts batch tasks by name and persists selection after restart', async ({
             {
               projectId,
               scriptId: `${projectId}:check`,
+              executionKind: 'oneShot' as const,
               continueWhen: { type: 'exit', timeoutSeconds: 60 }
             }
           ]

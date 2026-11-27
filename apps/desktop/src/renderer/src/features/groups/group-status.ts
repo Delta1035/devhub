@@ -1,6 +1,7 @@
 ﻿import type { ActiveGroup, Group, GroupRunState } from '@devhub/shared'
 
-export type GroupDisplayPhase = 'idle' | 'starting' | 'running' | 'done' | 'failed' | 'stopped'
+export type GroupDisplayPhase =
+  'idle' | 'starting' | 'running' | 'ready' | 'done' | 'failed' | 'stopped'
 
 export interface GroupStatusPresentation {
   /** 整体展示阶段 */
@@ -42,22 +43,27 @@ export function resolveGroupStatus({
 }: ResolveGroupStatusOptions): GroupStatusPresentation {
   const isStarting = state?.status === 'running'
   const isRunning = Boolean(active && active.phase === 'running')
-  const isActive = isStarting || isRunning
+  const isDegraded = Boolean(active && active.phase === 'degraded')
+  const isReady = state?.status === 'ready'
+  const isActive = isStarting || isRunning || isDegraded || isReady
 
   const phase: GroupDisplayPhase = isStarting
     ? 'starting'
     : isRunning
       ? 'running'
-      : state?.status === 'failed'
-        ? 'failed'
-        : state?.status === 'stopped'
-          ? 'stopped'
-          : state?.status === 'done'
-            ? 'done'
-            : 'idle'
+      : isReady
+        ? 'ready'
+        : state?.status === 'failed'
+          ? 'failed'
+          : state?.status === 'stopped'
+            ? 'stopped'
+            : state?.status === 'done'
+              ? 'done'
+              : 'idle'
 
   const totalSteps = state?.group?.steps.length ?? group.steps.length
-  const completedSteps = state?.steps.filter((s) => s.state === 'done').length ?? 0
+  const completedSteps =
+    state?.steps.filter((s) => s.state === 'done' || s.state === 'completed').length ?? 0
   const currentStepNum = Math.min(completedSteps + 1, Math.max(totalSteps, 1))
 
   let badgeText = ''
@@ -67,6 +73,9 @@ export function resolveGroupStatus({
       break
     case 'running':
       badgeText = active ? `运行中 ${active.current}/${active.total}` : '运行中'
+      break
+    case 'ready':
+      badgeText = '已就绪'
       break
     case 'failed':
       badgeText = '失败'
@@ -88,6 +97,7 @@ export function resolveGroupStatus({
       dotState = 'starting'
       break
     case 'running':
+    case 'ready':
       dotState = 'running'
       break
     case 'failed':
@@ -109,6 +119,9 @@ export function resolveGroupStatus({
       break
     case 'running':
       summaryText = active ? `${active.current}/${active.total} 个脚本运行中` : '运行中'
+      break
+    case 'ready':
+      summaryText = '启动流程已完成'
       break
     case 'failed':
       summaryText = state?.steps?.find((s) => s.state === 'failed')?.message ?? '失败'
@@ -132,8 +145,11 @@ export function resolveGroupStatus({
     case 'running':
       detailBadgeText = active ? `运行中 · ${active.current}/${active.total} 个服务存活` : '运行中'
       break
+    case 'ready':
+      detailBadgeText = '已就绪'
+      break
     case 'failed':
-      detailBadgeText = '失败'
+      detailBadgeText = isDegraded ? `失败 · ${active?.current ?? 0} 个服务仍存活` : '失败'
       break
     case 'stopped':
       detailBadgeText = '已停止'
@@ -154,8 +170,11 @@ export function resolveGroupStatus({
     case 'running':
       progressHint = `全部步骤就绪 · ${active?.current ?? 0} 个服务运行中`
       break
+    case 'ready':
+      progressHint = '全部步骤就绪'
+      break
     case 'failed':
-      progressHint = '执行中断'
+      progressHint = isDegraded ? `执行异常 · ${active?.current ?? 0} 个服务仍在运行` : '执行中断'
       break
     case 'stopped':
       progressHint = '已停止'

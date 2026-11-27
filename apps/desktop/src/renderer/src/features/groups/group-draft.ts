@@ -4,7 +4,8 @@ import {
   type ContinueCondition,
   type Group,
   type GroupInput,
-  type GroupMode
+  type GroupMode,
+  type GroupStepExecutionKind
 } from '@devhub/shared'
 
 export type ConditionType = ContinueCondition['type']
@@ -14,6 +15,9 @@ export interface DraftStep {
   key: string
   projectId: string
   scriptId: string
+  executionKind: GroupStepExecutionKind
+  /** The stored step predates lifecycle types and needs confirmation on save. */
+  legacy: boolean
   type: ConditionType
   text: string
   regex: boolean
@@ -30,7 +34,7 @@ export interface GroupDraft {
   steps: DraftStep[]
 }
 
-export const conditionTypes: ConditionType[] = ['output', 'exit', 'port', 'http', 'delay']
+export const readyConditionTypes: ConditionType[] = ['output', 'port', 'http', 'delay']
 
 export const conditionLabels: Record<ConditionType, string> = {
   output: '输出中出现文字',
@@ -48,6 +52,8 @@ export function emptyStep(projectId = ''): DraftStep {
     key: key(),
     projectId,
     scriptId: '',
+    executionKind: 'persistent',
+    legacy: false,
     // Servers are the common case: wait until they print that they are ready.
     type: 'output',
     text: '',
@@ -69,6 +75,8 @@ export function draftFromGroup(group: Group): GroupDraft {
       return {
         ...emptyStep(step.projectId),
         scriptId: step.scriptId,
+        executionKind: step.executionKind ?? (condition.type === 'exit' ? 'oneShot' : 'persistent'),
+        legacy: step.executionKind === undefined,
         type: condition.type,
         text: condition.type === 'output' ? condition.text : '',
         regex: condition.type === 'output' && condition.regex === true,
@@ -84,10 +92,9 @@ export function draftFromGroup(group: Group): GroupDraft {
   }
 }
 
-function conditionOf(step: DraftStep, mode: GroupMode): ContinueCondition {
-  // Parallel groups ignore conditions; store a neutral one.
-  if (mode === 'parallel') return { type: 'delay', seconds: 0 }
+function conditionOf(step: DraftStep): ContinueCondition {
   const timeoutSeconds = Number(step.timeout)
+  if (step.executionKind === 'oneShot') return { type: 'exit', timeoutSeconds }
   switch (step.type) {
     case 'output':
       return {
@@ -97,7 +104,7 @@ function conditionOf(step: DraftStep, mode: GroupMode): ContinueCondition {
         timeoutSeconds
       }
     case 'exit':
-      return { type: 'exit', timeoutSeconds }
+      return { type: 'output', text: step.text, timeoutSeconds }
     case 'port':
       return { type: 'port', port: Number(step.port), timeoutSeconds }
     case 'http':
@@ -121,7 +128,8 @@ export function toGroupInput(draft: GroupDraft): { input: GroupInput } | { error
     steps: draft.steps.map((step) => ({
       projectId: step.projectId,
       scriptId: step.scriptId,
-      continueWhen: conditionOf(step, draft.mode)
+      executionKind: step.executionKind,
+      continueWhen: conditionOf(step)
     }))
   }
   const parsed = groupInputSchema.safeParse(input)

@@ -241,6 +241,7 @@ for (const mode of ['serial', 'parallel'] as const) {
           steps: ['first', 'second'].map((script, index) => ({
             projectId: project.id,
             scriptId: `custom:${script}-server`,
+            executionKind: 'persistent',
             continueWhen: {
               type: 'http',
               url: `http://127.0.0.1:${ports[index]}/`,

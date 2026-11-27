@@ -22,6 +22,23 @@ describe('groupSchema and sorting', () => {
     expect(groupSchema.parse(legacy)).toEqual(legacy)
   })
 
+  it('loads legacy steps without an execution kind', () => {
+    const legacy = {
+      id: 'legacy',
+      name: 'legacy',
+      mode: 'parallel',
+      steps: [
+        {
+          id: 's1',
+          projectId: 'p1',
+          scriptId: 'npm:dev',
+          continueWhen: { type: 'delay', seconds: 0 }
+        }
+      ]
+    }
+    expect(groupSchema.parse(legacy)).toEqual(legacy)
+  })
+
   it('sorts pins newest first, then active groups, then keeps storage order', () => {
     const groups = [
       group('idle-a'),
@@ -134,8 +151,9 @@ describe('groupInputSchema', () => {
   const step = {
     projectId: 'p1',
     scriptId: 'npm:dev',
+    executionKind: 'persistent',
     continueWhen: { type: 'output', text: 'ready', timeoutSeconds: 120 }
-  }
+  } as const
 
   it('accepts a serial group across projects', () => {
     const parsed = groupInputSchema.parse({
@@ -153,6 +171,42 @@ describe('groupInputSchema', () => {
     ['an unknown mode', { name: 'g', mode: 'random', steps: [step] }]
   ])('rejects %s', (_label, input) => {
     expect(groupInputSchema.safeParse(input).success).toBe(false)
+  })
+
+  it.each([
+    ['a missing execution kind', { ...step, executionKind: undefined }],
+    [
+      'a one-shot readiness condition',
+      { ...step, executionKind: 'oneShot', continueWhen: step.continueWhen }
+    ],
+    [
+      'a persistent exit condition',
+      {
+        ...step,
+        executionKind: 'persistent',
+        continueWhen: { type: 'exit', timeoutSeconds: 120 }
+      }
+    ]
+  ])('rejects %s', (_label, invalidStep) => {
+    expect(
+      groupInputSchema.safeParse({ name: 'g', mode: 'serial', steps: [invalidStep] }).success
+    ).toBe(false)
+  })
+
+  it('accepts a one-shot exit condition', () => {
+    expect(
+      groupInputSchema.safeParse({
+        name: 'build',
+        mode: 'parallel',
+        steps: [
+          {
+            ...step,
+            executionKind: 'oneShot',
+            continueWhen: { type: 'exit', timeoutSeconds: 120 }
+          }
+        ]
+      }).success
+    ).toBe(true)
   })
 })
 
