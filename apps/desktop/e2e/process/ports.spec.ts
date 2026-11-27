@@ -241,6 +241,7 @@ for (const mode of ['serial', 'parallel'] as const) {
           steps: ['first', 'second'].map((script, index) => ({
             projectId: project.id,
             scriptId: `custom:${script}-server`,
+            executionKind: 'persistent',
             continueWhen: {
               type: 'http',
               url: `http://127.0.0.1:${ports[index]}/`,
@@ -259,7 +260,7 @@ for (const mode of ['serial', 'parallel'] as const) {
     await detail.getByRole('button', { name: '执行', exact: true }).click()
 
     // Windows performs verified CIM snapshots for each sequential port takeover.
-    await expect(item).toContainText('运行中 2/2', { timeout: 35_000 })
+    await expect(item).toContainText('运行中 2/2', { timeout: 35_000 }))
     await expect.poll(() => httpBody(first.port)).toBe('group-first')
     await expect.poll(() => httpBody(second.port)).toBe('group-second')
     await expect.poll(() => [hasExited(first), hasExited(second)]).toEqual([true, true])

@@ -84,6 +84,13 @@ export function GroupStepCard({
 
   const scriptDisplay = run?.title ?? step.scriptId.slice(step.scriptId.indexOf(':') + 1)
   const conditionBadge = getConditionBadge(step.continueWhen)
+  const hasCompletionCondition = isSerial || step.executionKind !== undefined
+  const conditionLabel =
+    step.executionKind === 'oneShot'
+      ? '完成'
+      : step.executionKind === 'persistent'
+        ? '就绪'
+        : '等待'
 
   return (
     <li aria-label={`运行步骤 ${index + 1}`} className="relative flex items-stretch gap-3 md:gap-4">
@@ -165,9 +172,11 @@ export function GroupStepCard({
           <span className="text-[11px] font-medium text-muted-foreground">
             {isSerial ? '等待' : '执行模式'}
           </span>
-          {isSerial ? (
+          {hasCompletionCondition ? (
             <div className="flex items-center gap-1.5 rounded border border-border/80 bg-secondary/80 px-2 py-0.5 font-mono text-[11px] text-info">
-              <span>{conditionBadge.text}</span>
+              <span>
+                {conditionLabel}：{conditionBadge.text}
+              </span>
             </div>
           ) : (
             <span className="text-muted-foreground">并行启动，无等待条件</span>
@@ -175,12 +184,12 @@ export function GroupStepCard({
 
           {/* Kept for E2E string matching */}
           <span className="sr-only">
-            {isSerial
-              ? `继续条件：${describeCondition(step.continueWhen)}`
+            {hasCompletionCondition
+              ? `${conditionLabel}条件：${describeCondition(step.continueWhen)}`
               : '并行启动，无等待条件'}
           </span>
 
-          {isSerial && conditionBadge.timeoutText && (
+          {hasCompletionCondition && conditionBadge.timeoutText && (
             <span className="text-[11px] text-muted-foreground font-mono">
               {conditionBadge.timeoutText}
             </span>

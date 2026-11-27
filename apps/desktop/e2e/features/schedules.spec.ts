@@ -85,6 +85,7 @@ test('creates a schedule for an existing batch task', async ({ launchDevhub, cre
           {
             projectId,
             scriptId: 'npm:tick',
+            executionKind: 'oneShot' as const,
             continueWhen: { type: 'exit', timeoutSeconds: 30 }
           }
         ]

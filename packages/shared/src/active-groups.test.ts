@@ -52,6 +52,38 @@ describe('activeGroups', () => {
     ])
   })
 
+  it('counts typed completed and ready steps while starting', () => {
+    const states = [
+      state('running', [
+        { state: 'completed', runId: 'build' },
+        { state: 'ready', runId: 'server' },
+        { state: 'running', runId: 'web' }
+      ])
+    ]
+    expect(activeGroups(states, [run('build', 'exited'), run('server'), run('web')])).toEqual([
+      {
+        groupId: 'g',
+        phase: 'starting',
+        current: 2,
+        total: 3,
+        runIds: ['server', 'web']
+      }
+    ])
+  })
+
+  it('marks a failed group with surviving persistent runs as degraded', () => {
+    const states = [
+      state('failed', [
+        { state: 'failed', runId: 'api' },
+        { state: 'ready', runId: 'web' }
+      ])
+    ]
+    expect(activeGroups(states, [run('api', 'exited'), run('web')])[0]).toMatchObject({
+      phase: 'degraded',
+      current: 1
+    })
+  })
+
   it('counts a stopping script as still alive', () => {
     const states = [state('stopped', [{ state: 'done', runId: 'a' }])]
     expect(activeGroups(states, [run('a', 'stopping')])).toHaveLength(1)

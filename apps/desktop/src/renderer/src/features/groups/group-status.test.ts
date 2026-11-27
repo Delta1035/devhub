@@ -170,6 +170,30 @@ describe('resolveGroupStatus', () => {
     })
   })
 
+  it('presents ready status when persistent steps are ready without active run data', () => {
+    const state: GroupRunState = {
+      groupId: mockGroup.id,
+      status: 'ready',
+      finishedAt: mockFinishedTime,
+      steps: [
+        { stepId: 'step-1', state: 'ready', runId: 'run-1' },
+        { stepId: 'step-2', state: 'completed', runId: 'run-2' }
+      ]
+    }
+
+    const result = resolveGroupStatus({ group: mockGroup, state, active: undefined })
+
+    expect(result).toMatchObject({
+      phase: 'ready',
+      isActive: true,
+      badgeText: '已就绪',
+      dotState: 'running',
+      summaryText: '启动流程已完成',
+      detailBadgeText: '已就绪',
+      progressHint: '全部步骤就绪'
+    })
+  })
+
   it('presents stopped status when execution was stopped', () => {
     const state: GroupRunState = {
       groupId: mockGroup.id,

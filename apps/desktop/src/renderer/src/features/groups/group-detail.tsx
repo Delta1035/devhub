@@ -36,7 +36,13 @@ export function GroupDetail({
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const running = state?.status === 'running'
-  const completed = state?.steps.filter((step) => step.state === 'done').length ?? 0
+  const completed =
+    state?.steps.filter((step) => step.state === 'completed' || step.state === 'done').length ?? 0
+  const ready = state?.steps.filter((step) => step.state === 'ready').length ?? 0
+  const progressLabel =
+    ready > 0
+      ? `${completed > 0 ? `${completed} 个已完成 · ` : ''}${ready} 个已就绪`
+      : `${completed}/${execution.steps.length} 个步骤完成`
   const busy = start.isPending || stop.isPending
   const activeRuns = runs.filter(
     (run) =>
@@ -117,9 +123,7 @@ export function GroupDetail({
           <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span>{isParallel ? '并行模式' : '串行模式'}</span>
             <span>·</span>
-            <span>
-              {completed}/{execution.steps.length} 个步骤完成
-            </span>
+            <span>{progressLabel}</span>
             {groupDurationMs !== null && (
               <>
                 <span>·</span>
@@ -195,6 +199,7 @@ export function GroupDetail({
       {/* Segmented Progress Bar */}
       <GroupProgressBar
         completedCount={completed}
+        readyCount={ready}
         totalCount={execution.steps.length}
         stepStates={stepStates}
         durationText={groupDurationMs !== null ? formatDuration(groupDurationMs) : null}
@@ -221,10 +226,9 @@ export function GroupDetail({
             上次执行结束：{new Date(state.finishedAt).toLocaleString('zh-CN')}
           </p>
         )}
-
-        {presentation.phase === 'running' && (
+        {(state?.status === 'ready' || presentation.phase === 'running') && (
           <p className="rounded-md border border-accent/20 bg-accent/5 p-3 text-sm text-foreground">
-            步骤已就绪，服务进程正在运行中。当前有 {activeRuns.length} 个活动脚本。
+            启动流程已完成，当前有 {activeRuns.length} 个持续运行任务。
           </p>
         )}
 

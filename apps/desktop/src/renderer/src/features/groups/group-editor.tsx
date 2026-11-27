@@ -28,8 +28,8 @@ interface GroupEditorProps {
 }
 
 const modes: { value: GroupMode; label: string; hint: string }[] = [
-  { value: 'parallel', label: '并行', hint: '同时启动所有脚本' },
-  { value: 'serial', label: '串行', hint: '按顺序启动，上一步满足条件后再启动下一步' }
+  { value: 'parallel', label: '并行', hint: '同时启动，并等待每个步骤完成或就绪' },
+  { value: 'serial', label: '串行', hint: '上一步完成或就绪后再启动下一步' }
 ]
 
 export function GroupEditor({
@@ -122,6 +122,11 @@ export function GroupEditor({
 
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium">步骤</span>
+            {draft.steps.some((step) => step.legacy) && (
+              <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+                这是旧版批量任务。请确认每一步是一次性任务还是持续运行任务；保存后将使用新的完成和就绪规则。
+              </p>
+            )}
             <ol className="flex flex-col gap-2">
               {draft.steps.map((step, index) => (
                 <GroupStepRow
@@ -129,7 +134,6 @@ export function GroupEditor({
                   index={index}
                   step={step}
                   projects={projects}
-                  serial={draft.mode === 'serial'}
                   isFirst={index === 0}
                   isLast={index === draft.steps.length - 1}
                   onChange={(changed) => updateSteps((steps) => (steps[index] = changed))}

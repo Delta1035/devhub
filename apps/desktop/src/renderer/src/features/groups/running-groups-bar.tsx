@@ -44,6 +44,8 @@ export function RunningGroupsBar({
               >
                 {group.phase === 'starting' ? (
                   <Loader2 className="size-3 shrink-0 animate-spin text-info" />
+                ) : group.phase === 'degraded' ? (
+                  <span className="size-1.5 shrink-0 rounded-full bg-destructive" />
                 ) : (
                   <span className="size-1.5 shrink-0 rounded-full bg-success" />
                 )}
@@ -51,7 +53,8 @@ export function RunningGroupsBar({
                 <span
                   className={cn(
                     'ml-auto shrink-0 tabular-nums text-muted-foreground',
-                    group.phase === 'starting' && 'text-info'
+                    group.phase === 'starting' && 'text-info',
+                    group.phase === 'degraded' && 'text-destructive'
                   )}
                 >
                   {describeActiveGroup(group)}

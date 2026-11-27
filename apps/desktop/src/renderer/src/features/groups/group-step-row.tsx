@@ -4,7 +4,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { useProjectScripts } from '@renderer/features/scripts/use-scripts'
 import { cn } from '@renderer/lib/utils'
-import { conditionLabels, conditionTypes, type DraftStep } from './group-draft'
+import { conditionLabels, readyConditionTypes, type DraftStep } from './group-draft'
 
 const selectClass =
   'h-8 min-w-0 rounded-md border bg-transparent px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring'
@@ -13,7 +13,6 @@ interface GroupStepRowProps {
   index: number
   step: DraftStep
   projects: Project[]
-  serial: boolean
   isFirst: boolean
   isLast: boolean
   onChange: (step: DraftStep) => void
@@ -25,7 +24,6 @@ export function GroupStepRow({
   index,
   step,
   projects,
-  serial,
   isFirst,
   isLast,
   onChange,
@@ -91,93 +89,119 @@ export function GroupStepRow({
         </div>
       </div>
 
-      {serial && (
-        <div className="flex flex-wrap items-center gap-2 pl-8 text-sm">
-          <span className="text-xs text-muted-foreground">完成后继续：</span>
-          <select
-            aria-label={`${label}的继续条件`}
-            className={selectClass}
-            value={step.type}
-            onChange={(event) => {
-              const type = conditionTypes.find((candidate) => candidate === event.target.value)
-              if (type) update({ type })
-            }}
-          >
-            {conditionTypes.map((type) => (
-              <option key={type} value={type}>
-                {conditionLabels[type]}
-              </option>
-            ))}
-          </select>
-          {step.type === 'output' && (
-            <Input
-              aria-label={`${label}等待的文字`}
-              className="h-8 w-56"
-              placeholder={
-                step.regex
-                  ? String.raw`如 Started \w+ in [\d.]+`
-                  : '如 Started Application / ready in'
-              }
-              value={step.text}
-              onChange={(event) => update({ text: event.target.value })}
+      <div className="flex flex-wrap items-center gap-2 pl-8 text-sm">
+        <span className="text-xs text-muted-foreground">任务类型：</span>
+        <select
+          aria-label={`${label}的任务类型`}
+          className={selectClass}
+          value={step.executionKind}
+          onChange={(event) => {
+            if (event.target.value === 'oneShot') {
+              update({ executionKind: 'oneShot', legacy: false, type: 'exit' })
+            } else if (event.target.value === 'persistent') {
+              update({
+                executionKind: 'persistent',
+                legacy: false,
+                type: step.type === 'exit' ? 'output' : step.type
+              })
+            }
+          }}
+        >
+          <option value="oneShot">一次性任务</option>
+          <option value="persistent">持续运行任务</option>
+        </select>
+        {step.executionKind === 'oneShot' ? (
+          <span className="text-xs text-muted-foreground">退出码为 0 时完成</span>
+        ) : (
+          <>
+            <span className="text-xs text-muted-foreground">就绪条件：</span>
+            <select
+              aria-label={`${label}的就绪条件`}
+              className={selectClass}
+              value={step.type}
+              onChange={(event) => {
+                const type = readyConditionTypes.find(
+                  (candidate) => candidate === event.target.value
+                )
+                if (type) update({ type })
+              }}
+            >
+              {readyConditionTypes.map((type) => (
+                <option key={type} value={type}>
+                  {conditionLabels[type]}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+        {step.executionKind === 'persistent' && step.type === 'output' && (
+          <Input
+            aria-label={`${label}等待的文字`}
+            className="h-8 w-56"
+            placeholder={
+              step.regex
+                ? String.raw`如 Started \w+ in [\d.]+`
+                : '如 Started Application / ready in'
+            }
+            value={step.text}
+            onChange={(event) => update({ text: event.target.value })}
+          />
+        )}
+        {step.executionKind === 'persistent' && step.type === 'output' && (
+          <label className="flex items-center gap-1 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              aria-label={`${label}使用正则`}
+              checked={step.regex}
+              onChange={(event) => update({ regex: event.target.checked })}
             />
-          )}
-          {step.type === 'output' && (
-            <label className="flex items-center gap-1 text-xs text-muted-foreground">
-              <input
-                type="checkbox"
-                aria-label={`${label}使用正则`}
-                checked={step.regex}
-                onChange={(event) => update({ regex: event.target.checked })}
-              />
-              正则
-            </label>
-          )}
-          {step.type === 'port' && (
+            正则
+          </label>
+        )}
+        {step.executionKind === 'persistent' && step.type === 'port' && (
+          <Input
+            aria-label={`${label}的端口`}
+            className="h-8 w-24"
+            inputMode="numeric"
+            placeholder="8080"
+            value={step.port}
+            onChange={(event) => update({ port: event.target.value })}
+          />
+        )}
+        {step.executionKind === 'persistent' && step.type === 'http' && (
+          <Input
+            aria-label={`${label}的地址`}
+            className="h-8 w-72"
+            placeholder="http://localhost:8080/actuator/health"
+            value={step.url}
+            onChange={(event) => update({ url: event.target.value })}
+          />
+        )}
+        {step.executionKind === 'persistent' && step.type === 'delay' ? (
+          <>
             <Input
-              aria-label={`${label}的端口`}
-              className="h-8 w-24"
+              aria-label={`${label}等待的秒数`}
+              className="h-8 w-20"
               inputMode="numeric"
-              placeholder="8080"
-              value={step.port}
-              onChange={(event) => update({ port: event.target.value })}
+              value={step.seconds}
+              onChange={(event) => update({ seconds: event.target.value })}
             />
-          )}
-          {step.type === 'http' && (
+            <span className="text-xs text-muted-foreground">秒</span>
+          </>
+        ) : (
+          <>
+            <span className="text-xs text-muted-foreground">超时</span>
             <Input
-              aria-label={`${label}的地址`}
-              className="h-8 w-72"
-              placeholder="http://localhost:8080/actuator/health"
-              value={step.url}
-              onChange={(event) => update({ url: event.target.value })}
+              aria-label={`${label}的超时秒数`}
+              className="h-8 w-20"
+              inputMode="numeric"
+              value={step.timeout}
+              onChange={(event) => update({ timeout: event.target.value })}
             />
-          )}
-          {step.type === 'delay' ? (
-            <>
-              <Input
-                aria-label={`${label}等待的秒数`}
-                className="h-8 w-20"
-                inputMode="numeric"
-                value={step.seconds}
-                onChange={(event) => update({ seconds: event.target.value })}
-              />
-              <span className="text-xs text-muted-foreground">秒</span>
-            </>
-          ) : (
-            <>
-              <span className="text-xs text-muted-foreground">超时</span>
-              <Input
-                aria-label={`${label}的超时秒数`}
-                className="h-8 w-20"
-                inputMode="numeric"
-                value={step.timeout}
-                onChange={(event) => update({ timeout: event.target.value })}
-              />
-              <span className="text-xs text-muted-foreground">秒</span>
-            </>
-          )}
-        </div>
-      )}
+            <span className="text-xs text-muted-foreground">秒</span>
+          </>
+        )}
+      </div>
     </li>
   )
 }

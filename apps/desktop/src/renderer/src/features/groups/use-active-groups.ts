@@ -26,9 +26,11 @@ export function useActiveGroups(): ActiveGroupView[] {
   )
 }
 
-/** "启动中 1/3" or "运行中 2/3". */
+/** "启动中 1/3", "运行中 2/3" or "异常 1/3". */
 export function describeActiveGroup(group: ActiveGroup): string {
-  return `${group.phase === 'starting' ? '启动中' : '运行中'} ${group.current}/${group.total}`
+  const label =
+    group.phase === 'starting' ? '启动中' : group.phase === 'degraded' ? '异常' : '运行中'
+  return `${label} ${group.current}/${group.total}`
 }
 
 /** "前后端联调（运行中 2/3）、全量构建（启动中 0/2）" for tooltips and screen readers. */

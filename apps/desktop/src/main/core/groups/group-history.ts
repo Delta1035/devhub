@@ -34,15 +34,18 @@ export function createGroupHistory(
  * nothing is waiting on it any more, so it is shown as stopped.
  */
 export function settleInterrupted(state: GroupRunState, at: Date): GroupRunState {
-  if (state.status !== 'running') return state
+  if (state.status !== 'running' && state.status !== 'ready') return state
   return {
     ...state,
     status: 'stopped',
-    finishedAt: state.finishedAt ?? at.toISOString(),
-    steps: state.steps.map((step) =>
-      step.state === 'pending' || step.state === 'running'
-        ? { ...step, state: 'cancelled', message: undefined }
-        : step
-    )
+    finishedAt:
+      state.status === 'ready' ? at.toISOString() : (state.finishedAt ?? at.toISOString()),
+    steps: state.steps.map((step) => {
+      if (step.state === 'ready') return { ...step, state: 'stopped', message: undefined }
+      if (step.state === 'pending' || step.state === 'running') {
+        return { ...step, state: 'cancelled', message: undefined }
+      }
+      return step
+    })
   }
 }

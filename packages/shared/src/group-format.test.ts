@@ -78,8 +78,11 @@ describe('stepStateLabels', () => {
   it('has entries for all step states', () => {
     expect(stepStateLabels.pending).toBe('等待启动')
     expect(stepStateLabels.running).toBe('启动中')
+    expect(stepStateLabels.ready).toBe('已就绪')
+    expect(stepStateLabels.completed).toBe('已完成')
     expect(stepStateLabels.done).toBe('条件满足')
     expect(stepStateLabels.failed).toBe('失败')
+    expect(stepStateLabels.stopped).toBe('已停止')
     expect(stepStateLabels.cancelled).toBe('已取消')
   })
 })

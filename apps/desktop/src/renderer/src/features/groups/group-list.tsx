@@ -214,7 +214,10 @@ function GroupItem({
   // Show the steps while something is happening or went wrong; finished groups stay compact.
   const showSteps =
     state &&
-    (state.status === 'running' || state.status === 'failed' || presentation.phase === 'running')
+    (state.status === 'running' ||
+      state.status === 'ready' ||
+      state.status === 'failed' ||
+      presentation.phase === 'running')
 
   return (
     <li
@@ -358,9 +361,13 @@ function StepIcon({ state }: { state: GroupStepState }): React.JSX.Element {
     case 'running':
       return <Loader2 className={cn(className, 'animate-spin text-info')} aria-label="进行中" />
     case 'done':
+    case 'ready':
+    case 'completed':
       return <Check className={cn(className, 'text-success')} aria-label="完成" />
     case 'failed':
       return <XIcon className={cn(className, 'text-destructive')} aria-label="失败" />
+    case 'stopped':
+      return <Square className={cn(className, 'text-muted-foreground')} aria-label="已停止" />
     default:
       return <CircleDashed className={cn(className, 'text-muted-foreground')} aria-label="未开始" />
   }

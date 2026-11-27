@@ -69,6 +69,7 @@ test('pins a batch task from its operations menu and keeps the pin after restart
     const step = {
       projectId: project.id,
       scriptId: 'npm:check',
+      executionKind: 'persistent' as const,
       continueWhen: { type: 'delay' as const, seconds: 0 }
     }
     await api.saveGroup({ name: 'alpha-task', mode: 'parallel', steps: [step] })

@@ -46,11 +46,13 @@ const input: GroupInput = {
     {
       projectId: 'api',
       scriptId: 'gradle:bootRun',
+      executionKind: 'persistent',
       continueWhen: { type: 'port', port: 8080, timeoutSeconds: 120 }
     },
     {
       projectId: 'web',
       scriptId: 'npm:dev',
+      executionKind: 'persistent',
       continueWhen: { type: 'output', text: 'ready', timeoutSeconds: 60 }
     }
   ]

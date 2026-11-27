@@ -54,7 +54,10 @@ export function getConditionBadge(condition: ContinueCondition): ConditionBadgeI
 export const stepStateLabels: Record<GroupStepState, string> = {
   pending: '等待启动',
   running: '启动中',
+  ready: '已就绪',
+  completed: '已完成',
   done: '条件满足',
   failed: '失败',
+  stopped: '已停止',
   cancelled: '已取消'
 }

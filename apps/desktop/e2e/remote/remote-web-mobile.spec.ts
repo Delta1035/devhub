@@ -31,6 +31,7 @@ test('on a phone-sized screen the web app uses a drawer and still drives scripts
       steps: projects.map((project) => ({
         projectId: project.id,
         scriptId: project.name === 'app' ? 'npm:tick' : 'npm:dev',
+        executionKind: 'oneShot',
         continueWhen: { type: 'exit', timeoutSeconds: 120 }
       }))
     })

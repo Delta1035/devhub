@@ -50,15 +50,52 @@ export type ContinueCondition = z.infer<typeof continueConditionSchema>
 
 export const defaultTimeoutSeconds = 120
 
-export const groupStepInputSchema = z.object({
+export const groupStepExecutionKindSchema = z.enum(['oneShot', 'persistent'])
+export type GroupStepExecutionKind = z.infer<typeof groupStepExecutionKindSchema>
+
+const groupStepFields = {
   projectId: z.string().min(1),
   scriptId: z.string().min(1),
-  /** Only used in serial mode. */
   continueWhen: continueConditionSchema
-})
+}
+
+function validateExecutionKind(
+  step: { executionKind?: GroupStepExecutionKind; continueWhen: ContinueCondition },
+  context: z.RefinementCtx
+): void {
+  if (step.executionKind === 'oneShot' && step.continueWhen.type !== 'exit') {
+    context.addIssue({
+      code: 'custom',
+      path: ['continueWhen'],
+      message: '一次性任务必须等待进程成功退出'
+    })
+  }
+  if (step.executionKind === 'persistent' && step.continueWhen.type === 'exit') {
+    context.addIssue({
+      code: 'custom',
+      path: ['continueWhen'],
+      message: '持续运行任务必须配置就绪条件'
+    })
+  }
+}
+
+/** New and edited steps always declare how their process is expected to finish. */
+export const groupStepInputSchema = z
+  .object({
+    ...groupStepFields,
+    executionKind: groupStepExecutionKindSchema
+  })
+  .superRefine(validateExecutionKind)
 export type GroupStepInput = z.infer<typeof groupStepInputSchema>
 
-export const groupStepSchema = groupStepInputSchema.extend({ id: z.string().min(1) })
+/** `executionKind` is optional only so groups saved by older DevHub versions still load. */
+export const groupStepSchema = z
+  .object({
+    ...groupStepFields,
+    id: z.string().min(1),
+    executionKind: groupStepExecutionKindSchema.optional()
+  })
+  .superRefine(validateExecutionKind)
 export type GroupStep = z.infer<typeof groupStepSchema>
 
 /** What the UI sends to create (no id) or update (with id) a group. */
@@ -150,7 +187,20 @@ export function sortGroups(
   })
 }
 
-export const groupStepStateSchema = z.enum(['pending', 'running', 'done', 'failed', 'cancelled'])
+export const groupStepStateSchema = z.enum([
+  'pending',
+  'running',
+  /** A persistent process reached its readiness condition and is still alive. */
+  'ready',
+  /** A one-shot process exited successfully. */
+  'completed',
+  /** Legacy result written before execution kinds were introduced. */
+  'done',
+  'failed',
+  /** A persistent process was stopped intentionally outside the group stop action. */
+  'stopped',
+  'cancelled'
+])
 export type GroupStepState = z.infer<typeof groupStepStateSchema>
 
 /** Latest execution progress; completed results are persisted across sessions. */
@@ -158,7 +208,7 @@ export const groupRunStateSchema = z.object({
   groupId: z.string(),
   /** Configuration at execution time; absent in older saved results. */
   group: groupSchema.optional(),
-  status: z.enum(['running', 'done', 'failed', 'stopped']),
+  status: z.enum(['running', 'ready', 'done', 'failed', 'stopped']),
   /** When the execution ended; absent while running. */
   finishedAt: z.iso.datetime().optional(),
   steps: z.array(

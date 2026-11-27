@@ -66,8 +66,21 @@ export function waitForCondition(
     cleanups.push(() => signal.removeEventListener('abort', onAbort))
 
     if (condition.type === 'delay') {
+      const unsubscribe = deps.subscribe((event) => {
+        if (
+          event.type === 'run-updated' &&
+          event.run.id === runId &&
+          event.run.status === 'exited'
+        ) {
+          finish(new Error('进程已退出，条件未满足'))
+        }
+      })
+      cleanups.push(unsubscribe)
       const timer = setTimeout(() => finish(), condition.seconds * 1000)
       cleanups.push(() => clearTimeout(timer))
+      if (deps.getRun(runId)?.status === 'exited') {
+        finish(new Error('进程已退出，条件未满足'))
+      }
       return
     }
 
