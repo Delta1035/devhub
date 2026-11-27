@@ -32,7 +32,7 @@ M4-2 PWA：
 
 - #17 已完成：网页版复用桌面 renderer（用户选择），由远程服务托管，扫码即连接；远程不允许的操作已隐藏。
 - #25 已完成：监听地址按 Tailscale → 局域网 → 其他 → 代理虚拟网卡（`198.18.0.0/15`，设置页标注）排序，二维码随之使用局域网地址。
-- #18 代码已完成，待真机验收：窄屏侧栏改为抽屉、触屏「⋯」菜单、manifest 可安装（不加 service worker）、HTTPS 交给 `tailscale serve`（设置页与官网「手机访问」说明，二维码暂不生成 HTTPS 链接）、终端与设置页按需加载（首屏 gzip 330 → 185 KB）。
+- #18 代码已完成，待真机验收：窄屏侧栏改为抽屉、触屏「⋯」菜单、manifest 可安装（不加 service worker）、HTTPS 交给 `tailscale serve`（设置页与官网「手机访问」说明，二维码暂不生成 HTTPS 链接）、终端与设置页按需加载（首屏 gzip 330 → 185 KB）；补齐项目/批量/设置/历史页的窄屏布局、终端触屏滚动与移动端浮动状态栏。
 - 未验证：真实手机经 Tailscale 安装与连接、经 `tailscale serve` 时 SSE 不被缓冲（本机未装 Tailscale）；远程相关代码尚未在 Linux 真机上运行（CI 的 Ubuntu 会跑单元测试与 E2E）。
 
 M4-3 Android：

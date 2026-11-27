@@ -32,8 +32,8 @@ export function BatchWorkspace({
       {/* 批量任务主头部 */}
       <BatchHeader onNewGroup={() => setEditingGroup(null)} />
 
-      {/* 两栏主体：左侧任务列表 + 右侧详情 */}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      {/* 两栏主体：手机上下排列，桌面左右排列 */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
         {/* 左栏：批量任务列表 (272px) */}
         <BatchTaskList
           selectedGroupId={activeGroupId}

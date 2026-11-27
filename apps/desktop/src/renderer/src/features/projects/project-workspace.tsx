@@ -27,12 +27,14 @@ export function ProjectWorkspace({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <header className="flex shrink-0 items-center justify-between border-b border-border bg-card/60 px-6 py-3.5">
-        <div className="flex flex-col gap-0.5">
+      <header className="flex shrink-0 items-center justify-between border-b border-border bg-card/60 px-4 py-3 md:px-6 md:py-3.5">
+        <div className="flex min-w-0 flex-col gap-0.5">
           <h1 className="font-heading text-lg font-semibold tracking-tight text-foreground">
             项目
           </h1>
-          <p className="text-xs text-muted-foreground">选择项目查看脚本、终端与运行历史</p>
+          <p className="truncate text-[11px] text-muted-foreground sm:text-xs">
+            选择项目查看脚本、终端与运行历史
+          </p>
         </div>
       </header>
       <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
@@ -40,7 +42,7 @@ export function ProjectWorkspace({
           aria-label="项目列表"
           style={narrow ? undefined : { width: projectList.width }}
           className={cn(
-            'relative flex min-h-[13rem] w-full shrink-0 flex-col border-b border-border bg-card/40 sm:min-h-0 sm:border-b-0 sm:border-r',
+            'relative flex max-h-[45%] min-h-36 w-full shrink-0 flex-col border-b border-border bg-card/40 sm:max-h-none sm:min-h-0 sm:border-b-0 sm:border-r',
             // On a phone the terminal tab needs the whole height; the list returns on other tabs.
             narrow && terminalView && 'hidden'
           )}

@@ -39,7 +39,7 @@ export function RunningWorkspace({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
-      <header className="flex shrink-0 items-center justify-between border-b border-border bg-card/60 px-6 py-3.5">
+      <header className="flex shrink-0 items-center justify-between border-b border-border bg-card/60 px-4 py-3 md:px-6 md:py-3.5">
         <div className="flex flex-col gap-0.5">
           <h1 className="font-heading text-lg font-semibold tracking-tight text-foreground">
             运行中
@@ -48,7 +48,7 @@ export function RunningWorkspace({
         </div>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-y-auto p-5">
+      <main className="min-h-0 flex-1 overflow-y-auto p-3 md:p-5">
         {hierarchy.hasActive ? (
           <div className="mx-auto flex max-w-4xl flex-col gap-3">
             <SidebarRunningSection

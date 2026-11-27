@@ -24,12 +24,12 @@ export function ScheduleWorkspace(): React.JSX.Element {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
-      <header className="flex shrink-0 items-center justify-between border-b border-border bg-card/60 px-6 py-3.5">
-        <div className="flex flex-col gap-0.5">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-card/60 px-4 py-3 md:px-6 md:py-3.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <h1 className="font-heading text-lg font-semibold tracking-tight text-foreground">
             定时任务
           </h1>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground sm:text-xs">
             按计划启动脚本或批量任务。DevHub 退出后不会执行，也不会补执行错过的计划。
           </p>
         </div>
@@ -45,7 +45,7 @@ export function ScheduleWorkspace(): React.JSX.Element {
         )}
       </header>
 
-      <main className="min-h-0 flex-1 overflow-y-auto p-5">
+      <main className="min-h-0 flex-1 overflow-y-auto p-3 md:p-5">
         {schedules.length === 0 ? (
           <div className="flex h-full min-h-64 flex-col items-center justify-center gap-3 text-center">
             <div className="flex size-12 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground">
