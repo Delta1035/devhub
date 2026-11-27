@@ -1,6 +1,7 @@
 ﻿import type { ActiveGroup, Group, GroupRunState } from '@devhub/shared'
 
-export type GroupDisplayPhase = 'idle' | 'starting' | 'running' | 'ready' | 'done' | 'failed' | 'stopped'
+export type GroupDisplayPhase =
+  'idle' | 'starting' | 'running' | 'ready' | 'done' | 'failed' | 'stopped'
 
 export interface GroupStatusPresentation {
   /** 整体展示阶段 */
