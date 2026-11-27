@@ -89,11 +89,23 @@ scripts:
     description: 后端 # 可选
     port: 8081 # 可选，也可以写 ports: [8081, 8082]；省略时从命令推断
     portConflictPolicy: terminate # 可选，启动此脚本前先结束端口占用者
-    health: /actuator/health # 可选，就绪检查改为请求该路径，期望 HTTP 2xx
+    health: /actuator/health # 可选，HTTP 路径字符串或探针对象（见下）
   db:
     command: docker compose up postgres
     cwd: deploy # 可选，相对项目目录，不能跳出项目
+  worker:
+    command: node worker.js
+    health:
+      type: output
+      pattern: worker ready
 ```
+
+`health` 除了直接填写 HTTP 路径字符串（如 `/actuator/health`，在该脚本首个端口上期望 HTTP 2xx）外，还支持多模态健康检测探针对象：
+
+- `{ type: http, path: string, port?: number }`：请求指定端口（`port` 省略时取脚本第一个端口）的 `path`，期望返回 HTTP 2xx。
+- `{ type: output, pattern: string, regex?: boolean }`：当进程输出匹配 `pattern`（`regex: true` 时按正则表达式匹配）时标记为就绪。
+- `{ type: ports, ports: number[] }`：指定的端口列表全部可连接时标记为就绪。
+- `{ type: alive, delayMs?: number }`：进程启动后稳定存活指定毫秒数（默认 `2000`，即 2 秒）时标记为就绪；未配置端口且未配置 `health` 时默认采用此行为。
 
 保存后刷新或切回窗口即生效；写错时脚本列表会显示行号或字段路径。
 
