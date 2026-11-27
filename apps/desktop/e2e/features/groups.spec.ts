@@ -200,21 +200,22 @@ test('a one-shot step completes only after its process exits successfully', asyn
   await dialog.getByRole('button', { name: '保存' }).click()
 
   const item = groups.getByRole('listitem', { name: '批量任务 release build' })
-  await item.getByRole('button', { name: '执行 release build' }).click()
-  await expect(item).toContainText('已完成', { timeout: 20_000 })
   await item.getByRole('button', { name: '查看 release build' }).click()
   const detail = page.getByRole('region', { name: '任务运行 release build' })
+  await detail.getByRole('button', { name: '执行', exact: true }).click()
+  await expect(item).toContainText('已完成', { timeout: 20_000 })
   await expect(detail).toContainText('1/1 个步骤完成')
   await expect(detail.getByRole('listitem', { name: '运行步骤 1' })).toContainText('已完成')
 })
 
-test('a persistent step becomes failed when it exits after becoming ready', async ({
+test('a failed persistent step stays visible while another persistent run remains alive', async ({
   launchDevhub,
   createProject
 }) => {
   const dir = await createProject('watcher', {
-    'package.json': packageJson({ dev: 'node watcher.js' }),
-    'watcher.js': `console.log('watching'); setTimeout(() => process.exit(2), 1500)`
+    'package.json': packageJson({ dev: 'node watcher.js', serve: 'node server.js' }),
+    'watcher.js': `console.log('watching'); setTimeout(() => process.exit(2), 1500)`,
+    'server.js': `console.log('alive'); setInterval(() => {}, 1000)`
   })
   const { page } = await launchDevhub()
   await addProjectViaApi(page, dir)
@@ -224,18 +225,25 @@ test('a persistent step becomes failed when it exits after becoming ready', asyn
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('名称').fill('watch files')
   await fillStep(page, 1, 'watcher', 'dev', 'watching')
+  await dialog.getByRole('button', { name: '添加步骤' }).click()
+  await fillStep(page, 2, 'watcher', 'serve', 'alive')
   await dialog.getByRole('button', { name: '保存' }).click()
 
   const item = groups.getByRole('listitem', { name: '批量任务 watch files' })
-  await item.getByRole('button', { name: '执行 watch files' }).click()
+  await item.getByRole('button', { name: '查看 watch files' }).click()
+  const detail = page.getByRole('region', { name: '任务运行 watch files' })
+  await detail.getByRole('button', { name: '执行', exact: true }).click()
   await expect(item).toContainText('失败', { timeout: 20_000 })
   await expect(item).toContainText('持续运行任务异常退出（退出码 2）')
-  await item.getByRole('button', { name: '查看 watch files' }).click()
-  await expect(
-    page
-      .getByRole('region', { name: '任务运行 watch files' })
-      .getByRole('listitem', { name: '运行步骤 1' })
-  ).toContainText('异常退出')
+  await expect(detail).toContainText('失败 · 1 个服务仍存活')
+  await expect(detail).toContainText('启动流程异常结束，当前有 1 个持续运行任务')
+  await expect(detail.getByRole('listitem', { name: '运行步骤 1' })).toContainText('异常退出')
+  await expect(detail.getByRole('listitem', { name: '运行步骤 2' })).toContainText('已就绪')
+  await detail.getByRole('button', { name: '停止全部' }).click()
+  await expect
+    .poll(async () => (await listRuns(page)).filter((run) => run.status !== 'exited').length)
+    .toBe(0)
+  await expect(detail.getByRole('listitem', { name: '运行步骤 2' })).toContainText('已停止')
 })
 
 test('waits for a regex in the output and remembers the result after a restart', async ({

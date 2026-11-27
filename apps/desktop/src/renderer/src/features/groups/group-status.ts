@@ -43,8 +43,9 @@ export function resolveGroupStatus({
 }: ResolveGroupStatusOptions): GroupStatusPresentation {
   const isStarting = state?.status === 'running'
   const isRunning = Boolean(active && active.phase === 'running')
+  const isDegraded = Boolean(active && active.phase === 'degraded')
   const isReady = state?.status === 'ready'
-  const isActive = isStarting || isRunning || isReady
+  const isActive = isStarting || isRunning || isDegraded || isReady
 
   const phase: GroupDisplayPhase = isStarting
     ? 'starting'
@@ -148,7 +149,7 @@ export function resolveGroupStatus({
       detailBadgeText = '已就绪'
       break
     case 'failed':
-      detailBadgeText = '失败'
+      detailBadgeText = isDegraded ? `失败 · ${active?.current ?? 0} 个服务仍存活` : '失败'
       break
     case 'stopped':
       detailBadgeText = '已停止'
@@ -173,7 +174,7 @@ export function resolveGroupStatus({
       progressHint = '全部步骤就绪'
       break
     case 'failed':
-      progressHint = '执行中断'
+      progressHint = isDegraded ? `执行异常 · ${active?.current ?? 0} 个服务仍在运行` : '执行中断'
       break
     case 'stopped':
       progressHint = '已停止'

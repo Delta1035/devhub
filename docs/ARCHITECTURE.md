@@ -200,7 +200,6 @@ Linux 已打包版本由 `APPIMAGE` 或 electron-builder 写入 `resources/packa
 
 - `features/groups/group-detail.tsx` 展示任务运行详情（包含 `GroupProgressBar` 分段进度条、`GroupStepCard` 步骤时间线卡片与 `GroupOutputPanel` 嵌入式任务输出面板，纯逻辑与时间/条件格式化由 `packages/shared/src/group-format.ts` 提供），App 管理项目与任务选择；日志入口携带具体 `runId` 切换到项目终端。
 - `GroupRunState` 可选保存执行配置快照与每步 `reused` 标志，随最近结果持久化。流程状态与实时 Run / RunHealth 独立，停止使用最近执行配置，兼容旧历史（ADR 0006 补充）。
-- 「正在运行的批量任务」由 shared 的 `activeGroups(states, runs)` 从最近执行状态与实时 Run 推导（执行中，或执行结束但步骤的 `runId` 仍未退出），不新增 API；renderer 经 `features/groups/use-active-groups.ts` 用于功能导航运行数量、运行中工作区与脚本行徽标。
 - 新建或编辑的批量步骤以 `executionKind` 区分 `oneShot` 与 `persistent`：前者等待退出码 0，后者等待输出、端口、HTTP 或延时就绪，并在就绪后继续监听 Run 退出事件。并行与串行都使用这套判定；旧步骤缺少类型时保持旧执行语义，编辑保存后写入明确类型。步骤分别使用 `completed` / `ready` / `stopped` / `failed`，包含持续步骤的启动流程使用批量状态 `ready`；持续任务异常退出后批量状态转为 `failed`。
 - 「正在运行的批量任务」由 shared 的 `activeGroups(states, runs)` 从最近执行状态与实时 Run 推导（执行中，或执行结束但步骤的 `runId` 仍未退出），不新增 API；renderer 经 `features/groups/use-active-groups.ts` 用于侧栏常驻条、「批量」标签、标题栏与脚本行徽标。
 - Windows 使用 NSIS 安装向导，`build/installer.nsh` 的 nsDialogs 目录页在浏览选择时更新输入框、手动输入时预览最终路径，统一规范新选目录为 `devhub` 尾目录，并保留原安装位置及静默升级路径（ADR 0014）。

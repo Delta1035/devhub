@@ -318,11 +318,19 @@ export function createGroupRunner(deps: GroupRunnerDeps): GroupRunner {
           }
         )
       )
-      if (execution?.state.status === 'running' || execution?.state.status === 'ready') {
-        execution.state.steps = execution.state.steps.map((step) =>
-          step.state === 'ready' ? { ...step, state: 'stopped', message: undefined } : step
-        )
-        finish(execution, 'stopped')
+      if (execution) {
+        let stoppedReadyStep = false
+        execution.state.steps = execution.state.steps.map((step) => {
+          if (step.state !== 'ready') return step
+          stoppedReadyStep = true
+          return { ...step, state: 'stopped', message: undefined }
+        })
+        if (execution.state.status === 'running' || execution.state.status === 'ready') {
+          finish(execution, 'stopped')
+        } else if (stoppedReadyStep) {
+          publish(execution)
+          persist()
+        }
       }
     },
 

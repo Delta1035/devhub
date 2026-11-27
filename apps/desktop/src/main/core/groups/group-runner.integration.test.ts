@@ -10,7 +10,9 @@ describe('group runner with RunManager', () => {
   beforeEach(() => vi.useFakeTimers())
 
   afterEach(async () => {
-    await manager?.dispose()
+    const disposing = manager?.dispose()
+    await vi.advanceTimersByTimeAsync(6000)
+    await disposing
     vi.useRealTimers()
   })
 
@@ -42,6 +44,13 @@ describe('group runner with RunManager', () => {
           scriptId: 'npm:dev',
           executionKind: 'persistent',
           continueWhen: { type: 'output', text: 'ready', timeoutSeconds: 30 }
+        },
+        {
+          id: 'worker',
+          projectId: 'p1',
+          scriptId: 'npm:worker',
+          executionKind: 'persistent',
+          continueWhen: { type: 'delay', seconds: 0 }
         }
       ]
     }
@@ -66,15 +75,15 @@ describe('group runner with RunManager', () => {
     })
 
     await runner.start(group.id)
-    await vi.advanceTimersByTimeAsync(0)
-    expect(harness.ptys).toHaveLength(2)
+    await vi.advanceTimersByTimeAsync(16)
+    expect(harness.ptys).toHaveLength(3)
 
     harness.ptys[0]?.emitExit(0)
     harness.ptys[1]?.emitData('server ready')
     await vi.advanceTimersByTimeAsync(16)
     expect(states.at(-1)).toMatchObject({
       status: 'ready',
-      steps: [{ state: 'completed' }, { state: 'ready' }]
+      steps: [{ state: 'completed' }, { state: 'ready' }, { state: 'ready' }]
     })
 
     harness.ptys[1]?.emitExit(2)
@@ -82,8 +91,17 @@ describe('group runner with RunManager', () => {
       status: 'failed',
       steps: [
         { state: 'completed' },
-        { state: 'failed', message: '持续运行任务异常退出（退出码 2）' }
+        { state: 'failed', message: '持续运行任务异常退出（退出码 2）' },
+        { state: 'ready' }
       ]
+    })
+
+    const stopping = runner.stop(group.id)
+    await vi.advanceTimersByTimeAsync(6000)
+    await stopping
+    expect(states.at(-1)).toMatchObject({
+      status: 'failed',
+      steps: [{ state: 'completed' }, { state: 'failed' }, { state: 'stopped' }]
     })
   })
 })

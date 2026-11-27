@@ -102,7 +102,8 @@ export function GroupDetail({
               }
               className={cn(
                 'h-5 gap-1.5 px-2 text-[10px]',
-                presentation.isActive &&
+                presentation.phase !== 'failed' &&
+                  presentation.isActive &&
                   'border-transparent bg-accent/15 text-accent hover:bg-accent/20'
               )}
             >
@@ -226,11 +227,22 @@ export function GroupDetail({
             上次执行结束：{new Date(state.finishedAt).toLocaleString('zh-CN')}
           </p>
         )}
-        {(state?.status === 'ready' || presentation.phase === 'running') && (
-          <p className="rounded-md border border-accent/20 bg-accent/5 p-3 text-sm text-foreground">
-            启动流程已完成，当前有 {activeRuns.length} 个持续运行任务。
-          </p>
-        )}
+        {(state?.status === 'ready' ||
+          state?.status === 'failed' ||
+          presentation.phase === 'running') &&
+          activeRuns.length > 0 && (
+            <p
+              className={cn(
+                'rounded-md border p-3 text-sm',
+                state?.status === 'failed'
+                  ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                  : 'border-accent/20 bg-accent/5 text-foreground'
+              )}
+            >
+              {state?.status === 'failed' ? '启动流程异常结束' : '启动流程已完成'}，当前有{' '}
+              {activeRuns.length} 个持续运行任务。
+            </p>
+          )}
 
         {presentation.phase === 'done' && (
           <p className="rounded-md border border-border/80 bg-muted/40 p-3 text-sm text-muted-foreground">

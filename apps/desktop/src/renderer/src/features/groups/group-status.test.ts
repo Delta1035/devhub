@@ -170,6 +170,36 @@ describe('resolveGroupStatus', () => {
     })
   })
 
+  it('keeps a failed summary when other persistent runs are still alive', () => {
+    const state: GroupRunState = {
+      groupId: mockGroup.id,
+      status: 'failed',
+      steps: [
+        { stepId: 'step-1', state: 'failed', runId: 'run-1', message: '持续运行任务异常退出' },
+        { stepId: 'step-2', state: 'ready', runId: 'run-2' }
+      ]
+    }
+    const active: ActiveGroup = {
+      groupId: mockGroup.id,
+      phase: 'degraded',
+      current: 1,
+      total: 2,
+      runIds: ['run-2']
+    }
+
+    const result = resolveGroupStatus({ group: mockGroup, state, active })
+
+    expect(result).toMatchObject({
+      phase: 'failed',
+      isActive: true,
+      badgeText: '失败',
+      dotState: 'failed',
+      summaryText: '持续运行任务异常退出',
+      detailBadgeText: '失败 · 1 个服务仍存活',
+      progressHint: '执行异常 · 1 个服务仍在运行'
+    })
+  })
+
   it('presents ready status when persistent steps are ready without active run data', () => {
     const state: GroupRunState = {
       groupId: mockGroup.id,
