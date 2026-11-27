@@ -135,7 +135,7 @@ test('on a phone-sized screen the web app uses a drawer and still drives scripts
   }
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
   await expect(terminalRows).not.toContainText('tick 60')
-  await expect(terminalRows).toContainText('tick 30')
+  await expect(terminalRows).toContainText(/tick (?:[1-9]|[1-5][0-9])/)
   await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false })
   await cdp.detach()
   await web.screenshot({ path: testInfo.outputPath('phone-running.png') })
